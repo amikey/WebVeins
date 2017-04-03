@@ -5,4 +5,8 @@ public class Html {
 	public Html(String entity){
 		this.entity = entity;
 	}
+	
+	public String toString(){
+		return entity;
+	}
 }
