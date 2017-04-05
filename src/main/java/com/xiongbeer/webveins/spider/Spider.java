@@ -2,17 +2,24 @@ package com.xiongbeer.webveins.spider;
 
 import java.io.IOException;
 
+import org.apache.http.HttpEntity;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 
 import com.xiongbeer.webveins.scheduler.QueueFrontier;
+import com.xiongbeer.webveins.selector.Html;
+import com.xiongbeer.webveins.utils.InitLog4j;
 import com.xiongbeer.webveins.utils.Site;
 
 public class Spider {
 	public static void main(String[] args) throws ClientProtocolException, IOException{
+		InitLog4j.init();
+		
+		
 		Site site = new Site();
 		site.setCharset("UTF-8")
 			.setDomain("https://www.baidu.com")
@@ -40,16 +47,10 @@ public class Spider {
 		
 		
 		CloseableHttpClient httpclient = HttpClients.createDefault();
-		
-		while(qf.get()!=null){
-			HttpGet httpget = new HttpGet(qf.get());
-			CloseableHttpResponse response = httpclient.execute(httpget);
-			try{
-				System.out.println(response.getStatusLine() + ":" + qf.get());
-				qf.next();
-			} finally{
-				response.close();
-			}
-		}
+		HttpGet httpget = new HttpGet(qf.get());
+		CloseableHttpResponse response = httpclient.execute(httpget);
+		HttpEntity entity = response.getEntity();
+		Html html = new Html(EntityUtils.toString(entity));
+		System.out.println(html);
 	}
 }

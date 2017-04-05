@@ -1,9 +1,9 @@
 package com.xiongbeer.webveins.scheduler;
 
-import java.util.LinkedList;
+import com.xiongbeer.webveins.utils.Queue;
 
 public class QueueFrontier extends Frontier{
-	private Queue requestQueue = new Queue();
+	private Queue<String> requestQueue = new Queue<String>();
 	private VisitedTable visited;
 	public QueueFrontier(){
 		visited = new BloomVisitedTable();
@@ -14,7 +14,7 @@ public class QueueFrontier extends Frontier{
 			return null;
 		}
 		else{
-			return (String)requestQueue.remove();
+			return requestQueue.remove();
 		}
 	}
 
@@ -44,31 +44,8 @@ public class QueueFrontier extends Frontier{
 			return null;
 		}
 		else{
-			return (String)requestQueue.peek();
+			return requestQueue.peek();
 		}
 	}
 	
-	class Queue{
-		private LinkedList<Object> queue= new LinkedList<Object>();
-		public void put(Object t){
-			queue.addLast(t);
-		}
-		
-		public Object remove(){
-			return queue.removeFirst();
-		}
-		
-		public Object peek(){
-			return queue.getFirst();
-		}
-		
-		public boolean isEmpty(){
-			return queue.isEmpty();
-		}
-		
-		public boolean contains(Object t){
-			return queue.contains(t);
-		}
-		
-	}
 }

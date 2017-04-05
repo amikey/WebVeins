@@ -2,6 +2,8 @@ package com.xiongbeer.webveins.downloader;
 
 import java.io.IOException;
 
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -24,7 +26,7 @@ public class HttpClientDownloader {
 	private HttpGet setHttpGet(HttpGet httpGet){
 		if(site == null){
 			return httpGet;
-		}
+		}		
 		return httpGet;
 	}
 	public HttpClientDownloader(){}
