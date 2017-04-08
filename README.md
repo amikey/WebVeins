@@ -43,7 +43,7 @@
     * [ ] on plan
 - zookeeper
     * [x] Manager,Tasks,Workers基础设置
-    * [ ] Manager选举及管理
+    * [x] Manager选举及管理
     * [ ] Tasks队列构建
     * [ ] Workers监控
     * [ ] 节点抖动
