@@ -46,7 +46,7 @@
     * [x] Manager选举及管理
     * [ ] Tasks队列构建
     * [ ] Workers监控
-    * [ ] 节点抖动
-    * [ ] 羊群效应
+    * [x] 节点抖动
+    * [x] 羊群效应
 - loger
     * [ ] on plan
