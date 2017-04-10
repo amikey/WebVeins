@@ -44,9 +44,14 @@
 - zookeeper
     * [x] Manager,Tasks,Workers基础设置
     * [x] Manager选举及管理
-    * [ ] Tasks队列构建
+    * [x] Tasks队列构建
+    * [x] Tasls监控与管理
     * [ ] Workers监控
     * [x] 节点抖动
     * [x] 羊群效应
+    * [ ] 增强权限
+- save
+    * [ ] 本地持久化
+    * [ ] HDFS持久化
 - loger
-    * [ ] on plan
+    * [x] slf4j
