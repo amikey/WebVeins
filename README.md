@@ -43,7 +43,7 @@
     * [ ] checkPoint
     * [ ] edits
     * [ ] fsimage
-    * [ ] hdfsSetting
+    * [x] hdfsSetting
 - scheduler
     * [ ] on plan
 - zookeeper
@@ -51,12 +51,13 @@
     * [x] Manager选举及管理
     * [x] Tasks队列构建
     * [x] Tasls监控与管理
-    * [ ] Workers监控
+    * [x] Workers监控
     * [x] 节点抖动
     * [x] 羊群效应
+    * [x] 检查失效worker与task
     * [ ] 增强权限
 - save
     * [ ] 本地持久化
-    * [ ] HDFS持久化
+    * [x] HDFS持久化
 - loger
     * [x] slf4j
