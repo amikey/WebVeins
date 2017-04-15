@@ -1,44 +1,19 @@
 # WebVeins
 [![Build Status](https://travis-ci.org/xiongbeer/WebVeins.svg?branch=master)](https://travis-ci.org/xiongbeer/WebVeins)
-## 稳定的分布式爬虫框架
+[![LICENCE](https://img.shields.io/badge/licence-MIT-blue.svg)](https://raw.githubusercontent.com/xiongbeer/WebVeins/master/LICENSE.txt)
+[![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://xiongbeer.gitbooks.io/webveinsguide/content/)
+## 分布式爬虫调度器
 ## 开发中...
+### Manual
+![文档](https://xiongbeer.gitbooks.io/webveinsguide/content/)
 ### TODO-LIST
-- Spider
-    * [x] 普通队列
+- Filter
     * [x] url去重:布隆过滤器
         * [x] 内存布隆过滤器
         * [x] 持久化布隆过滤器
         * [x] 压缩持久化布隆过滤器
         * [x] nio mappedbuffer
         * [x] 提供友好的用户接口
-    * [ ] 优先级队列
-    * [ ] multThread
-    * [ ] 增量爬取
-- Http
-    * [x] HttpClientGenerator
-    * [ ] Http状态处理
-    * [ ] Request封装
-    * [ ] proxy
-- Page && Site
-    * [x] charset封装
-    * [x] userAgent封装
-    * [x] targetRequestUrl封装
-    * [ ] headers封装
-    * [ ] cookies封装
-    - Html
-        * [x] rawTest
-        * [ ] links
-        * [ ] images
-        * [ ] pdf
-        * [ ] docx
-        * [ ] cssSelector
-        * [ ] jsonSelector
-        * [ ] xpath
-        * [ ] regex
-- pipeline
-    * [ ] console
-    * [ ] files
-    * [ ] singleFile
 - recover
     * [ ] checkPoint
     * [ ] edits
