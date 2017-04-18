@@ -5,7 +5,7 @@
 ## 分布式爬虫调度器
 ## 开发中...
 ### Manual
-![文档](https://xiongbeer.gitbooks.io/webveinsguide/content/)
+[文档](https://xiongbeer.gitbooks.io/webveinsguide/content/)
 ### TODO-LIST
 - Filter
     * [x] url去重:布隆过滤器
