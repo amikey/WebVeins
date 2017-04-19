@@ -1,5 +1,6 @@
 package com.xiongbeer.filter.bloom;
 
+import com.xiongbeer.Configuration;
 import com.xiongbeer.MD5;
 import org.junit.Test;
 
