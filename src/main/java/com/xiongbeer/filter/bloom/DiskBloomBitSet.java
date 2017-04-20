@@ -11,14 +11,16 @@ import java.io.*;
  */
 public class DiskBloomBitSet extends AbstractBitSet{
     ByteChecker checker;
+    static final int BLOOM_WRITE_BLOCK = 1024*1024;
+
     public DiskBloomBitSet(long size, String savePath){
         File file = new File(savePath);
         if(!file.exists()){
             try {
                 FileOutputStream out = new FileOutputStream(file);
-                byte[] content = new byte[Configuration.BLOOM_WRITE_BLOCK];
+                byte[] content = new byte[BLOOM_WRITE_BLOCK];
                 initBytes(content);
-                for(long i=0; i<(size/(long)Configuration.BLOOM_WRITE_BLOCK + 1); ++i){
+                for(long i=0; i<(size/(long)BLOOM_WRITE_BLOCK + 1); ++i){
                     out.write(content);
                 }
                 out.close();
@@ -47,6 +49,12 @@ public class DiskBloomBitSet extends AbstractBitSet{
         return value == 0?false:true;
     }
 
+    /**
+     *
+     * @param bitIndex
+     * @param flag    占位符，无所谓具体置
+     * @return
+     */
     @Override
     public byte get(long bitIndex, boolean flag){
         return checker.readByte(bitIndex);
