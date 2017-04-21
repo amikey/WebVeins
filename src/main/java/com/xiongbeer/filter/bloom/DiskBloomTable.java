@@ -7,7 +7,7 @@ import com.xiongbeer.Configuration;
  *
  * Created by shaoxiong on 17-4-11.
  */
-public class DiskBloomTable extends  Bloom{
+public class DiskBloomTable extends  BloomTable{
     private static final long DEFAULT_SIZE = 2 << 24;
     private static final int[] DEFAULT_SEEDS = new int[]{7, 11, 13, 31, 37, 61};
 

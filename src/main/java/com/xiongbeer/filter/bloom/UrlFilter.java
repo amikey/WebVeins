@@ -13,8 +13,9 @@ public class UrlFilter {
     private double falseEPositiveRate;
     private long size;
     private long maxElementNums;
-    private Bloom filter;
+    private BloomTable filter;
     private long counter;
+    private CreateMode mode;
 
     public enum CreateMode{
         RAM, DISK, DISK_COMPRESSED
@@ -23,13 +24,14 @@ public class UrlFilter {
     /**
      *
      * @param elementNums 元素个数
-     * @param falseEPositiveRate 错误概率
+     * @param falsePositiveRate 错误概率
      * @param mode Bloom模式
      */
-    public UrlFilter(long elementNums, double falseEPositiveRate, CreateMode mode){
+    public UrlFilter(long elementNums, double falsePositiveRate, CreateMode mode){
         this.falseEPositiveRate = falseEPositiveRate;
         this.maxElementNums = elementNums;
-        size = (long) ((-1) * elementNums * Math.log(falseEPositiveRate)
+        this.mode = mode;
+        size = (long) ((-1) * elementNums * Math.log(falsePositiveRate)
                         / (Math.pow(Math.log(2) ,2)));
         int k = (int) (Math.log(2) * size / elementNums);
         switch (mode){
@@ -74,6 +76,14 @@ public class UrlFilter {
 
     public long getElementNums() {
         return counter;
+    }
+
+    public CreateMode getMode(){
+        return mode;
+    }
+
+    public BloomTable getTable(){
+        return filter;
     }
 
     private int[] getPrimeNumbers(int nums){

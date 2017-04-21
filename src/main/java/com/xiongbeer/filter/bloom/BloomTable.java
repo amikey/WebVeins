@@ -1,15 +1,15 @@
 package com.xiongbeer.filter.bloom;
 
 /**
- * Created by shaoxiong on 17-4-11.
+ * Created by shaoxiong on 17-4-18.
  */
-public class Bloom {
-    private long size;
-    private int[] seeds;
+public class BloomTable {
+    protected long size;
+    protected int[] seeds;
     protected AbstractBitSet bits;
     protected HashMaker[] func;
 
-    public Bloom(AbstractBitSet bits, long size, int[] seeds){
+    public BloomTable(AbstractBitSet bits, long size, int[] seeds){
         this.bits = bits;
         this.size = size;
         this.seeds = seeds;
@@ -41,4 +41,9 @@ public class Bloom {
         }
         return false;
     }
+
+    public boolean get(long index){
+        return bits.get(index);
+    }
+
 }

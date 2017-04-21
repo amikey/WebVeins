@@ -3,6 +3,7 @@ package com.xiongbeer.filter.bloom;
 
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.LinkedList;
 
 /**
  * 扩展的BitSet
@@ -15,10 +16,17 @@ import java.util.BitSet;
  */
 
 public class BloomBitSet extends AbstractBitSet{
-    private ArrayList<BitSet> bitSets = new ArrayList<BitSet>();
     private int num;
     private int index;
+    private ArrayList<BitSet> bitSets = new ArrayList<BitSet>();
 
+    /*
+        一个BitSet的上限为Integer.MAX_VALUE
+        显然在数据量极大的情况下是不够用的。
+        这里用ArrayList存放多个BitSet，而
+        ArrayList的上限也为Integer.MAX_VALUE，
+        那么整体的容量就扩充到了Integer.MAX_VALUE^2
+     */
     public BloomBitSet(long size){
         int nums = (int) (size / Integer.MAX_VALUE);
         int rest = (int) (size % Integer.MAX_VALUE);
@@ -43,17 +51,13 @@ public class BloomBitSet extends AbstractBitSet{
         return bitSet.get(index);
     }
 
+    /*
+        因为有多个BisSet，这里
+        需要做一下映射来定位
+     */
     private void setIndex(long bitIndex){
         num = (int) (bitIndex / Integer.MAX_VALUE);
         index = (int) (bitIndex % Integer.MAX_VALUE);
-    }
-
-    /**
-     * @deprecated
-     */
-    @Override
-    public byte get(long bitIndex, boolean flag) {
-        return 0;
     }
 
     @Override
@@ -65,7 +69,13 @@ public class BloomBitSet extends AbstractBitSet{
      * @deprecated
      */
     @Override
-    public void set(long bitIndex, byte value) {
-
+    public byte get(long bitIndex, boolean flag) {
+        return 0;
     }
+
+    /**
+     * @deprecated
+     */
+    @Override
+    public void set(long bitIndex, byte value) {}
 }
