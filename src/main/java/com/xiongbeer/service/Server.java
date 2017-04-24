@@ -8,6 +8,12 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.LineBasedFrameDecoder;
+import io.netty.handler.codec.protobuf.ProtobufDecoder;
+import io.netty.handler.codec.protobuf.ProtobufEncoder;
+import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
+import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
+import io.netty.handler.codec.string.StringDecoder;
 import org.apache.zookeeper.ZooKeeper;
 
 import java.io.IOException;
@@ -16,14 +22,12 @@ import java.io.IOException;
  * Created by shaoxiong on 17-4-23.
  */
 public class Server {
-    private final ServerData serverData;
-    private final ZooKeeper zk;
+    private final String host;
+    private final int port;
 
-    private static final int SESSION_TIME_OUT = 2000;
-
-    public Server(String zkHostPort, ServerData serverData) throws IOException {
-        this.zk = new ZooKeeper(zkHostPort, SESSION_TIME_OUT, null);
-        this.serverData = serverData;
+    public Server(String host, int port) throws IOException {
+        this.host = host;
+        this.port = port;
     }
 
     public void bind(){
@@ -33,17 +37,10 @@ public class Server {
             ServerBootstrap bootStrap = new ServerBootstrap();
             bootStrap.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
-                    .childHandler(new ChannelInitializer<SocketChannel>() {
-                        @Override
-                        public void initChannel(SocketChannel socketChannel){
-                            socketChannel.pipeline()
-                                    .addLast(new ServerHandler(serverData));
-                        }
-                    })
-                    .option(ChannelOption.SO_BACKLOG, 128)
-                    .childOption(ChannelOption.SO_KEEPALIVE, true);
+                    .childHandler(new ChildChannelHandler())
+                    .option(ChannelOption.SO_BACKLOG, 1024);
 
-            ChannelFuture future = bootStrap.bind(serverData.getPort()).sync();
+            ChannelFuture future = bootStrap.bind(port).sync();
             future.channel().closeFuture().sync();
 
         } catch (InterruptedException e) {
@@ -54,10 +51,34 @@ public class Server {
         }
     }
 
+
+
+    private class ChildChannelHandler extends ChannelInitializer<SocketChannel>{
+
+        @Override
+        protected void initChannel(SocketChannel socketChannel) throws Exception {
+            /* 处理半包 */
+            socketChannel.pipeline().addLast(
+                    new ProtobufVarint32FrameDecoder());
+
+            /* Protobuf 解码器 */
+            socketChannel.pipeline().addLast(new ProtobufDecoder(
+                    ProcessDataProto
+                            .ProcessData
+                            .getDefaultInstance()));
+
+            socketChannel.pipeline().addLast(
+                    new ProtobufVarint32LengthFieldPrepender());
+
+            socketChannel.pipeline().addLast(new ProtobufEncoder());
+            socketChannel.pipeline().addLast(new ServerHandler());
+
+        }
+    }
+
     public static void main(String[] args){
-        ServerData serverData = new ServerData("127.0.0.1", 8080);
         try {
-            Server server = new Server("127.0.0.1:2181", serverData);
+            Server server = new Server("127.0.0.1:2181", 8080);
             server.bind();
         } catch (IOException e) {
             e.printStackTrace();
