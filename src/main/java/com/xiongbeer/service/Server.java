@@ -19,8 +19,9 @@ import java.util.LinkedList;
 public class Server {
     private static LinkedList<Channel> channels = new LinkedList<Channel>();
 
-    private final String host;
+    private TaskWorker taskWorker;
 
+    private final String host;
     private final int port;
 
     public static LinkedList<Channel> getChannels() {
@@ -84,7 +85,7 @@ public class Server {
 
             socketChannel.pipeline().addLast(new ProtobufEncoder());
 
-            socketChannel.pipeline().addLast(new ServerHandler());
+            socketChannel.pipeline().addLast(new ServerHandler(taskWorker));
 
         }
     }
