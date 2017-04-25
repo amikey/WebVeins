@@ -1,5 +1,6 @@
 package com.xiongbeer.service;
 
+import com.xiongbeer.task.TaskWorker;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -19,10 +20,10 @@ import java.util.LinkedList;
 public class Server {
     private static LinkedList<Channel> channels = new LinkedList<Channel>();
 
-    private TaskWorker taskWorker;
-
     private final String host;
     private final int port;
+
+    private TaskWorker taskWorker;
 
     public static LinkedList<Channel> getChannels() {
         return channels;
