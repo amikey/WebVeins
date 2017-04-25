@@ -24,6 +24,15 @@ public final class ProcessDataProto {
      */
     com.google.protobuf.ByteString
         getUrlFilePathBytes();
+
+    /**
+     * <code>required .ProcessData.Status status = 2 [default = NULL];</code>
+     */
+    boolean hasStatus();
+    /**
+     * <code>required .ProcessData.Status status = 2 [default = NULL];</code>
+     */
+    ProcessDataProto.ProcessData.Status getStatus();
   }
   /**
    * Protobuf type {@code ProcessData}
@@ -81,6 +90,17 @@ public final class ProcessDataProto {
               com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000001;
               urlFilePath_ = bs;
+              break;
+            }
+            case 16: {
+              int rawValue = input.readEnum();
+              ProcessDataProto.ProcessData.Status value = ProcessDataProto.ProcessData.Status.valueOf(rawValue);
+              if (value == null) {
+                unknownFields.mergeVarintField(2, rawValue);
+              } else {
+                bitField0_ |= 0x00000002;
+                status_ = value;
+              }
               break;
             }
           }
@@ -265,8 +285,24 @@ public final class ProcessDataProto {
       }
     }
 
+    public static final int STATUS_FIELD_NUMBER = 2;
+    private ProcessDataProto.ProcessData.Status status_;
+    /**
+     * <code>required .ProcessData.Status status = 2 [default = NULL];</code>
+     */
+    public boolean hasStatus() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>required .ProcessData.Status status = 2 [default = NULL];</code>
+     */
+    public ProcessDataProto.ProcessData.Status getStatus() {
+      return status_;
+    }
+
     private void initFields() {
       urlFilePath_ = "";
+      status_ = ProcessDataProto.ProcessData.Status.NULL;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -275,6 +311,10 @@ public final class ProcessDataProto {
       if (isInitialized == 0) return false;
 
       if (!hasUrlFilePath()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasStatus()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -288,6 +328,9 @@ public final class ProcessDataProto {
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeBytes(1, getUrlFilePathBytes());
       }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeEnum(2, status_.getNumber());
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -300,6 +343,10 @@ public final class ProcessDataProto {
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(1, getUrlFilePathBytes());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeEnumSize(2, status_.getNumber());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -420,6 +467,8 @@ public final class ProcessDataProto {
         super.clear();
         urlFilePath_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
+        status_ = ProcessDataProto.ProcessData.Status.NULL;
+        bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
 
@@ -452,6 +501,10 @@ public final class ProcessDataProto {
           to_bitField0_ |= 0x00000001;
         }
         result.urlFilePath_ = urlFilePath_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.status_ = status_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -473,12 +526,19 @@ public final class ProcessDataProto {
           urlFilePath_ = other.urlFilePath_;
           onChanged();
         }
+        if (other.hasStatus()) {
+          setStatus(other.getStatus());
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
 
       public final boolean isInitialized() {
         if (!hasUrlFilePath()) {
+          
+          return false;
+        }
+        if (!hasStatus()) {
           
           return false;
         }
@@ -580,6 +640,41 @@ public final class ProcessDataProto {
         return this;
       }
 
+      private ProcessDataProto.ProcessData.Status status_ = ProcessDataProto.ProcessData.Status.NULL;
+      /**
+       * <code>required .ProcessData.Status status = 2 [default = NULL];</code>
+       */
+      public boolean hasStatus() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required .ProcessData.Status status = 2 [default = NULL];</code>
+       */
+      public ProcessDataProto.ProcessData.Status getStatus() {
+        return status_;
+      }
+      /**
+       * <code>required .ProcessData.Status status = 2 [default = NULL];</code>
+       */
+      public Builder setStatus(ProcessDataProto.ProcessData.Status value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000002;
+        status_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required .ProcessData.Status status = 2 [default = NULL];</code>
+       */
+      public Builder clearStatus() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        status_ = ProcessDataProto.ProcessData.Status.NULL;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:ProcessData)
     }
 
@@ -605,10 +700,11 @@ public final class ProcessDataProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\021ProcessData.proto\"_\n\013ProcessData\022\023\n\013ur" +
-      "lFilePath\030\001 \002(\t\";\n\006Status\022\010\n\004NULL\020\000\022\013\n\007W" +
-      "AITING\020\001\022\013\n\007RUNNING\020\002\022\r\n\tFINNISHED\020\003B\022B\020" +
-      "ProcessDataProto"
+      "\n\021ProcessData.proto\"\212\001\n\013ProcessData\022\023\n\013u" +
+      "rlFilePath\030\001 \002(\t\022)\n\006status\030\002 \002(\0162\023.Proce" +
+      "ssData.Status:\004NULL\";\n\006Status\022\010\n\004NULL\020\000\022" +
+      "\013\n\007WAITING\020\001\022\013\n\007RUNNING\020\002\022\r\n\tFINNISHED\020\003" +
+      "B\022B\020ProcessDataProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -627,7 +723,7 @@ public final class ProcessDataProto {
     internal_static_ProcessData_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_ProcessData_descriptor,
-        new java.lang.String[] { "UrlFilePath", });
+        new java.lang.String[] { "UrlFilePath", "Status", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

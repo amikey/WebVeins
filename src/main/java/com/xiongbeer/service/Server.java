@@ -1,29 +1,41 @@
 package com.xiongbeer.service;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.protobuf.ProtobufDecoder;
 import io.netty.handler.codec.protobuf.ProtobufEncoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
-import io.netty.handler.codec.string.StringDecoder;
-import org.apache.zookeeper.ZooKeeper;
 
 import java.io.IOException;
+import java.util.LinkedList;
 
 /**
  * Created by shaoxiong on 17-4-23.
  */
 public class Server {
+    private static LinkedList<Channel> channels = new LinkedList<Channel>();
+
     private final String host;
+
     private final int port;
+
+    public static LinkedList<Channel> getChannels() {
+        return channels;
+    }
+
+    public static void setChannels(LinkedList<Channel> channels) {
+        Server.channels = channels;
+    }
+
+    public void sentData(ProcessDataProto.ProcessData data){
+        for(Channel channel:channels){
+            channel.pipeline().writeAndFlush(data);
+        }
+    }
 
     public Server(String host, int port) throws IOException {
         this.host = host;
@@ -40,7 +52,7 @@ public class Server {
                     .childHandler(new ChildChannelHandler())
                     .option(ChannelOption.SO_BACKLOG, 1024);
 
-            ChannelFuture future = bootStrap.bind(port).sync();
+            final ChannelFuture future = bootStrap.bind(port).sync();
             future.channel().closeFuture().sync();
 
         } catch (InterruptedException e) {
@@ -64,22 +76,26 @@ public class Server {
             /* Protobuf 解码器 */
             socketChannel.pipeline().addLast(new ProtobufDecoder(
                     ProcessDataProto
-                            .ProcessData
+                           .ProcessData
                             .getDefaultInstance()));
 
             socketChannel.pipeline().addLast(
                     new ProtobufVarint32LengthFieldPrepender());
 
             socketChannel.pipeline().addLast(new ProtobufEncoder());
+
             socketChannel.pipeline().addLast(new ServerHandler());
 
         }
     }
 
+
+
     public static void main(String[] args){
         try {
             Server server = new Server("127.0.0.1:2181", 8080);
             server.bind();
+            System.out.println("!");
         } catch (IOException e) {
             e.printStackTrace();
         }

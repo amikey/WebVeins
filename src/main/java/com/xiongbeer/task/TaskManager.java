@@ -105,8 +105,8 @@ public class TaskManager extends Task{
     /**
      * 重置任务
      *
-     * 任务失败，重置其状态，等待
-     * 其他Worker重新接管任务
+     * 任务失败(与Worker失去连接)，重置其
+     * 状态，等待其他Worker重新接管任务
      * @param path
      */
     @Async

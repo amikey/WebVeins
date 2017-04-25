@@ -23,7 +23,7 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
         ProcessDataProto.ProcessData.Builder builder =
                 ProcessDataProto.ProcessData.newBuilder();
         builder.setUrlFilePath("sddd");
-        ctx.writeAndFlush(builder.build());
+        ctx.writeAndFlush(Unpooled.copiedBuffer(("123" + System.getProperty("line.separator")).getBytes()));
     }
 
     @Override

@@ -9,4 +9,6 @@ message ProcessData {
         RUNNING=2;
         FINNISHED=3;
     }
+
+    required Status status=2 [default=NULL];
 }

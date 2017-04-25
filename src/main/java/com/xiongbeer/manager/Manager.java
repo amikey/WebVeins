@@ -1,6 +1,7 @@
 package com.xiongbeer.manager;
 
 import com.xiongbeer.*;
+import com.xiongbeer.filter.bloom.RamBloomTable;
 import com.xiongbeer.filter.bloom.UrlFilter;
 import com.xiongbeer.saver.HDFSManager;
 import com.xiongbeer.task.Epoch;
@@ -33,11 +34,20 @@ import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
  * 监听active manager，一旦活动节点失效则接管其工作。
  */
 public class Manager {
+    /**
+     * Manager的状态
+     * Initializing: 刚初始化，还未进行选举
+     * ELECTED:      主节点
+     * NOTELECTED:   从节点
+     */
+    public enum Status{
+        Initializing, ELECTED, NOTELECTED
+    }
     private ZooKeeper client;
     private String serverId;
 
     private String managerPath;
-    private int status = ZnodeInfo.MANAGER_NULL;
+    private Status status;
     private ScheduledExecutorService delayExector = Executors.newScheduledThreadPool(1);
 
     private WorkersWatcher workersWatcher;
@@ -46,15 +56,16 @@ public class Manager {
 
     private HashMap<String, String> workerList = new HashMap<String, String>();
 
-    /*未完成的任务指RUNNING状态的任务 */
+    /* 未完成的任务指RUNNING状态的任务 */
     private HashMap<String, Epoch> unfinnsedTaskList = new HashMap<String, Epoch>();
 
     private UrlFilter filter;
 
     private Logger logger = LoggerFactory.getLogger(Manager.class);
-
+    
     public Manager(ZooKeeper zk, String serverId,
                    String hdfsFileSystem, UrlFilter filter){
+        status = Status.Initializing;
         client = zk;
         this.serverId = serverId;
 
@@ -66,7 +77,7 @@ public class Manager {
         toBeActive();
     }
 
-    public int getStatus(){
+    public Status getStatus(){
         return status;
     }
 
@@ -103,7 +114,7 @@ public class Manager {
      */
     public void takeOverResponsibility(){
         // 只有standby节点才能接管
-        if(status == ZnodeInfo.MANAGER_NOTELECTED){
+        if(status == Status.NOTELECTED){
 
         }
     }
@@ -158,7 +169,7 @@ public class Manager {
                     recoverActiveManager();
                     break;
                 case OK:
-                    status = ZnodeInfo.MANAGER_ELECTED;
+                    status = Status.ELECTED;
                     logger.info("Recover active manager success. now server." + serverId +
                             " is active manager.");
                     activeManagerExists();
@@ -185,7 +196,7 @@ public class Manager {
                         recoverActiveManager();
                         break;
                     }
-                    if(status == ZnodeInfo.MANAGER_ELECTED){
+                    if(status == Status.ELECTED){
                         logger.info("Active manager working well. watching by itself");
                     }
                     else {
@@ -228,7 +239,7 @@ public class Manager {
                 case OK:
                     logger.info("Active manager created success. at {}", new Date().toString());
                     managerPath = path;
-                    status = ZnodeInfo.MANAGER_ELECTED;
+                    status = Status.ELECTED;
                     activeManagerExists();
                     break;
                 case NODEEXISTS:
@@ -251,7 +262,7 @@ public class Manager {
                     toBeStandBy();
                     break;
                 case OK:
-                    status = ZnodeInfo.MANAGER_NOTELECTED;
+                    status = Status.NOTELECTED;
                     managerPath = path;
                     logger.info("Server." + serverId + " registered. at {}", new Date().toString());
                     activeManagerExists();
@@ -372,7 +383,7 @@ public class Manager {
                     )
         );
 
-        if(status == ZnodeInfo.MANAGER_NOTELECTED) {
+        if(status == Status.NOTELECTED) {
             delayExector.schedule(new Runnable(){
                 public void run(){
                     client.multi(
@@ -557,6 +568,7 @@ public class Manager {
                 }
             }
         }
+
         /* 去除.bak后缀 */
         urls = file.listFiles();
         for(File url:urls){
@@ -577,10 +589,24 @@ public class Manager {
         urls = file.listFiles();
         for(File url:urls){
             if(!url.isDirectory()) {
-                hdfsManager.upLoad(url.getAbsolutePath(), Configuration.WAITING_TASKS_URLS
-                        + '/' + url.getName());
+                hdfsManager.upLoad(url.getAbsolutePath(),
+                        Configuration.WAITING_TASKS_URLS +  '/' + url.getName());
                 taskManager.submit(url.getName());
             }
+        }
+
+
+        /*
+            如果bloom过滤器是ram类型的，还需要备份它
+
+            注意：如果存储的url达到过千万级别，
+            而且要求精度较高，请不要使用ram_bloom
+         */
+        if(filter.getMode().equals(UrlFilter.CreateMode.RAM)){
+            RamBloomTable table = (RamBloomTable) filter.getTable();
+            table.save(Configuration.R_BLOOM_SAVE_PATH);
+            hdfsManager.upLoad(Configuration.R_BLOOM_SAVE_PATH,
+                    Configuration.BLOOM_BACKUP_PATH);
         }
 
         /*
@@ -591,7 +617,6 @@ public class Manager {
         for(String urlPath:urlFiles){
             hdfsManager.deleteHDFSFile(urlPath);
         }
-
     }
 
 

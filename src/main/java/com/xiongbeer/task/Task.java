@@ -23,7 +23,8 @@ import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 public class Task {
     public static final String WAITING   = "0";
     public static final String RUNNING   = "1";
-    public static final String FINNSHED  = "2";
+    public static final String FINISHED  = "2";
+
     protected ZooKeeper client;
     protected HashMap<String, Epoch> tasksInfo = new HashMap<String, Epoch>();
     protected Logger logger = LoggerFactory.getLogger(Task.class);

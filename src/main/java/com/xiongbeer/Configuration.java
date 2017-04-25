@@ -27,11 +27,13 @@ public class Configuration {
 
     public static String BLOOM_SAVE_PATH;
     public static String C_BLOOM_SAVE_PATH;
+    public static String R_BLOOM_SAVE_PATH;
 
     public static String HDFS_ROOT;
     public static String WAITING_TASKS_URLS;
     public static String FINNSED_TASKS_URLS;
     public static String NEW_TASKS_URLS;
+    public static String BLOOM_BACKUP_PATH;
 
     public static String TEMP_DIR;
 
@@ -51,11 +53,13 @@ public class Configuration {
         /* 初始化final变量 */
         BLOOM_SAVE_PATH = map.get("bloom_save_path");
         C_BLOOM_SAVE_PATH = map.get("c_bloom_save_path");
+        R_BLOOM_SAVE_PATH = map.get("r_bloom_save_path");
 
         HDFS_ROOT = map.get("hdfs_root");
         WAITING_TASKS_URLS = map.get("waiting_tasks_urls");
         FINNSED_TASKS_URLS = map.get("finnsed_tasks_urls");
         NEW_TASKS_URLS = map.get("new_tasks_urls");
+        BLOOM_BACKUP_PATH = map.get("bloom_backup_path");
 
         TEMP_DIR = map.get("temp_dir");
 
@@ -64,19 +68,43 @@ public class Configuration {
 
     }
 
+    public static synchronized Configuration getInstance() {
+        if(conf == null){
+            try {
+                conf = new Configuration();
+            } catch (SAXException e) {
+                e.printStackTrace();
+                System.exit(1);
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.exit(1);
+            } catch (ParserConfigurationException e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
+        }
+        return conf;
+    }
+
     /**
      * 设置默认值
      */
     public void init(){
-        map.put("bloom_save_path", "temp/urlbloomvalue.dat");
-        map.put("c_bloom_save_path", "temp/urlbloomvalue_compressed.dat");
-        map.put("check_time", "60");
+        map.put("bloom_save_path", "bloom/urlbloomvalue.dat");
+        map.put("c_bloom_save_path", "bloom/urlbloomvalue_compressed.dat");
+        map.put("r_bloom_save_path", "bloom/urlbloomvalue_ram.dat");
+
         map.put("hdfs_root", "/webveins");
-        map.put("waiting_tasks_urls", map.get("hdfs_root")+"/tasks/waitingtasks");
-        map.put("finnsed_tasks_urls", map.get("hdfs_root")+"/tasks/finnsedtasks");
-        map.put("new_tasks_urls", map.get("hdfs_root")+"/tasks/newurls");
+        String root = map.get("hdfs_root");
+        map.put("waiting_tasks_urls", root + "/tasks/waitingtasks");
+        map.put("finnsed_tasks_urls", root + "/tasks/finnsedtasks");
+        map.put("new_tasks_urls", root + "/tasks/newurls");
+        map.put("bloom_backup_path", root + "/bloom");
+
         map.put("temp_dir", "temp");
+
         map.put("worker_dead_time" , "5");
+        map.put("check_time", "60");
     }
 
 
@@ -154,21 +182,5 @@ public class Configuration {
         return result;
     }
 
-    public static synchronized Configuration getInstance() {
-        if(conf == null){
-            try {
-                conf = new Configuration();
-            } catch (SAXException e) {
-                e.printStackTrace();
-                System.exit(1);
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.exit(1);
-            } catch (ParserConfigurationException e) {
-                e.printStackTrace();
-                System.exit(1);
-            }
-        }
-        return conf;
-    }
+
 }

@@ -16,22 +16,42 @@ import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
  * Created by shaoxiong on 17-4-9.
  */
 public class Worker {
+    public enum Status{
+        Initializing, Working, STOPED
+    }
     private ZooKeeper client;
     private String serverId;
+    private String workerPath;
     private Logger logger = LoggerFactory.getLogger(Worker.class);
     private TaskWorker taskWorker;
+    private Status status;
 
     public Worker(ZooKeeper zk, String serverId){
+        status = Status.Initializing;
         client = zk;
-        this.serverId = serverId;
         taskWorker = new TaskWorker(zk);
+        this.serverId = serverId;
         signUpWorker();
     }
 
-    public void setServerId(String serverId){
-        this.serverId = serverId;
+    public void stop(){
+        logger.info("Trying to stop worker." + serverId + " ...");
+        try {
+            client.delete(workerPath, -1);
+            status = Status.STOPED;
+        } catch (KeeperException.ConnectionLossException e){
+          logger.warn("Connection loss, retry ...");
+          stop();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (KeeperException e) {
+            e.printStackTrace();
+        }
     }
 
+    public Status getStatus(){
+        return status;
+    }
 
     private StringCallback workerCreateCallback = new StringCallback() {
         public void processResult(int rc, String path, Object ctx, String name) {
@@ -41,6 +61,8 @@ public class Worker {
                     break;
                 case OK:
                     logger.info("Worker sign up success by server." + serverId);
+                    workerPath = path;
+                    status = Status.Working;
                     break;
                 default:
                     logger.error("Something went wrong when sign up worker.",

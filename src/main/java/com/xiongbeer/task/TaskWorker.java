@@ -12,7 +12,7 @@ import java.util.*;
 public class TaskWorker extends Task{
 
     //TODO 构建优先级队列时候可以用到
-    private LinkedList<String> waitingList = new LinkedList<String>();
+    private static LinkedList<String> waitingList = new LinkedList<String>();
 
     public TaskWorker(ZooKeeper zk) {
         super(zk);
@@ -53,16 +53,33 @@ public class TaskWorker extends Task{
     }
 
     /**
-     * 设置工作状态，方便manager维护
+     * 执行失败，放弃任务
      *
-     * @param status free为等待任务，非free
-     *               状态应传入task的名称
+     * @param taskPath
+     *
      */
-    public void setStatus(String status, String workerPath){
+    public void DiscardTask(String taskPath){
         try {
-            client.setData(workerPath, status.getBytes(), -1);
+            client.setData(taskPath, WAITING.getBytes(), -1);
         } catch (KeeperException.ConnectionLossException e) {
-            setStatus(status, workerPath);
+            DiscardTask(taskPath);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (KeeperException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 完成任务
+     *
+     * @param taskPath
+     */
+    public void FinishTask(String taskPath){
+        try {
+            client.setData(taskPath, FINISHED.getBytes(), -1);
+        } catch (KeeperException.ConnectionLossException e) {
+            DiscardTask(taskPath);
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (KeeperException e) {

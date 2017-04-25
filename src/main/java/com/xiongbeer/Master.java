@@ -54,13 +54,14 @@ public class Master implements Watcher {
     public static void main(String[] args) throws Exception {
 
         InitLogger.init();
+        Configuration.getInstance();
         Master a = new Master("127.0.0.1:2181");
         Master b = new Master("127.0.0.1:2182");
         Master c = new Master("127.0.0.1:2183");
         a.startZK();
         b.startZK();
         c.startZK();
-        UrlFilter filter = new UrlFilter(10000, 0.00001, UrlFilter.CreateMode.RAM);
+        UrlFilter filter = new UrlFilter(500000, 0.000001, UrlFilter.CreateMode.RAM);
         Manager manager = new Manager(a.getZK(), "1","hdfs://localhost:9000/",filter);
         new Manager(b.getZK(), "2","hdfs://localhost:9000/",filter);
         new Manager(c.getZK(), "3","hdfs://localhost:9000/",filter);

@@ -17,15 +17,6 @@ public class ZnodeInfo {
 
     public static final int TICKTIME                = 100;
 
-    /**
-     * Manager的状态
-     * Null:        刚初始化，还未进行选举
-     * ELECTED:     主节点
-     * NOTELECTED:  从节点
-     */
-    public static final int MANAGER_NULL            = 2;
-    public static final int MANAGER_ELECTED         = 1;
-    public static final int MANAGER_NOTELECTED      = 0;
 
     public static final int JITTER_DELAY            = 5;
 
