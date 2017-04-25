@@ -62,7 +62,7 @@ public class Manager {
     private UrlFilter filter;
 
     private Logger logger = LoggerFactory.getLogger(Manager.class);
-    
+
     public Manager(ZooKeeper zk, String serverId,
                    String hdfsFileSystem, UrlFilter filter){
         status = Status.Initializing;
@@ -417,7 +417,7 @@ public class Manager {
             Map.Entry entry = (Map.Entry)iterator.next();
             String key = (String) entry.getKey();
             Epoch value = (Epoch) entry.getValue();
-            if(value.getStatus().equals(Task.FINNSHED)){
+            if(value.getStatus().equals(Task.FINISHED)){
                 if(unfinnsedTaskList.containsKey(key)){
                     unfinnsedTaskList.remove(key);
                 }
