@@ -1,34 +1,51 @@
 package com.xiongbeer.service;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Date;
 
 /**
  * Created by shaoxiong on 17-4-23.
  */
 public class ClientHandler extends ChannelInboundHandlerAdapter {
-    private final ByteBuf firstMessage;
-    private  byte[] req =
-            ("TIME" + System.getProperty("line.separator")).getBytes();
-    public ClientHandler(){
+    private Logger logger = LoggerFactory.getLogger(ClientHandler.class);
+    private Action action;
 
-        firstMessage = Unpooled.buffer(req.length);
-        firstMessage.writeBytes(req);
+    public ClientHandler(Action action){
+        this.action = action;
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        ProcessDataProto.ProcessData.Builder builder =
-                ProcessDataProto.ProcessData.newBuilder();
-        builder.setUrlFilePath("sddd");
-        ctx.writeAndFlush(Unpooled.copiedBuffer(("123" + System.getProperty("line.separator")).getBytes()));
+        Server.getChannels().add(ctx.channel());
+        logger.info(ctx.channel().remoteAddress().toString() + " log in "
+                + "at {}", new Date().toString());
+    }
+
+    /**
+     * 用户应该Override Action中的run方法
+     * run方法实际上是传递了已经拿到的Url
+     * 爬虫可以开始任务了
+     *
+     * @param ctx
+     * @param msg
+     * @throws Exception
+     */
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        ProcessDataProto.ProcessData data =
+                (ProcessDataProto.ProcessData) msg;
+        String urlFilePath = data.getUrlFilePath();
+        action.run(urlFilePath);
+        logger.info("Crawler get the task success at {}", new Date().toString());
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        System.out.println(msg);
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        Server.getChannels().remove(ctx.channel());
     }
 
     @Override

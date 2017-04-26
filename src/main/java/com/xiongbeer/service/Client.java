@@ -2,10 +2,7 @@ package com.xiongbeer.service;
 
 import com.xiongbeer.InitLogger;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -14,10 +11,28 @@ import io.netty.handler.codec.protobuf.ProtobufEncoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 
+import java.util.LinkedList;
+
 /**
  * Created by shaoxiong on 17-4-23.
  */
 public class Client {
+    private static LinkedList<Channel> channels = new LinkedList<Channel>();
+
+    public static LinkedList<Channel> getChannels() {
+        return channels;
+    }
+
+    public static void setChannels(LinkedList<Channel> channels) {
+        Client.channels = channels;
+    }
+
+    public void sentData(ProcessDataProto.ProcessData data){
+        for(Channel channel:channels){
+            channel.pipeline().writeAndFlush(data);
+        }
+    }
+
     public void connect(int port, String host) {
         EventLoopGroup group = new NioEventLoopGroup();
         try {
@@ -38,16 +53,22 @@ public class Client {
 
         @Override
         protected void initChannel(SocketChannel socketChannel) throws Exception {
+            /* 处理半包 */
+            socketChannel.pipeline().addLast(
+                    new ProtobufVarint32FrameDecoder());
 
-            socketChannel.pipeline().addLast(new ProtobufVarint32FrameDecoder());
+            /* Protobuf 解码器 */
             socketChannel.pipeline().addLast(new ProtobufDecoder(
                     ProcessDataProto
                             .ProcessData
                             .getDefaultInstance()));
-            socketChannel.pipeline().addLast(new ProtobufVarint32LengthFieldPrepender());
+
+            socketChannel.pipeline().addLast(
+                    new ProtobufVarint32LengthFieldPrepender());
+
             socketChannel.pipeline().addLast(new ProtobufEncoder());
 
-            socketChannel.pipeline().addLast(new ClientHandler());
+            socketChannel.pipeline().addLast(new ClientHandler(new Action()));
         }
     }
 

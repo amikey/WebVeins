@@ -1,5 +1,6 @@
 package com.xiongbeer.service;
 
+import com.xiongbeer.InitLogger;
 import com.xiongbeer.task.TaskWorker;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -13,6 +14,8 @@ import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 
 import java.io.IOException;
 import java.util.LinkedList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Created by shaoxiong on 17-4-23.
@@ -39,9 +42,10 @@ public class Server {
         }
     }
 
-    public Server(String host, int port) throws IOException {
+    public Server(String host, int port, TaskWorker taskWorker) throws IOException {
         this.host = host;
         this.port = port;
+        this.taskWorker = taskWorker;
     }
 
     public void bind(){
@@ -95,9 +99,28 @@ public class Server {
 
     public static void main(String[] args){
         try {
-            Server server = new Server("127.0.0.1:2181", 8080);
+            InitLogger.init();
+            final ProcessDataProto.ProcessData.Builder builder =
+                    ProcessDataProto.ProcessData.newBuilder();
+            builder.setStatus(ProcessDataProto.ProcessData.Status.NULL);
+            builder.setUrlFilePath("xasd");
+
+
+            //ZooKeeper zk = new ZooKeeper("127.0.0.1:2181", 1000, null);
+            final Server server = new Server("127.0.0.1:2181", 8080, null);
+
+            TimerTask task = new TimerTask() {
+                @Override
+                public void run() {
+                    server.sentData(builder.build());
+                    System.out.println("sent message");
+                }
+            };
+            Timer timer = new Timer();
+            timer.schedule(task, 10000, 2000);
+
             server.bind();
-            System.out.println("!");
+
         } catch (IOException e) {
             e.printStackTrace();
         }

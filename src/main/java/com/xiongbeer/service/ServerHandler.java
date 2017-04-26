@@ -1,9 +1,7 @@
 package com.xiongbeer.service;
 
 import com.xiongbeer.ZnodeInfo;
-import com.xiongbeer.task.Task;
 import com.xiongbeer.task.TaskWorker;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
@@ -25,10 +23,21 @@ public class ServerHandler extends ChannelInboundHandlerAdapter{
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         Server.getChannels().add(ctx.channel());
-        logger.info(ctx.channel().remoteAddress().toString() + " log in"
+        logger.info(ctx.channel().remoteAddress().toString() + " log in "
                 + "at {}", new Date().toString());
     }
 
+    /**
+     * 爬虫Client返回给Server的信息
+     * 任务成功则将任务状态设置为Finished
+     * 让Manager自动回收
+     * 失败则设置为Waiting，将任务让给其他
+     * Worker
+     *
+     * @param ctx
+     * @param msg
+     * @throws Exception
+     */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ProcessDataProto.ProcessData data = (ProcessDataProto.ProcessData) msg;
@@ -45,7 +54,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter{
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         Server.getChannels().remove(ctx.channel());
-        logger.info(ctx.channel().remoteAddress().toString() + " log out"
+        logger.info(ctx.channel().remoteAddress().toString() + " log out "
                 + "at {}", new Date().toString());
     }
 
