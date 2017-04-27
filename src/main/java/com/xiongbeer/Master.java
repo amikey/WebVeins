@@ -1,14 +1,8 @@
 package com.xiongbeer;
 
 import com.xiongbeer.filter.bloom.UrlFilter;
-import com.xiongbeer.manager.Manager;
-import com.xiongbeer.task.Task;
-import com.xiongbeer.task.TaskManager;
-import com.xiongbeer.worker.WorkersWatcher;
+import com.xiongbeer.zk.manager.Manager;
 import org.apache.zookeeper.*;
-
-import java.util.BitSet;
-import java.util.HashMap;
 
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 

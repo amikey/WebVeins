@@ -2,7 +2,6 @@ package com.xiongbeer;
 
 import org.apache.zookeeper.AsyncCallback.*;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.Code;
 import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
@@ -43,6 +42,7 @@ public class Cluster {
                     break;
                 case OK:
                     break;
+                default:
             }
         }
     };
