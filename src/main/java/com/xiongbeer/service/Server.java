@@ -1,7 +1,8 @@
 package com.xiongbeer.service;
 
+import com.xiongbeer.Configuration;
 import com.xiongbeer.InitLogger;
-import com.xiongbeer.task.TaskWorker;
+import com.xiongbeer.zk.task.TaskWorker;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -11,6 +12,8 @@ import io.netty.handler.codec.protobuf.ProtobufDecoder;
 import io.netty.handler.codec.protobuf.ProtobufEncoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -22,11 +25,13 @@ import java.util.TimerTask;
  */
 public class Server {
     private static LinkedList<Channel> channels = new LinkedList<Channel>();
-
+    private Logger logger = LoggerFactory.getLogger(Server.class);
     private final String host;
     private final int port;
-
     private TaskWorker taskWorker;
+    private EventLoopGroup bossGroup;
+    private EventLoopGroup workerGroup;
+
 
     public static LinkedList<Channel> getChannels() {
         return channels;
@@ -49,8 +54,8 @@ public class Server {
     }
 
     public void bind(){
-        EventLoopGroup bossGroup = new NioEventLoopGroup();
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        bossGroup = new NioEventLoopGroup();
+        workerGroup = new NioEventLoopGroup();
         try {
             ServerBootstrap bootStrap = new ServerBootstrap();
             bootStrap.group(bossGroup, workerGroup)
@@ -64,11 +69,14 @@ public class Server {
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
-            workerGroup.shutdownGracefully();
-            bossGroup.shutdownGracefully();
+            stop();
         }
     }
 
+    public void stop(){
+        workerGroup.shutdownGracefully();
+        bossGroup.shutdownGracefully();
+    }
 
 
     private class ChildChannelHandler extends ChannelInitializer<SocketChannel>{
@@ -100,6 +108,7 @@ public class Server {
     public static void main(String[] args){
         try {
             InitLogger.init();
+            Configuration.getInstance();
             final ProcessDataProto.ProcessData.Builder builder =
                     ProcessDataProto.ProcessData.newBuilder();
             builder.setStatus(ProcessDataProto.ProcessData.Status.NULL);
@@ -107,7 +116,7 @@ public class Server {
 
 
             //ZooKeeper zk = new ZooKeeper("127.0.0.1:2181", 1000, null);
-            final Server server = new Server("127.0.0.1:2181", 8080, null);
+            final Server server = new Server(Configuration.LOCAL_HOST, Configuration.LOCAL_PORT, null);
 
             TimerTask task = new TimerTask() {
                 @Override

@@ -1,5 +1,6 @@
 package com.xiongbeer.service;
 
+import com.xiongbeer.Configuration;
 import com.xiongbeer.InitLogger;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -10,6 +11,8 @@ import io.netty.handler.codec.protobuf.ProtobufDecoder;
 import io.netty.handler.codec.protobuf.ProtobufEncoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
 
@@ -17,23 +20,19 @@ import java.util.LinkedList;
  * Created by shaoxiong on 17-4-23.
  */
 public class Client {
-    private static LinkedList<Channel> channels = new LinkedList<Channel>();
-
-    public static LinkedList<Channel> getChannels() {
-        return channels;
-    }
-
-    public static void setChannels(LinkedList<Channel> channels) {
-        Client.channels = channels;
-    }
+    private static Channel channel;
+    private Logger logger = LoggerFactory.getLogger(Client.class);
+    private Action action;
 
     public void sentData(ProcessDataProto.ProcessData data){
-        for(Channel channel:channels){
-            channel.pipeline().writeAndFlush(data);
-        }
+        channel.pipeline().writeAndFlush(data);
     }
+    public void connect(String host, int port) {
+        //if(action == null){
+        //    logger.error("Connect failed, action is null");
+        //    return;
+        //}
 
-    public void connect(int port, String host) {
         EventLoopGroup group = new NioEventLoopGroup();
         try {
             Bootstrap b = new Bootstrap();
@@ -68,13 +67,23 @@ public class Client {
 
             socketChannel.pipeline().addLast(new ProtobufEncoder());
 
-            socketChannel.pipeline().addLast(new ClientHandler(new Action()));
+            socketChannel.pipeline().addLast(new ClientHandler(action));
         }
     }
 
+    public void setAction(Action action){
+        this.action = action;
+    }
+
+    public void disconnect(){
+        channel.close();
+    }
+
+
     public static void main(String[] args){
         InitLogger.init();
+        Configuration.getInstance();
         int port = 8080;
-        new Client().connect(port, "127.0.0.1");
+        new Client().connect(Configuration.LOCAL_HOST, Configuration.LOCAL_PORT);
     }
 }

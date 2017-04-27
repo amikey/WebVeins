@@ -39,7 +39,7 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
         ProcessDataProto.ProcessData data =
                 (ProcessDataProto.ProcessData) msg;
         String urlFilePath = data.getUrlFilePath();
-        action.run(urlFilePath);
+        //action.run(urlFilePath);
         logger.info("Crawler get the task success at {}", new Date().toString());
     }
 

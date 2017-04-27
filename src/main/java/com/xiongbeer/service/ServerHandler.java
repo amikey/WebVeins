@@ -1,7 +1,7 @@
 package com.xiongbeer.service;
 
 import com.xiongbeer.ZnodeInfo;
-import com.xiongbeer.task.TaskWorker;
+import com.xiongbeer.zk.task.TaskWorker;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
