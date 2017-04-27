@@ -14,13 +14,12 @@
         * [x] 压缩持久化布隆过滤器
         * [x] nio mappedbuffer
         * [x] 提供友好的用户接口
+        * [ ] 优化缓存
 - recover
-    * [ ] checkPoint
+    * [x] checkPoint
     * [ ] edits
     * [ ] fsimage
     * [x] hdfsSetting
-- scheduler
-    * [ ] on plan
 - zookeeper
     * [x] Manager,Tasks,Workers基础设置
     * [x] Manager选举及管理
@@ -32,7 +31,7 @@
     * [x] 检查失效worker与task
     * [ ] 增强权限
 - save
-    * [ ] 本地持久化
+    * [x] 本地持久化
     * [x] HDFS持久化
 - loger
     * [x] slf4j
