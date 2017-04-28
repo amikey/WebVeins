@@ -32,7 +32,6 @@ public class Server {
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
 
-
     public static LinkedList<Channel> getChannels() {
         return channels;
     }
@@ -78,7 +77,6 @@ public class Server {
         bossGroup.shutdownGracefully();
     }
 
-
     private class ChildChannelHandler extends ChannelInitializer<SocketChannel>{
 
         @Override
@@ -103,8 +101,6 @@ public class Server {
         }
     }
 
-
-
     public static void main(String[] args){
         try {
             InitLogger.init();
@@ -114,8 +110,6 @@ public class Server {
             builder.setStatus(ProcessDataProto.ProcessData.Status.NULL);
             builder.setUrlFilePath("xasd");
 
-
-            //ZooKeeper zk = new ZooKeeper("127.0.0.1:2181", 1000, null);
             final Server server = new Server(Configuration.LOCAL_HOST, Configuration.LOCAL_PORT, null);
 
             TimerTask task = new TimerTask() {
