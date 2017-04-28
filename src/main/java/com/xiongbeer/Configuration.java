@@ -26,6 +26,8 @@ public class Configuration {
     private Logger logger = LoggerFactory.getLogger(Configuration.class);
     private HashMap<String, String> map = new HashMap<String, String>();
 
+    private static String confPath = System.getenv("WEBVEINS_HOME")+"conf/";
+    
     /* 常量的具体解释见后面的init() */
     public static String BLOOM_SAVE_PATH;
     public static String C_BLOOM_SAVE_PATH;
@@ -37,6 +39,8 @@ public class Configuration {
     public static String NEW_TASKS_URLS;
     public static String BLOOM_BACKUP_PATH;
 
+    public static String HDFS_SYSTEM_PATH;
+
     public static String TEMP_DIR;
 
     public static int WORKER_DEAD_TIME;
@@ -47,11 +51,13 @@ public class Configuration {
     public static String LOCAL_HOST;
     public static int LOCAL_PORT;
 
+    public static String ZOOKEEPER_INIT_SERVER;
+    
     private static UrlFilter URL_FILTER;
-
+    
     private Configuration() throws SAXException, IOException, ParserConfigurationException {
         /* 读取配置信息失败，后续的任务肯定无法进行了 */
-        if(!check("conf/core.xml")){
+        if(!check(confPath+"core.xml")){
             System.exit(1);
         }
         init();
@@ -75,6 +81,10 @@ public class Configuration {
 
         LOCAL_HOST = map.get("local_host");
         LOCAL_PORT = Integer.parseInt(map.get("local_port"));
+
+        HDFS_SYSTEM_PATH = map.get("hdfs_system_path");
+        
+        ZOOKEEPER_INIT_SERVER = map.get("zookeeper_init_server");
     }
 
     /**
@@ -141,6 +151,8 @@ public class Configuration {
         map.put("finnsed_tasks_urls", root + "/tasks/finnsedtasks");
         map.put("new_tasks_urls", root + "/tasks/newurls");
 
+        map.put("hdfs_system_path", "hdfs://localhost:9000/");
+
         /* bloom过滤器会定时备份，此为其存放的路径 */
         map.put("bloom_backup_path", root + "/bloom");
 
@@ -163,6 +175,9 @@ public class Configuration {
         map.put("loom_filter_fpr", "0.0000001");
         /* bloom过滤器的预计最大容量 */
         map.put("bloom_filter_enums", "1000000");
+        
+        /* 提供均衡负载之前必须首先读取信息，需要一个用于初始化的ZookeeperServer的ip和端口号 */
+        map.put("zookeeper_init_path", "127.0.0.1:2181");
     }
 
 
@@ -177,7 +192,7 @@ public class Configuration {
     public void parse() throws ParserConfigurationException, IOException, SAXException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
-        File file = new File("conf/core.xml");
+        File file = new File(confPath+"core.xml");
         Document doc = builder.parse(file);
         Element root = (Element) doc.getDocumentElement();
 
@@ -215,7 +230,7 @@ public class Configuration {
         SchemaFactory factory = SchemaFactory.newInstance("http://www.w3.org/2001/XMLSchema");
 
         /* 编译指定xsd文件的格式 */
-        File schemaLocation = new File("conf/config.xsd");
+        File schemaLocation = new File(confPath+"config.xsd");
         Schema schema = factory.newSchema(schemaLocation);
 
         /* 获取验证器 */
