@@ -2,9 +2,8 @@
 <?xml-stylesheet type="text/xsl" href="config.xsl"?>
 
 <configuration
-        xmlns="http://xiongbeer.com"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://xiongbeer.com config.xsd>
+        xsi:noNamespaceSchemaLocation="config.xsd">
     <property>
         <name>bloom_save_path</name>
         <value>temp/urlbloomvalue.dat</value>
@@ -15,7 +14,7 @@
     </property>
     <property>
         <name>check_time</name>
-        <value>30</value>
+        <value>45</value>
     </property>
     <property>
         <name>temp_dir</name>
