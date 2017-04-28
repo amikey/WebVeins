@@ -9,6 +9,8 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 
 import java.io.IOException;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * 启动入口
@@ -19,10 +21,22 @@ public class WebVeinsMain implements Watcher{
     private ZooKeeper zk;
     private Worker worker;
     private String serverId;
+    private Configuration configuration;
+    private Timer managerTimer;
+    private Server server;
 
     private WebVeinsMain() throws IOException {
-        zk = new ZooKeeper("127.0.0.1:2181", 1000, this);
+        zk = new ZooKeeper(configuration.ZOOKEEPER_INIT_SERVER, 1000, this);
+        configuration = Configuration.getInstance();
         serverId = "1";
+    }
+
+    public void stopManager(){
+        managerTimer.cancel();
+    }
+
+    public void stopServer(){
+        server.stop();
     }
 
     public static synchronized WebVeinsMain getInstance() throws IOException {
@@ -32,18 +46,40 @@ public class WebVeinsMain implements Watcher{
         return wvMain;
     }
 
-    public void runManager(){
-        UrlFilter filter = Configuration.getInstance().getUrlFilter();
-        Manager manager = new Manager(zk, serverId,
-                "hdfs://localhost:9000/", filter);
+    /**
+     * 定时执行manage
+     */
+    private void runManager(){
+        UrlFilter filter = configuration.getUrlFilter();
+        final Manager manager = new Manager(zk, serverId,
+                Configuration.HDFS_SYSTEM_PATH, filter);
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    manager.manage();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (VeinsException.FilterOverflowException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        managerTimer = new Timer();
+        long delay = 0;
+        long intevalPeriod = 10 * 1000;
+        managerTimer.scheduleAtFixedRate(task, delay, intevalPeriod);
     }
 
-    public void runServer() throws IOException {
-        Server server = new Server(Configuration.LOCAL_HOST,
+    private void runServer() throws IOException {
+        server = new Server(Configuration.LOCAL_HOST,
                 Configuration.LOCAL_PORT, worker.getTaskWorker());
+        server.bind();
     }
 
-    public void run(String arg) throws IOException {
+    private void run(String arg) throws IOException {
         if(arg.equals("manager")){
             runManager();
         }
@@ -61,7 +97,7 @@ public class WebVeinsMain implements Watcher{
             System.out.println("Error:miss arg");
             return;
         }
-        //ZooKeeper zooKeeper = new ZooKeeper("127.0.0.1:2181", 1000, )
+        InitLogger.init();
         WebVeinsMain main = WebVeinsMain.getInstance();
         main.run(args[0]);
     }
