@@ -17,4 +17,4 @@ WEBVEINS_PATH=$WEBVEINS_HOME/webveins.jar:$WEBVEINS_PATH
 
 export WEBVEINS_CONF_PATH=$WEBVEINS_HOME/conf
 
-java -cp $WEBVEINS_PATH:webveins.jar com.xiongbeer.WebVeinsMain manager
+java -cp $WEBVEINS_PATH:webveins.jar com.xiongbeer.WebVeinsMain
