@@ -57,10 +57,13 @@ public class Configuration {
     
     private Configuration() throws SAXException, IOException, ParserConfigurationException {
         /* 读取配置信息失败，后续的任务肯定无法进行了 */
+    	logger.info("Checking...");
         if(!check(confPath+"core.xml")){
             System.exit(1);
         }
+        logger.info("Loading default configuration...");
         init();
+        logger.info("Loading user's configuration...");
         parse();
 
         /* 初始化final变量 */
@@ -172,12 +175,12 @@ public class Configuration {
         /* bloom过滤器的模式 */
         map.put("bloom_filter", "ram");
         /* bloom过滤器出错的概率 */
-        map.put("loom_filter_fpr", "0.0000001");
+        map.put("bloom_filter_fpr", "0.0000001");
         /* bloom过滤器的预计最大容量 */
         map.put("bloom_filter_enums", "1000000");
         
         /* 提供均衡负载之前必须首先读取信息，需要一个用于初始化的ZookeeperServer的ip和端口号 */
-        map.put("zookeeper_init_path", "127.0.0.1:2181");
+        map.put("zookeeper_init_server", "127.0.0.1:2181");
     }
 
 

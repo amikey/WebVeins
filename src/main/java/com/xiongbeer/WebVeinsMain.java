@@ -2,8 +2,7 @@ package com.xiongbeer;
 
 import com.xiongbeer.filter.bloom.UrlFilter;
 import com.xiongbeer.zk.manager.Manager;
-import com.xiongbeer.service.Server;
-import com.xiongbeer.zk.worker.Worker;
+
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
@@ -19,33 +18,26 @@ import java.util.TimerTask;
 public class WebVeinsMain implements Watcher{
     private static WebVeinsMain wvMain;
     private ZooKeeper zk;
-    private Worker worker;
     private String serverId;
     private Configuration configuration;
     private Timer managerTimer;
-    private Server server;
 
     private WebVeinsMain() throws IOException {
-        zk = new ZooKeeper(configuration.ZOOKEEPER_INIT_SERVER, 1000, this);
-        configuration = Configuration.getInstance();
-        serverId = "1";
+    	configuration = Configuration.getInstance();
+        zk = new ZooKeeper(Configuration.ZOOKEEPER_INIT_SERVER, 1000, this);
+        serverId = new IdProvider().getId();
     }
-
-    public void stopManager(){
-        managerTimer.cancel();
-    }
-
-    public void stopServer(){
-        server.stop();
-    }
-
+    
     public static synchronized WebVeinsMain getInstance() throws IOException {
         if(wvMain == null){
             wvMain = new WebVeinsMain();
         }
         return wvMain;
     }
-
+    
+    public void stopManager(){
+        managerTimer.cancel();
+    }
     /**
      * 定时执行manage
      */
@@ -69,36 +61,16 @@ public class WebVeinsMain implements Watcher{
         };
         managerTimer = new Timer();
         long delay = 0;
-        long intevalPeriod = 10 * 1000;
+        long intevalPeriod = Configuration.CHECK_TIME * 1000;
         managerTimer.scheduleAtFixedRate(task, delay, intevalPeriod);
-    }
-
-    private void runServer() throws IOException {
-        server = new Server(Configuration.LOCAL_HOST,
-                Configuration.LOCAL_PORT, worker.getTaskWorker());
-        server.bind();
-    }
-
-    private void run(String arg) throws IOException {
-        if(arg.equals("manager")){
-            runManager();
-        }
-        else if(arg.equals("server")){
-            worker = new Worker(zk, serverId);
-            runServer();
-        }
     }
 
     @Override
     public void process(WatchedEvent watchedEvent) {}
 
     public static void main(String[] args) throws IOException {
-        if(args.length == 0){
-            System.out.println("Error:miss arg");
-            return;
-        }
         InitLogger.init();
         WebVeinsMain main = WebVeinsMain.getInstance();
-        main.run(args[0]);
+        main.runManager();;
     }
 }

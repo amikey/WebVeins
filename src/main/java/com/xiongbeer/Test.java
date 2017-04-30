@@ -34,6 +34,7 @@ public class Test {
         };
         service.scheduleAtFixedRate(runnable, 5, 5, TimeUnit.SECONDS);
         */
+        /*
         Enumeration allNetInterfaces = NetworkInterface.getNetworkInterfaces();
         InetAddress ip = null;
         while (allNetInterfaces.hasMoreElements())
@@ -49,6 +50,26 @@ public class Test {
                     System.out.println("本机的IP = " + ip.getHostAddress());
                 }
             }
+        }
+        */
+        try {
+            Enumeration<NetworkInterface> allNetInterfaces = NetworkInterface.getNetworkInterfaces();
+            InetAddress ip = null;
+            while (allNetInterfaces.hasMoreElements()) {
+                NetworkInterface netInterface = (NetworkInterface) allNetInterfaces.nextElement();
+                if (netInterface.isLoopback() || netInterface.isVirtual() || !netInterface.isUp()) {
+                    continue;
+                } else {
+                    Enumeration<InetAddress> addresses = netInterface.getInetAddresses();
+                    while (addresses.hasMoreElements()) {
+                        ip = addresses.nextElement();
+                        if (ip != null && ip instanceof Inet4Address) {
+                            System.out.println(ip.getHostAddress());
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
         }
     }
 }

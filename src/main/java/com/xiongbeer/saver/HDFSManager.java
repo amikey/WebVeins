@@ -19,6 +19,11 @@ public class HDFSManager {
 
     public HDFSManager(String hdfsFileSystem){
         Configuration conf = new Configuration();
+        /*
+         	这里设置这个属性的原因是在打jar包时hadoop-common中的services会覆盖hadoop-hdfs中的，
+         	所以运行时会抛出java.io.IOException: No FileSystem for scheme: hdfs
+         */
+        conf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
         try {
             fs = FileSystem.get(URI.create(hdfsFileSystem), conf);
         } catch (IOException e) {
