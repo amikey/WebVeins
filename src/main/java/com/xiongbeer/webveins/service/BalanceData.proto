@@ -1,0 +1,7 @@
+option java_outer_classname = "BalanceDataProto";
+
+message BalanceData {
+    required int32 load=1 [default=0];
+    required string ip=2;
+    required int32 port=3;
+}

@@ -20,4 +20,8 @@
         <name>temp_dir</name>
         <value>temp</value>
     </property>
+    <property>
+        <name>zookeeper_manager_address</name>
+        <value>192.168.0.115:2181</value>
+    </property>
 </configuration>
