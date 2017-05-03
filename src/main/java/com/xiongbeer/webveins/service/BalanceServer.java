@@ -1,6 +1,6 @@
 package com.xiongbeer.webveins.service;
 
-import com.xiongbeer.webveins.zk.task.TaskWorker;
+import com.xiongbeer.webveins.zk.manager.Manager;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -21,12 +21,12 @@ import java.util.LinkedList;
  */
 public class BalanceServer {
     private static LinkedList<Channel> channels = new LinkedList<Channel>();
-    private Logger logger = LoggerFactory.getLogger(Server.class);
+    private Logger logger = LoggerFactory.getLogger(BalanceServer.class);
     private final String host;
     private final int port;
-    private TaskWorker taskWorker;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
+    private Manager manager;
 
     public static LinkedList<Channel> getChannels() {
         return channels;
@@ -42,10 +42,10 @@ public class BalanceServer {
         }
     }
 
-    public BalanceServer(String host, int port, TaskWorker taskWorker) throws IOException {
+    public BalanceServer(String host, int port, Manager manager) throws IOException {
         this.host = host;
         this.port = port;
-        this.taskWorker = taskWorker;
+        this.manager = manager;
     }
 
     public void bind(){
@@ -83,8 +83,8 @@ public class BalanceServer {
 
             /* Protobuf 解码器 */
             socketChannel.pipeline().addLast(new ProtobufDecoder(
-                    ProcessDataProto
-                            .ProcessData
+                    BalanceDataProto
+                            .BalanceData
                             .getDefaultInstance()));
 
             socketChannel.pipeline().addLast(
@@ -92,7 +92,7 @@ public class BalanceServer {
 
             socketChannel.pipeline().addLast(new ProtobufEncoder());
 
-            socketChannel.pipeline().addLast(new ServerHandler(taskWorker));
+            socketChannel.pipeline().addLast(new BalanceServerHandler(manager));
         }
     }
 }

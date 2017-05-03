@@ -1,6 +1,7 @@
 package com.xiongbeer.webveins;
 
 import com.xiongbeer.webveins.filter.bloom.UrlFilter;
+import com.xiongbeer.webveins.service.BalanceServer;
 import com.xiongbeer.webveins.utils.InitLogger;
 import com.xiongbeer.webveins.zk.manager.Manager;
 import org.apache.zookeeper.*;
@@ -63,17 +64,9 @@ public class Master implements Watcher {
         //manager.manage();
         //Thread.sleep(15000);
         //manager.manage();
-        System.out.println(manager.getBalanceData().getLoad());
-        Thread.sleep(10000);
-        System.out.println("add load");
-        manager.addLoad();
-        System.out.println(manager.getBalanceData().getLoad());
-        manager.addLoad();
-        System.out.println(manager.getBalanceData().getLoad());
-        manager.reduceLoad();
-        System.out.println(manager.getBalanceData().getLoad());
-        manager.reduceLoad();
-        System.out.println(manager.getBalanceData().getLoad());
+
+        BalanceServer server = new BalanceServer("localhost", 8080, manager);
+        server.bind();
         Thread.sleep(60000);
 
     }

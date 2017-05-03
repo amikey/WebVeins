@@ -77,12 +77,4 @@ public class Client {
     public void disconnect(){
         channel.close();
     }
-
-
-    public static void main(String[] args){
-        InitLogger.init();
-        Configuration.getInstance();
-        int port = 8080;
-        new Client().connect(Configuration.LOCAL_HOST, Configuration.LOCAL_PORT);
-    }
 }

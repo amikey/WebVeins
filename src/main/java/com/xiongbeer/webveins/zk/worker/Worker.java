@@ -39,6 +39,7 @@ public class Worker {
         try {
             client.delete(workerPath, -1);
             status = Status.STOPED;
+            logger.info("Stop " + serverId + " success.");
         } catch (KeeperException.ConnectionLossException e){
           logger.warn("Connection loss, retry ...");
           stop();
@@ -55,6 +56,10 @@ public class Worker {
 
     public TaskWorker getTaskWorker(){
         return taskWorker;
+    }
+
+    public void resetZK(ZooKeeper client){
+        this.client = client;
     }
 
     private StringCallback workerCreateCallback = new StringCallback() {
