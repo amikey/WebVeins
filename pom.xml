@@ -63,6 +63,10 @@
        <artifactId>protobuf-java</artifactId>
        <version>3.2.0</version>
     </dependency>
-
+    <dependency>
+       <groupId>us.codecraft</groupId>
+       <artifactId>webmagic-core</artifactId>
+       <version>0.6.1</version>
+    </dependency>
   </dependencies>
 </project>
