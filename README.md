@@ -6,32 +6,4 @@
 ## 开发中...
 ### Manual
 [文档](https://xiongbeer.gitbooks.io/webveinsguide/content/)
-### TODO-LIST
-- Filter
-    * [x] url去重:布隆过滤器
-        * [x] 内存布隆过滤器
-        * [x] 持久化布隆过滤器
-        * [x] 压缩持久化布隆过滤器
-        * [x] nio mappedbuffer
-        * [x] 提供友好的用户接口
-        * [ ] 优化缓存
-- recover
-    * [x] checkPoint
-    * [ ] edits
-    * [ ] fsimage
-    * [x] hdfsSetting
-- zookeeper
-    * [x] Manager,Tasks,Workers基础设置
-    * [x] Manager选举及管理
-    * [x] Tasks队列构建
-    * [x] Tasls监控与管理
-    * [x] Workers监控
-    * [x] 节点抖动
-    * [x] 羊群效应
-    * [x] 检查失效worker与task
-    * [ ] 增强权限
-- save
-    * [x] 本地持久化
-    * [x] HDFS持久化
-- loger
-    * [x] slf4j
+
