@@ -3,7 +3,7 @@ package com.xiongbeer.webveins.service;
 /**
  * Created by shaoxiong on 17-4-26.
  */
-public class Action {
+public abstract class Action {
     private String urlFilePath;
 
     public String getUrlFilePath() {
@@ -14,7 +14,5 @@ public class Action {
         this.urlFilePath = urlFilePath;
     }
 
-    public void run(String urlFilePath){
-
-    }
+    abstract public void run(String urlFilePath);
 }

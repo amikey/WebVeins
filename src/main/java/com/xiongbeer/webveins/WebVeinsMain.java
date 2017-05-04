@@ -8,6 +8,8 @@ import com.xiongbeer.webveins.zk.manager.Manager;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Timer;
@@ -23,7 +25,7 @@ public class WebVeinsMain implements Watcher{
     private String serverId;
     private Configuration configuration;
     private Timer managerTimer;
-
+    private Logger logger = LoggerFactory.getLogger(WebVeinsMain.class);
     private WebVeinsMain() throws IOException {
     	configuration = Configuration.getInstance();
 
@@ -53,6 +55,7 @@ public class WebVeinsMain implements Watcher{
     public void stopManager(){
         managerTimer.cancel();
     }
+
     /**
      * 定时执行manage
      */

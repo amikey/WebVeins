@@ -1,7 +1,7 @@
 package com.xiongbeer.webveins.service;
 
-import com.xiongbeer.webveins.Configuration;
-import com.xiongbeer.webveins.utils.InitLogger;
+import com.xiongbeer.webveins.WebVeinsServer;
+import com.xiongbeer.webveins.zk.manager.ManagerData;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -11,13 +11,18 @@ import io.netty.channel.socket.nio.NioSocketChannel;
  */
 public class BalanceClient {
     private static Channel channel;
-    public void connect(String host, int port) {
+    private ManagerData managerData;
+    public void connect(ManagerData managerData, WebVeinsServer wvServer) {
+        this.managerData = managerData;
+        String host = managerData.getIp();
+        int port = managerData.getPort();
+
         EventLoopGroup group = new NioEventLoopGroup();
         try {
             io.netty.bootstrap.Bootstrap b = new io.netty.bootstrap.Bootstrap();
             b.group(group).channel(NioSocketChannel.class)
                     .option(ChannelOption.TCP_NODELAY, true)
-                    .handler(new BalanceClientHandler());
+                    .handler(new BalanceClientHandler(managerData, wvServer));
             ChannelFuture f = b.connect(host, port).sync();
             f.channel().closeFuture().sync();
         } catch (InterruptedException e) {
@@ -29,9 +34,5 @@ public class BalanceClient {
 
     public void disconnect(){
         channel.close();
-    }
-
-    public static void main(String[] args){
-        new BalanceClient().connect("localhost", 8080);
     }
 }

@@ -8,13 +8,10 @@ import com.xiongbeer.webveins.service.BalanceDataProto;
  */
 public class ManagerData implements Comparable<ManagerData> {
     private BalanceDataProto.BalanceData data;
-    private String path;
-    private String ip;
-
 
     public ManagerData(byte[] dataFlow) throws InvalidProtocolBufferException {
-        this.path = path;
         data = BalanceDataProto.BalanceData.parseFrom(dataFlow);
+
     }
 
     public void setData(byte[] dataFlow) throws InvalidProtocolBufferException {
@@ -23,6 +20,18 @@ public class ManagerData implements Comparable<ManagerData> {
 
     public Integer getLoad(){
         return new Integer(data.getLoad());
+    }
+
+    public String getIp(){
+        return data.getIp();
+    }
+
+    public int getPort(){
+        return data.getPort();
+    }
+
+    public String getZKConnectString(){
+        return data.getZkIp() + ":" + data.getZkPort();
     }
 
     @Override

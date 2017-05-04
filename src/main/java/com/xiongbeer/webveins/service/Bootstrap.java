@@ -1,5 +1,6 @@
 package com.xiongbeer.webveins.service;
 
+import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.zk.task.TaskWorker;
 
 import java.io.IOException;
@@ -13,10 +14,9 @@ public class Bootstrap {
     private Action action;
     private Client client;
 
-    public Bootstrap(){}
-
     public Bootstrap(Action action){
         this.action = action;
+        Configuration.getInstance();
     }
 
     public Bootstrap setAction(Action action){
@@ -24,12 +24,12 @@ public class Bootstrap {
         return this;
     }
 
-    public Bootstrap runClient(String host, int port){
+    public Bootstrap runClient(){
         if(client == null) {
             client = new Client();
         }
         client.setAction(action);
-        client.connect(host, port);
+        client.connect(Configuration.LOCAL_HOST, Configuration.LOCAL_PORT);
         return this;
     }
 
@@ -42,5 +42,4 @@ public class Bootstrap {
         client.disconnect();
         return this;
     }
-
 }

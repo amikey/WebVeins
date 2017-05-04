@@ -1,5 +1,6 @@
 package com.xiongbeer.webveins.service;
 
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
@@ -10,6 +11,7 @@ import java.util.Date;
 /**
  * Created by shaoxiong on 17-4-23.
  */
+@ChannelHandler.Sharable
 public class ClientHandler extends ChannelInboundHandlerAdapter {
     private Logger logger = LoggerFactory.getLogger(ClientHandler.class);
     private Action action;
@@ -39,7 +41,7 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
         ProcessDataProto.ProcessData data =
                 (ProcessDataProto.ProcessData) msg;
         String urlFilePath = data.getUrlFilePath();
-        //action.run(urlFilePath);
+        action.run(urlFilePath);
         logger.info("Crawler get the task success at {}", new Date().toString());
     }
 

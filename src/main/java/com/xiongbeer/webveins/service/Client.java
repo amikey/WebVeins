@@ -27,10 +27,10 @@ public class Client {
         channel.pipeline().writeAndFlush(data);
     }
     public void connect(String host, int port) {
-        //if(action == null){
-        //    logger.error("Connect failed, action is null");
-        //    return;
-        //}
+        if(action == null){
+            logger.error("Connect failed, action is null");
+            return;
+        }
 
         EventLoopGroup group = new NioEventLoopGroup();
         try {

@@ -4,4 +4,6 @@ message BalanceData {
     required int32 load=1 [default=0];
     required string ip=2;
     required int32 port=3;
+    required string zkIp=4;
+    required int32 zkPort=5;
 }

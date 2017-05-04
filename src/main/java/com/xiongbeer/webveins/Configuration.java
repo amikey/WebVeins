@@ -42,29 +42,20 @@ public class Configuration {
     public static String BLOOM_SAVE_PATH;
     public static String C_BLOOM_SAVE_PATH;
     public static String R_BLOOM_SAVE_PATH;
-
     public static String HDFS_ROOT;
     public static String WAITING_TASKS_URLS;
     public static String FINNSED_TASKS_URLS;
     public static String NEW_TASKS_URLS;
     public static String BLOOM_BACKUP_PATH;
-
     public static String HDFS_SYSTEM_PATH;
-
     public static String TEMP_DIR;
-
     public static int WORKER_DEAD_TIME;
     public static int CHECK_TIME;
-
     public static String TEMP_SUFFIX = ".bak";
-
     public static String LOCAL_HOST;
     public static int LOCAL_PORT;
-
     public static String INIT_SERVER;
-
-
-
+    public static int BALANCE_SERVER_PORT;
     private static UrlFilter URL_FILTER;
     
     private Configuration() throws SAXException, IOException, ParserConfigurationException {
@@ -98,8 +89,10 @@ public class Configuration {
         LOCAL_PORT = Integer.parseInt(map.get("local_port"));
 
         HDFS_SYSTEM_PATH = map.get("hdfs_system_path");
-        
-        INIT_SERVER = map.get("zookeeper_init_server");
+
+        BALANCE_SERVER_PORT = Integer.parseInt(map.get("balance_server_port"));
+
+        INIT_SERVER = map.get("init_server");
     }
 
     /**
@@ -192,6 +185,9 @@ public class Configuration {
         
         /* 提供均衡负载之前必须首先读取信息，需要一个用于初始化的BalanceServer的ip和端口号 */
         map.put("init_server", "127.0.0.1:2181");
+
+        /* */
+        map.put("balance_server_port", "8080");
     }
 
 

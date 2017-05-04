@@ -42,6 +42,29 @@ public final class BalanceDataProto {
      * <code>required int32 port = 3;</code>
      */
     int getPort();
+
+    /**
+     * <code>required string zkIp = 4;</code>
+     */
+    boolean hasZkIp();
+    /**
+     * <code>required string zkIp = 4;</code>
+     */
+    java.lang.String getZkIp();
+    /**
+     * <code>required string zkIp = 4;</code>
+     */
+    com.google.protobuf.ByteString
+        getZkIpBytes();
+
+    /**
+     * <code>required int32 zkPort = 5;</code>
+     */
+    boolean hasZkPort();
+    /**
+     * <code>required int32 zkPort = 5;</code>
+     */
+    int getZkPort();
   }
   /**
    * Protobuf type {@code BalanceData}
@@ -109,6 +132,17 @@ public final class BalanceDataProto {
             case 24: {
               bitField0_ |= 0x00000004;
               port_ = input.readInt32();
+              break;
+            }
+            case 34: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000008;
+              zkIp_ = bs;
+              break;
+            }
+            case 40: {
+              bitField0_ |= 0x00000010;
+              zkPort_ = input.readInt32();
               break;
             }
           }
@@ -223,10 +257,69 @@ public final class BalanceDataProto {
       return port_;
     }
 
+    public static final int ZKIP_FIELD_NUMBER = 4;
+    private java.lang.Object zkIp_;
+    /**
+     * <code>required string zkIp = 4;</code>
+     */
+    public boolean hasZkIp() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    /**
+     * <code>required string zkIp = 4;</code>
+     */
+    public java.lang.String getZkIp() {
+      java.lang.Object ref = zkIp_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          zkIp_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string zkIp = 4;</code>
+     */
+    public com.google.protobuf.ByteString
+        getZkIpBytes() {
+      java.lang.Object ref = zkIp_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        zkIp_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int ZKPORT_FIELD_NUMBER = 5;
+    private int zkPort_;
+    /**
+     * <code>required int32 zkPort = 5;</code>
+     */
+    public boolean hasZkPort() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    /**
+     * <code>required int32 zkPort = 5;</code>
+     */
+    public int getZkPort() {
+      return zkPort_;
+    }
+
     private void initFields() {
       load_ = 0;
       ip_ = "";
       port_ = 0;
+      zkIp_ = "";
+      zkPort_ = 0;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -246,6 +339,14 @@ public final class BalanceDataProto {
         memoizedIsInitialized = 0;
         return false;
       }
+      if (!hasZkIp()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasZkPort()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
       memoizedIsInitialized = 1;
       return true;
     }
@@ -261,6 +362,12 @@ public final class BalanceDataProto {
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeInt32(3, port_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeBytes(4, getZkIpBytes());
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeInt32(5, zkPort_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -282,6 +389,14 @@ public final class BalanceDataProto {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
           .computeInt32Size(3, port_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(4, getZkIpBytes());
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(5, zkPort_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -406,6 +521,10 @@ public final class BalanceDataProto {
         bitField0_ = (bitField0_ & ~0x00000002);
         port_ = 0;
         bitField0_ = (bitField0_ & ~0x00000004);
+        zkIp_ = "";
+        bitField0_ = (bitField0_ & ~0x00000008);
+        zkPort_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -446,6 +565,14 @@ public final class BalanceDataProto {
           to_bitField0_ |= 0x00000004;
         }
         result.port_ = port_;
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.zkIp_ = zkIp_;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        result.zkPort_ = zkPort_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -473,6 +600,14 @@ public final class BalanceDataProto {
         if (other.hasPort()) {
           setPort(other.getPort());
         }
+        if (other.hasZkIp()) {
+          bitField0_ |= 0x00000008;
+          zkIp_ = other.zkIp_;
+          onChanged();
+        }
+        if (other.hasZkPort()) {
+          setZkPort(other.getZkPort());
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -487,6 +622,14 @@ public final class BalanceDataProto {
           return false;
         }
         if (!hasPort()) {
+          
+          return false;
+        }
+        if (!hasZkIp()) {
+          
+          return false;
+        }
+        if (!hasZkPort()) {
           
           return false;
         }
@@ -652,6 +795,114 @@ public final class BalanceDataProto {
         return this;
       }
 
+      private java.lang.Object zkIp_ = "";
+      /**
+       * <code>required string zkIp = 4;</code>
+       */
+      public boolean hasZkIp() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      /**
+       * <code>required string zkIp = 4;</code>
+       */
+      public java.lang.String getZkIp() {
+        java.lang.Object ref = zkIp_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            zkIp_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>required string zkIp = 4;</code>
+       */
+      public com.google.protobuf.ByteString
+          getZkIpBytes() {
+        java.lang.Object ref = zkIp_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          zkIp_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string zkIp = 4;</code>
+       */
+      public Builder setZkIp(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000008;
+        zkIp_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string zkIp = 4;</code>
+       */
+      public Builder clearZkIp() {
+        bitField0_ = (bitField0_ & ~0x00000008);
+        zkIp_ = getDefaultInstance().getZkIp();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string zkIp = 4;</code>
+       */
+      public Builder setZkIpBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000008;
+        zkIp_ = value;
+        onChanged();
+        return this;
+      }
+
+      private int zkPort_ ;
+      /**
+       * <code>required int32 zkPort = 5;</code>
+       */
+      public boolean hasZkPort() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>required int32 zkPort = 5;</code>
+       */
+      public int getZkPort() {
+        return zkPort_;
+      }
+      /**
+       * <code>required int32 zkPort = 5;</code>
+       */
+      public Builder setZkPort(int value) {
+        bitField0_ |= 0x00000010;
+        zkPort_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required int32 zkPort = 5;</code>
+       */
+      public Builder clearZkPort() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        zkPort_ = 0;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:BalanceData)
     }
 
@@ -677,9 +928,10 @@ public final class BalanceDataProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\021BalanceData.proto\"8\n\013BalanceData\022\017\n\004lo" +
-      "ad\030\001 \002(\005:\0010\022\n\n\002ip\030\002 \002(\t\022\014\n\004port\030\003 \002(\005B\022B" +
-      "\020BalanceDataProto"
+      "\n\021BalanceData.proto\"V\n\013BalanceData\022\017\n\004lo" +
+      "ad\030\001 \002(\005:\0010\022\n\n\002ip\030\002 \002(\t\022\014\n\004port\030\003 \002(\005\022\014\n" +
+      "\004zkIp\030\004 \002(\t\022\016\n\006zkPort\030\005 \002(\005B\022B\020BalanceDa" +
+      "taProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -698,7 +950,7 @@ public final class BalanceDataProto {
     internal_static_BalanceData_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_BalanceData_descriptor,
-        new java.lang.String[] { "Load", "Ip", "Port", });
+        new java.lang.String[] { "Load", "Ip", "Port", "ZkIp", "ZkPort", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

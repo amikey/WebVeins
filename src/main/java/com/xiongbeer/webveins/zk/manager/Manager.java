@@ -61,7 +61,7 @@ public class Manager {
     private HashMap<String, String> workerList = new HashMap<String, String>();
 
     /* 未完成的任务指RUNNING状态的任务 */
-    private HashMap<String, Epoch> unfinnsedTaskList = new HashMap<String, Epoch>();
+    private HashMap<String, Epoch> unfinishedTaskList = new HashMap<String, Epoch>();
 
     private UrlFilter filter;
 
@@ -76,20 +76,20 @@ public class Manager {
         builder = BalanceDataProto.BalanceData.newBuilder();
         String ip = new IdProvider().getIp();
         builder.setIp(ip);
+        builder.setPort(Configuration.BALANCE_SERVER_PORT);
+        builder.setZkIp(ip);
         int port = Configuration.ZOOKEEPER_MANAGER_ADDRESS.get(ip);
-        builder.setPort(port);
+        builder.setZkPort(port);
         builder.setLoad(0);
         balanceData = builder.build();
 
         status = Status.Initializing;
         this.zk = zk;
         this.serverId = serverId;
-
         taskManager = new TaskManager(zk);
         hdfsManager = new HDFSManager(hdfsFileSystem);
         workersWatcher = new WorkersWatcher(zk);
         this.filter = filter;
-
         toBeActive();
     }
 
@@ -121,7 +121,7 @@ public class Manager {
         checkWorkers();
         publishNewTasks();
 
-        System.out.println(unfinnsedTaskList);
+        System.out.println(unfinishedTaskList);
         System.out.println(workerList);
     }
 
@@ -171,6 +171,9 @@ public class Manager {
         }
     };
 
+    /**
+     * 增加负载值，同时将信息上传到Znode中
+     */
     public void addLoad(){
         BalanceDataProto.BalanceData data;
         builder.setLoad(balanceData.getLoad() + 1);
@@ -187,7 +190,10 @@ public class Manager {
         }
 
     }
-
+    
+    /**
+     * 减少负载值，同时将信息上传到Znode中
+     */
     public void reduceLoad(){
         BalanceDataProto.BalanceData data;
         builder.setLoad(balanceData.getLoad() - 1);
@@ -469,8 +475,8 @@ public class Manager {
             String key = (String) entry.getKey();
             Epoch value = (Epoch) entry.getValue();
             if(value.getStatus().equals(Task.FINISHED)){
-                if(unfinnsedTaskList.containsKey(key)){
-                    unfinnsedTaskList.remove(key);
+                if(unfinishedTaskList.containsKey(key)){
+                    unfinishedTaskList.remove(key);
                 }
                 hdfsManager.moveHDFSFile(Configuration.WAITING_TASKS_URLS + "/" + key,
                         Configuration.FINNSED_TASKS_URLS + "/" + key);
@@ -478,7 +484,7 @@ public class Manager {
 
             }
             else if(value.getStatus().equals(Task.RUNNING)){
-                unfinnsedTaskList.put(key, value);
+                unfinishedTaskList.put(key, value);
             }
         }
     }
@@ -491,7 +497,7 @@ public class Manager {
     private void checkWorkers() throws InterruptedException {
         Tracker tracker = new Tracker();
         HashMap<String, Epoch> tasks = taskManager.getTasksInfo();
-        Iterator iterator = unfinnsedTaskList.entrySet().iterator();
+        Iterator iterator = unfinishedTaskList.entrySet().iterator();
         tracker.setStatus(Tracker.WAITING);
         workersWatcher.getWorkers(tracker);
         while(tracker.getStatus() == Tracker.WAITING){

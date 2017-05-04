@@ -2,6 +2,7 @@ package com.xiongbeer.webveins.service;
 
 import com.xiongbeer.webveins.ZnodeInfo;
 import com.xiongbeer.webveins.zk.task.TaskWorker;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
@@ -12,6 +13,7 @@ import java.util.Date;
 /**
  * Created by shaoxiong on 17-4-23.
  */
+@ChannelHandler.Sharable
 public class ServerHandler extends ChannelInboundHandlerAdapter{
     private Logger logger = LoggerFactory.getLogger(ServerHandler.class);
     private TaskWorker taskWorker;
