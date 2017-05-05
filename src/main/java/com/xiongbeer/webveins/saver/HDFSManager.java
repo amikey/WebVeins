@@ -122,7 +122,7 @@ public class HDFSManager {
      */
     public LinkedList<String> listChildren(String src, boolean recursive) throws IOException {
         LinkedList<String> filePath = new LinkedList<String>();
-        RemoteIterator iterator = fs.listFiles(new Path(src), recursive);
+        RemoteIterator<LocatedFileStatus> iterator = fs.listFiles(new Path(src), recursive);
         while(iterator.hasNext()){
             LocatedFileStatus child = (LocatedFileStatus) iterator.next();
             filePath.add(child.getPath().toString());

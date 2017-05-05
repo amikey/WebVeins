@@ -12,14 +12,12 @@ import java.io.IOException;
  * Created by shaoxiong on 17-5-2.
  */
 public class BalanceServer {
-    private final String host;
     private final int port;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
     private Manager manager;
 
-    public BalanceServer(String host, int port, Manager manager) throws IOException {
-        this.host = host;
+    public BalanceServer(int port, Manager manager) throws IOException {
         this.port = port;
         this.manager = manager;
     }
@@ -35,17 +33,19 @@ public class BalanceServer {
                     .option(ChannelOption.SO_BACKLOG, 1024);
 
             final ChannelFuture future = bootStrap.bind(port).sync();
-            future.channel().closeFuture();
-
+            future.channel().closeFuture().sync();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
-            stop();
+            workerGroup.shutdownGracefully();
+            bossGroup.shutdownGracefully();
         }
     }
 
+    /**
+     * TODO
+     */
     public void stop(){
-        workerGroup.shutdownGracefully();
-        bossGroup.shutdownGracefully();
+
     }
 }

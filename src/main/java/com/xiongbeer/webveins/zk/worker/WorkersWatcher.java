@@ -3,15 +3,15 @@ package com.xiongbeer.webveins.zk.worker;
 import com.xiongbeer.webveins.utils.Async;
 import com.xiongbeer.webveins.utils.Tracker;
 import com.xiongbeer.webveins.ZnodeInfo;
+
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.AsyncCallback.*;
 import org.apache.zookeeper.KeeperException.Code;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import java.util.*;
+import java.util.Map.Entry;
 
 
 /**
@@ -34,9 +34,10 @@ public class WorkersWatcher implements Watcher{
                                         + " workers");
 
                     /* 首先检查上一次保存的worker中有没有消失的 */
-                    Iterator iterator = workersList.entrySet().iterator();
+                    Iterator<Entry<String, String>> iterator = workersList.entrySet().iterator();
                     while(iterator.hasNext()){
-                        Map.Entry entry = (Map.Entry) iterator.next();
+                        @SuppressWarnings("rawtypes")
+						Map.Entry entry = (Map.Entry) iterator.next();
                         if(!children.contains(entry.getKey())){
                             workersList.remove(entry.getKey());
                         }
@@ -81,9 +82,10 @@ public class WorkersWatcher implements Watcher{
      * worker目前的状态
      */
     public void reflushWorkerStatus(){
-        Iterator iterator = workersList.entrySet().iterator();
+        Iterator<Entry<String, String>> iterator = workersList.entrySet().iterator();
         while(iterator.hasNext()){
-            Map.Entry entry = (Map.Entry) iterator.next();
+            @SuppressWarnings("rawtypes")
+			Map.Entry entry = (Map.Entry) iterator.next();
             getWorkerStatus((String) entry.getKey());
         }
     }
@@ -116,20 +118,6 @@ public class WorkersWatcher implements Watcher{
 
     public HashMap<String, String> getWorkersList(){
         return workersList;
-    }
-
-    /**
-     * 提取path中的Data的name
-     *
-     * @param path
-     * @return
-     */
-    private String getDataName(String path){
-        String[] items = path.split("/");
-        if(items == null){
-            return null;
-        }
-        return items[items.length-1];
     }
 }
 

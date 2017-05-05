@@ -2,9 +2,11 @@ package com.xiongbeer.webveins.zk.task;
 
 import com.xiongbeer.webveins.utils.Tracker;
 import com.xiongbeer.webveins.ZnodeInfo;
+
 import org.apache.zookeeper.*;
 
 import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * Created by shaoxiong on 17-4-10.
@@ -30,9 +32,10 @@ public class TaskWorker extends Task{
         }
 
         /* 抢夺未被领取的任务 */
-        Iterator iterator = tasksInfo.entrySet().iterator();
+        Iterator<Entry<String, Epoch>> iterator = tasksInfo.entrySet().iterator();
         while(iterator.hasNext()){
-            Map.Entry entry = (Map.Entry)iterator.next();
+            @SuppressWarnings("rawtypes")
+			Map.Entry entry = (Map.Entry)iterator.next();
             String key = (String) entry.getKey();
             Epoch value = (Epoch) entry.getValue();
             if(value.getStatus().equals(WAITING)){

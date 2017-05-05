@@ -26,7 +26,6 @@ import java.util.TimerTask;
 public class Server {
     private static LinkedList<Channel> channels = new LinkedList<Channel>();
     private Logger logger = LoggerFactory.getLogger(Server.class);
-    private final String host;
     private final int port;
     private TaskWorker taskWorker;
     private EventLoopGroup bossGroup;
@@ -46,8 +45,7 @@ public class Server {
         }
     }
 
-    public Server(String host, int port, TaskWorker taskWorker) throws IOException {
-        this.host = host;
+    public Server(int port, TaskWorker taskWorker) throws IOException {
         this.port = port;
         this.taskWorker = taskWorker;
     }
@@ -109,7 +107,7 @@ public class Server {
             builder.setStatus(ProcessDataProto.ProcessData.Status.NULL);
             builder.setUrlFilePath("xasd");
 
-            final Server server = new Server(Configuration.LOCAL_HOST, Configuration.LOCAL_PORT, null);
+            final Server server = new Server(Configuration.LOCAL_PORT, null);
 
             TimerTask task = new TimerTask() {
                 @Override

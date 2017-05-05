@@ -6,6 +6,10 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.apache.zookeeper.ZooKeeper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 /**
  * Created by shaoxiong on 17-5-2.
@@ -14,6 +18,7 @@ import org.apache.zookeeper.ZooKeeper;
 public class BalanceClientHandler extends ChannelInboundHandlerAdapter {
     private ManagerData managerData;
     private WebVeinsServer wvServer;
+    private Logger logger = LoggerFactory.getLogger(BalanceClientHandler.class);
     public BalanceClientHandler(ManagerData managerData, WebVeinsServer wvServer){
         this.managerData = managerData;
         this.wvServer = wvServer;
@@ -23,12 +28,25 @@ public class BalanceClientHandler extends ChannelInboundHandlerAdapter {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         ZooKeeper zk = new ZooKeeper(managerData.getZKConnectString(), 2000,wvServer);
         wvServer.setZK(zk);
-        wvServer.runServer();
+
+        new Thread("wvLocalServer"){
+            @Override
+            public void run(){
+                try {
+                    logger.info("run local server");
+                    wvServer.runServer();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    System.exit(1);
+                }
+            }
+        }.start();
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         wvServer.stopServer();
+        System.out.println("log out");
     }
 
     @Override

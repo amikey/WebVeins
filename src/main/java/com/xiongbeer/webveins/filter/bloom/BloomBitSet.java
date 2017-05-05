@@ -3,7 +3,6 @@ package com.xiongbeer.webveins.filter.bloom;
 
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.LinkedList;
 
 /**
  * 扩展的BitSet

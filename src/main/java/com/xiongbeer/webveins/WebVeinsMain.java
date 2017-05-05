@@ -1,6 +1,7 @@
 package com.xiongbeer.webveins;
 
 import com.xiongbeer.webveins.filter.bloom.UrlFilter;
+import com.xiongbeer.webveins.service.BalanceServer;
 import com.xiongbeer.webveins.utils.IdProvider;
 import com.xiongbeer.webveins.utils.InitLogger;
 import com.xiongbeer.webveins.zk.manager.Manager;
@@ -26,13 +27,12 @@ public class WebVeinsMain implements Watcher{
     private Configuration configuration;
     private Timer managerTimer;
     private Logger logger = LoggerFactory.getLogger(WebVeinsMain.class);
+    private String ip = new IdProvider().getIp();
+    private BalanceServer balanceServer;
     private WebVeinsMain() throws IOException {
     	configuration = Configuration.getInstance();
 
         /* 检查本机ip是否与zk的ip匹配 */
-        String ip = new IdProvider().getIp();
-        System.out.println(ip);
-        System.out.println(Configuration.ZOOKEEPER_MANAGER_ADDRESS);
         if(!Configuration.ZOOKEEPER_MANAGER_ADDRESS
                 .containsKey(ip)){
             throw new RuntimeException("Manager ip is invaild");
@@ -59,7 +59,7 @@ public class WebVeinsMain implements Watcher{
     /**
      * 定时执行manage
      */
-    private void runManager(){
+    private void run(){
         UrlFilter filter = configuration.getUrlFilter();
         final Manager manager = new Manager(zk, serverId,
                 Configuration.HDFS_SYSTEM_PATH, filter);
@@ -81,7 +81,23 @@ public class WebVeinsMain implements Watcher{
         long delay = 0;
         long intevalPeriod = Configuration.CHECK_TIME * 1000;
         managerTimer.scheduleAtFixedRate(task, delay, intevalPeriod);
+
+        /* 均衡负载服务 */
+        new Thread("BalanceServer"){
+            @Override
+            public void run(){
+                try {
+                    balanceServer = new BalanceServer(Configuration.BALANCE_SERVER_PORT, manager);
+                    balanceServer.bind();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    System.exit(1);
+                }
+            }
+        }.start();
     }
+
+
 
     @Override
     public void process(WatchedEvent watchedEvent) {}
@@ -89,6 +105,6 @@ public class WebVeinsMain implements Watcher{
     public static void main(String[] args) throws IOException {
         InitLogger.init();
         WebVeinsMain main = WebVeinsMain.getInstance();
-        main.runManager();;
+        main.run();;
     }
 }

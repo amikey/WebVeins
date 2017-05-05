@@ -1,9 +1,6 @@
 package com.xiongbeer.webveins.service;
 
 import com.xiongbeer.webveins.Configuration;
-import com.xiongbeer.webveins.zk.task.TaskWorker;
-
-import java.io.IOException;
 
 /**
  * 提供给用户的使用接口
@@ -29,7 +26,12 @@ public class Bootstrap {
             client = new Client();
         }
         client.setAction(action);
-        client.connect(Configuration.LOCAL_HOST, Configuration.LOCAL_PORT);
+        new Thread("wvLocalClient") {
+            @Override
+            public void run() {
+                client.connect(Configuration.LOCAL_HOST, Configuration.LOCAL_PORT);
+            }
+        }.start();
         return this;
     }
 

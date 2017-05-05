@@ -10,7 +10,7 @@ import com.xiongbeer.webveins.VeinsException;
  * Created by shaoxiong on 17-4-12.
  */
 public class UrlFilter {
-    private double falseEPositiveRate;
+    private double falsePositiveRate;
     private long size;
     private long maxElementNums;
     private BloomTable filter;
@@ -28,7 +28,7 @@ public class UrlFilter {
      * @param mode Bloom模式
      */
     public UrlFilter(long elementNums, double falsePositiveRate, CreateMode mode){
-        this.falseEPositiveRate = falseEPositiveRate;
+        this.falsePositiveRate = falsePositiveRate;
         this.maxElementNums = elementNums;
         this.mode = mode;
         size = (long) ((-1) * elementNums * Math.log(falsePositiveRate)
@@ -65,7 +65,7 @@ public class UrlFilter {
     }
 
     public double getFalseEPositiveRate() {
-        return falseEPositiveRate;
+        return falsePositiveRate;
     }
 
     public long getSize() {

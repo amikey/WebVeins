@@ -11,9 +11,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
  */
 public class BalanceClient {
     private static Channel channel;
-    private ManagerData managerData;
     public void connect(ManagerData managerData, WebVeinsServer wvServer) {
-        this.managerData = managerData;
         String host = managerData.getIp();
         int port = managerData.getPort();
 

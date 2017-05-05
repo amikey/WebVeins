@@ -7,6 +7,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.xiongbeer.webveins.service.BalanceClient;
 import com.xiongbeer.webveins.utils.IdProvider;
 import com.xiongbeer.webveins.utils.InitLogger;
+import com.xiongbeer.webveins.utils.Tracker;
 import com.xiongbeer.webveins.zk.manager.ManagerData;
 import org.apache.zookeeper.AsyncCallback.VoidCallback;
 import org.apache.zookeeper.KeeperException;
@@ -52,44 +53,8 @@ public class WebVeinsServer implements Watcher {
 
     public void runServer() throws IOException {
         worker = new Worker(zk, serverId);
-        server = new Server(Configuration.LOCAL_HOST,
-                Configuration.LOCAL_PORT, worker.getTaskWorker());
+        server = new Server(Configuration.LOCAL_PORT, worker.getTaskWorker());
         server.bind();
-    }
-
-    private VoidCallback connectManagerCallback = new VoidCallback() {
-        @Override
-        public void processResult(int rc, String path, Object ctx) {
-            switch (KeeperException.Code.get(rc)) {
-                case CONNECTIONLOSS:
-                    connectManager();
-                    break;
-                case OK:
-                    try {
-                        connectBalanceManager();
-                    } catch (KeeperException.ConnectionLossException e) {
-                        connectManager();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    } catch (KeeperException e) {
-                        e.printStackTrace();
-                    }
-                    break;
-                default:
-
-                    System.exit(1);
-                    break;
-            }
-        }
-    };
-
-    /**
-     * 客户端到连接到一个负载最小的manager端
-     *
-     * sync表示拿到目前最新的信息
-     */
-    public void connectManager(){
-        zk.sync(ZnodeInfo.MANAGERS_PATH, connectManagerCallback, null);
     }
 
     public void connectBalanceManager() throws KeeperException, InterruptedException {
@@ -109,21 +74,28 @@ public class WebVeinsServer implements Watcher {
 
         /* 拿到负载最小的Manager */
         ManagerData manager = managerData.get(0);
+
         balanceClient.connect(manager, this);
+    }
+
+    public void run(){
+        try {
+            connectBalanceManager();
+        } catch (KeeperException.ConnectionLossException e) {
+            run();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (KeeperException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
 	public void process(WatchedEvent arg0) {}
     
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         InitLogger.init();
         WebVeinsServer server = WebVeinsServer.getInstance();
-        try {
-            server.connectBalanceManager();
-        } catch (KeeperException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        server.run();
     }
 }

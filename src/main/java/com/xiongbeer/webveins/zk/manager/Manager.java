@@ -11,13 +11,12 @@ import com.xiongbeer.webveins.utils.Tracker;
 import com.xiongbeer.webveins.zk.task.Epoch;
 import com.xiongbeer.webveins.zk.task.Task;
 import com.xiongbeer.webveins.zk.task.TaskManager;
-
 import com.xiongbeer.webveins.zk.worker.WorkersWatcher;
+
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.AsyncCallback.*;
 import org.apache.zookeeper.KeeperException.Code;
 import org.apache.zookeeper.data.Stat;
-
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -25,6 +24,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -439,6 +439,8 @@ public class Manager {
                 case NONODE:
                     recoverActiveManager();
                     break;
+			default:
+				break;
             }
         }
     };
@@ -469,9 +471,10 @@ public class Manager {
             Thread.sleep(50);
         }
         HashMap<String, Epoch> tasks = taskManager.getTasksInfo();
-        Iterator iterator = tasks.entrySet().iterator();
+        Iterator<Entry<String, Epoch>> iterator = tasks.entrySet().iterator();
         while(iterator.hasNext()){
-            Map.Entry entry = (Map.Entry)iterator.next();
+            @SuppressWarnings("rawtypes")
+			Map.Entry entry = (Map.Entry)iterator.next();
             String key = (String) entry.getKey();
             Epoch value = (Epoch) entry.getValue();
             if(value.getStatus().equals(Task.FINISHED)){
@@ -496,8 +499,7 @@ public class Manager {
      */
     private void checkWorkers() throws InterruptedException {
         Tracker tracker = new Tracker();
-        HashMap<String, Epoch> tasks = taskManager.getTasksInfo();
-        Iterator iterator = unfinishedTaskList.entrySet().iterator();
+        Iterator<Entry<String, Epoch>> iterator = unfinishedTaskList.entrySet().iterator();
         tracker.setStatus(Tracker.WAITING);
         workersWatcher.getWorkers(tracker);
         while(tracker.getStatus() == Tracker.WAITING){
@@ -507,7 +509,8 @@ public class Manager {
         workersWatcher.reflushWorkerStatus();
         workerList = workersWatcher.getWorkersList();
         while(iterator.hasNext()){
-            Map.Entry entry = (Map.Entry) iterator.next();
+            @SuppressWarnings("rawtypes")
+			Map.Entry entry = (Map.Entry) iterator.next();
             String name = (String) entry.getKey();
             // 检查执行对应任务的worker是不是挂了
             if(! workerList.containsValue(name)){

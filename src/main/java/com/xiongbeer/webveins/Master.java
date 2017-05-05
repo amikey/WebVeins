@@ -65,7 +65,7 @@ public class Master implements Watcher {
         //Thread.sleep(15000);
         //manager.manage();
 
-        BalanceServer server = new BalanceServer("localhost", 8080, manager);
+        BalanceServer server = new BalanceServer(8080, manager);
         server.bind();
         Thread.sleep(60000);
 

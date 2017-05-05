@@ -64,24 +64,6 @@ public class Task {
         }
     };
 
-    private DataCallback checkTaskDataCallback = new DataCallback() {
-        public void processResult(int rc, String path, Object ctx, byte[] bytes, Stat stat) {
-            switch (Code.get(rc)){
-                case CONNECTIONLOSS:
-                    checkTask(path);
-                    break;
-                case OK:
-                    String status = new String(bytes);
-                    Epoch taskInfo = new Epoch(stat.getMtime(), status, stat.getVersion());
-                    tasksInfo.put(getDataName(path), taskInfo);
-                    break;
-                default:
-                    logger.warn("Check task: " + path + " failed.");
-                    break;
-            }
-        }
-    } ;
-
     /**
      * 遍历目前所有任务
      *
@@ -134,7 +116,6 @@ public class Task {
     public HashMap<String, Epoch> getTasksInfo(){
         return tasksInfo;
     }
-
 
     /**
      * 提取path中的Data的Name
