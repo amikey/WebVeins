@@ -1,12 +1,5 @@
 #!/bin/sh
-isrun=`jps | grep WebVeinsServer`
-if [ "$isrun" = "" ]
-then
-    echo 'start server...'
-else
-    echo 'server has already running'
-    exit 1
-fi
+echo 'start server...'
 WEBVEINS_PATH=""
 for i in "$WEBVEINS_HOME"/lib/*.jar
 do

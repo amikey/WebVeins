@@ -1,13 +1,5 @@
 #!/bin/sh
-isrun=`jps | grep WebVeinsMain`
-if [ "$isrun" = "" ]
-then
-    echo 'start manager...'
-else
-    echo 'manager has already running'
-    exit 1
-fi
-
+echo 'start manager...'
 WEBVEINS_PATH=""
 for i in "$WEBVEINS_HOME"/lib/*.jar
 do
