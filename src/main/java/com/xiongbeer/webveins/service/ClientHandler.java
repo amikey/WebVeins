@@ -1,5 +1,6 @@
 package com.xiongbeer.webveins.service;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -22,8 +23,9 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        Server.getChannels().add(ctx.channel());
-        logger.info(ctx.channel().remoteAddress().toString() + " log in "
+        Channel channel = ctx.channel();
+        Client.setChannel(channel);
+        logger.info(channel.remoteAddress().toString() + " log in "
                 + "at {}", new Date().toString());
     }
 

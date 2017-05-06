@@ -12,15 +12,15 @@ public final class ProcessDataProto {
       com.google.protobuf.MessageOrBuilder {
 
     /**
-     * <code>required string urlFilePath = 1;</code>
+     * <code>optional string urlFilePath = 1;</code>
      */
     boolean hasUrlFilePath();
     /**
-     * <code>required string urlFilePath = 1;</code>
+     * <code>optional string urlFilePath = 1;</code>
      */
     java.lang.String getUrlFilePath();
     /**
-     * <code>required string urlFilePath = 1;</code>
+     * <code>optional string urlFilePath = 1;</code>
      */
     com.google.protobuf.ByteString
         getUrlFilePathBytes();
@@ -163,6 +163,10 @@ public final class ProcessDataProto {
        * <code>FINNISHED = 3;</code>
        */
       FINNISHED(3, 3),
+      /**
+       * <code>READY = 4;</code>
+       */
+      READY(4, 4),
       ;
 
       /**
@@ -181,6 +185,10 @@ public final class ProcessDataProto {
        * <code>FINNISHED = 3;</code>
        */
       public static final int FINNISHED_VALUE = 3;
+      /**
+       * <code>READY = 4;</code>
+       */
+      public static final int READY_VALUE = 4;
 
 
       public final int getNumber() { return value; }
@@ -191,6 +199,7 @@ public final class ProcessDataProto {
           case 1: return WAITING;
           case 2: return RUNNING;
           case 3: return FINNISHED;
+          case 4: return READY;
           default: return null;
         }
       }
@@ -246,13 +255,13 @@ public final class ProcessDataProto {
     public static final int URLFILEPATH_FIELD_NUMBER = 1;
     private java.lang.Object urlFilePath_;
     /**
-     * <code>required string urlFilePath = 1;</code>
+     * <code>optional string urlFilePath = 1;</code>
      */
     public boolean hasUrlFilePath() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     /**
-     * <code>required string urlFilePath = 1;</code>
+     * <code>optional string urlFilePath = 1;</code>
      */
     public java.lang.String getUrlFilePath() {
       java.lang.Object ref = urlFilePath_;
@@ -269,7 +278,7 @@ public final class ProcessDataProto {
       }
     }
     /**
-     * <code>required string urlFilePath = 1;</code>
+     * <code>optional string urlFilePath = 1;</code>
      */
     public com.google.protobuf.ByteString
         getUrlFilePathBytes() {
@@ -310,10 +319,6 @@ public final class ProcessDataProto {
       if (isInitialized == 1) return true;
       if (isInitialized == 0) return false;
 
-      if (!hasUrlFilePath()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
       if (!hasStatus()) {
         memoizedIsInitialized = 0;
         return false;
@@ -534,10 +539,6 @@ public final class ProcessDataProto {
       }
 
       public final boolean isInitialized() {
-        if (!hasUrlFilePath()) {
-          
-          return false;
-        }
         if (!hasStatus()) {
           
           return false;
@@ -566,13 +567,13 @@ public final class ProcessDataProto {
 
       private java.lang.Object urlFilePath_ = "";
       /**
-       * <code>required string urlFilePath = 1;</code>
+       * <code>optional string urlFilePath = 1;</code>
        */
       public boolean hasUrlFilePath() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>required string urlFilePath = 1;</code>
+       * <code>optional string urlFilePath = 1;</code>
        */
       public java.lang.String getUrlFilePath() {
         java.lang.Object ref = urlFilePath_;
@@ -589,7 +590,7 @@ public final class ProcessDataProto {
         }
       }
       /**
-       * <code>required string urlFilePath = 1;</code>
+       * <code>optional string urlFilePath = 1;</code>
        */
       public com.google.protobuf.ByteString
           getUrlFilePathBytes() {
@@ -605,7 +606,7 @@ public final class ProcessDataProto {
         }
       }
       /**
-       * <code>required string urlFilePath = 1;</code>
+       * <code>optional string urlFilePath = 1;</code>
        */
       public Builder setUrlFilePath(
           java.lang.String value) {
@@ -618,7 +619,7 @@ public final class ProcessDataProto {
         return this;
       }
       /**
-       * <code>required string urlFilePath = 1;</code>
+       * <code>optional string urlFilePath = 1;</code>
        */
       public Builder clearUrlFilePath() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -627,7 +628,7 @@ public final class ProcessDataProto {
         return this;
       }
       /**
-       * <code>required string urlFilePath = 1;</code>
+       * <code>optional string urlFilePath = 1;</code>
        */
       public Builder setUrlFilePathBytes(
           com.google.protobuf.ByteString value) {
@@ -700,11 +701,11 @@ public final class ProcessDataProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\021ProcessData.proto\"\212\001\n\013ProcessData\022\023\n\013u" +
-      "rlFilePath\030\001 \002(\t\022)\n\006status\030\002 \002(\0162\023.Proce" +
-      "ssData.Status:\004NULL\";\n\006Status\022\010\n\004NULL\020\000\022" +
+      "\n\021ProcessData.proto\"\225\001\n\013ProcessData\022\023\n\013u" +
+      "rlFilePath\030\001 \001(\t\022)\n\006status\030\002 \002(\0162\023.Proce" +
+      "ssData.Status:\004NULL\"F\n\006Status\022\010\n\004NULL\020\000\022" +
       "\013\n\007WAITING\020\001\022\013\n\007RUNNING\020\002\022\r\n\tFINNISHED\020\003" +
-      "B\022B\020ProcessDataProto"
+      "\022\t\n\005READY\020\004B\022B\020ProcessDataProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {

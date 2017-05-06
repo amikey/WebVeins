@@ -3,12 +3,11 @@ package com.xiongbeer.webveins;
 import com.xiongbeer.webveins.saver.HDFSManager;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
+import org.omg.Messaging.SYNC_WITH_TRANSPORT;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.net.*;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Enumeration;
@@ -35,41 +34,19 @@ public class Test {
         service.scheduleAtFixedRate(runnable, 5, 5, TimeUnit.SECONDS);
         */
         /*
-        Enumeration allNetInterfaces = NetworkInterface.getNetworkInterfaces();
-        InetAddress ip = null;
-        while (allNetInterfaces.hasMoreElements())
-        {
-            NetworkInterface netInterface = (NetworkInterface) allNetInterfaces.nextElement();
-            System.out.println(netInterface.getName());
-            Enumeration addresses = netInterface.getInetAddresses();
-            while (addresses.hasMoreElements())
-            {
-                ip = (InetAddress) addresses.nextElement();
-                if (ip != null && ip instanceof Inet4Address)
-                {
-                    System.out.println("本机的IP = " + ip.getHostAddress());
+        try {
+            Process process = Runtime.getRuntime().exec("jps");
+            InputStreamReader iR = new InputStreamReader(process.getInputStream());
+            BufferedReader input = new BufferedReader(iR);
+            String line;
+            while((line = input.readLine()) != null){
+                if(line.matches(".*DataNode")){
+                    System.out.println(line);
                 }
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         */
-        try {
-            Enumeration<NetworkInterface> allNetInterfaces = NetworkInterface.getNetworkInterfaces();
-            InetAddress ip = null;
-            while (allNetInterfaces.hasMoreElements()) {
-                NetworkInterface netInterface = (NetworkInterface) allNetInterfaces.nextElement();
-                if (netInterface.isLoopback() || netInterface.isVirtual() || !netInterface.isUp()) {
-                    continue;
-                } else {
-                    Enumeration<InetAddress> addresses = netInterface.getInetAddresses();
-                    while (addresses.hasMoreElements()) {
-                        ip = addresses.nextElement();
-                        if (ip != null && ip instanceof Inet4Address) {
-                            System.out.println(ip.getHostAddress());
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-        }
     }
 }

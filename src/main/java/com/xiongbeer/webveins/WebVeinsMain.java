@@ -51,7 +51,7 @@ public class WebVeinsMain implements Watcher{
         }
         return wvMain;
     }
-    
+
     public void stopManager(){
         managerTimer.cancel();
     }
@@ -103,6 +103,10 @@ public class WebVeinsMain implements Watcher{
     public void process(WatchedEvent watchedEvent) {}
 
     public static void main(String[] args) throws IOException {
+        if(SelfTest.check(WebVeinsMain.class.getSimpleName())){
+            System.out.println("[Error] Service has already running");
+            System.exit(1);
+        }
         InitLogger.init();
         WebVeinsMain main = WebVeinsMain.getInstance();
         main.run();;

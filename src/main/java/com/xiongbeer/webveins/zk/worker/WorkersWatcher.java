@@ -59,10 +59,6 @@ public class WorkersWatcher implements Watcher{
         }
     };
 
-    public WorkersWatcher(ZooKeeper zk){
-        this.client = zk;
-    }
-
     /**
      * 获得(刷新)worker列表
      * @param tracker
@@ -75,6 +71,10 @@ public class WorkersWatcher implements Watcher{
                 workersGetChildrenCallback,
                 tracker
         );
+    }
+
+    public WorkersWatcher(ZooKeeper zk){
+        this.client = zk;
     }
 
     /**

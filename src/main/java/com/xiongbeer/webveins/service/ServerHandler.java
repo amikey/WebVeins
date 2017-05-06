@@ -1,6 +1,7 @@
 package com.xiongbeer.webveins.service;
 
 import com.xiongbeer.webveins.ZnodeInfo;
+import com.xiongbeer.webveins.zk.task.TaskWatcher;
 import com.xiongbeer.webveins.zk.task.TaskWorker;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -17,10 +18,11 @@ import java.util.Date;
 public class ServerHandler extends ChannelInboundHandlerAdapter{
     private Logger logger = LoggerFactory.getLogger(ServerHandler.class);
     private TaskWorker taskWorker;
-    public ServerHandler(TaskWorker taskWorker){
+    private TaskWatcher taskWatcher;
+    public ServerHandler(TaskWorker taskWorker, TaskWatcher taskWatcher){
         this.taskWorker = taskWorker;
+        this.taskWatcher = taskWatcher;
     }
-
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -31,10 +33,8 @@ public class ServerHandler extends ChannelInboundHandlerAdapter{
 
     /**
      * 爬虫Client返回给Server的信息
-     * 任务成功则将任务状态设置为Finished
-     * 让Manager自动回收
-     * 失败则设置为Waiting，将任务让给其他
-     * Worker
+     * 任务成功则将任务状态设置为Finished，让Manager自动回收
+     * 失败则设置为Waiting，将任务让给其他Worker
      *
      * @param ctx
      * @param msg
@@ -45,10 +45,22 @@ public class ServerHandler extends ChannelInboundHandlerAdapter{
         ProcessDataProto.ProcessData data = (ProcessDataProto.ProcessData) msg;
         String taskPath = ZnodeInfo.NEW_TASK_PATH + data.getUrlFilePath();
         ProcessDataProto.ProcessData.Status status = data.getStatus();
-        if(status == ProcessDataProto.ProcessData.Status.FINNISHED){
-            taskWorker.FinishTask(taskPath);
-        }else if(status == ProcessDataProto.ProcessData.Status.NULL){
-            taskWorker.DiscardTask(taskPath);
+
+        switch (status){
+            case NULL:
+                taskWorker.DiscardTask(taskPath);
+                break;
+            case READY:
+                taskWatcher.waitForTask();
+                System.out.println(taskWorker.takeTask());
+                break;
+            case FINNISHED:
+                taskWorker.FinishTask(taskPath);
+                break;
+            case WAITING:
+                break;
+            default:
+                break;
         }
     }
 

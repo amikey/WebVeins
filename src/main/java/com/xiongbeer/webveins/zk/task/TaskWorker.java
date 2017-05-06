@@ -30,7 +30,7 @@ public class TaskWorker extends Task{
         while(tracker.getStatus() == Tracker.WAITING){
             /* 等待checkTasks任务完成 */
         }
-
+        System.out.println("here!");
         /* 抢夺未被领取的任务 */
         Iterator<Entry<String, Epoch>> iterator = tasksInfo.entrySet().iterator();
         while(iterator.hasNext()){
@@ -51,7 +51,6 @@ public class TaskWorker extends Task{
         if(task != null){
             return true;
         }
-
         return false;
     }
 

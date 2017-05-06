@@ -9,6 +9,7 @@ import com.xiongbeer.webveins.utils.IdProvider;
 import com.xiongbeer.webveins.utils.InitLogger;
 import com.xiongbeer.webveins.utils.Tracker;
 import com.xiongbeer.webveins.zk.manager.ManagerData;
+import com.xiongbeer.webveins.zk.task.TaskWatcher;
 import org.apache.zookeeper.AsyncCallback.VoidCallback;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -53,7 +54,8 @@ public class WebVeinsServer implements Watcher {
 
     public void runServer() throws IOException {
         worker = new Worker(zk, serverId);
-        server = new Server(Configuration.LOCAL_PORT, worker.getTaskWorker());
+        server = new Server(Configuration.LOCAL_PORT,
+                worker.getTaskWorker(), new TaskWatcher(zk));
         server.bind();
     }
 
@@ -94,6 +96,10 @@ public class WebVeinsServer implements Watcher {
 	public void process(WatchedEvent arg0) {}
     
     public static void main(String[] args) throws IOException, InterruptedException {
+        if(SelfTest.check(WebVeinsServer.class.getSimpleName())){
+            System.out.println("[Error] Service has already running");
+            System.exit(1);
+        }
         InitLogger.init();
         WebVeinsServer server = WebVeinsServer.getInstance();
         server.run();

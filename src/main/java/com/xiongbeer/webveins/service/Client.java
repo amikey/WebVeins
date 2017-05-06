@@ -12,6 +12,8 @@ import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.LinkedList;
+
 
 /**
  * Created by shaoxiong on 17-4-23.
@@ -20,6 +22,10 @@ public class Client {
     private static Channel channel;
     private Logger logger = LoggerFactory.getLogger(Client.class);
     private Action action;
+
+    public static void setChannel(Channel channel){
+        Client.channel = channel;
+    }
 
     public void sentData(ProcessDataProto.ProcessData data){
         channel.pipeline().writeAndFlush(data);
@@ -73,6 +79,6 @@ public class Client {
     }
 
     public void disconnect(){
-        channel.close();
+            channel.close();
     }
 }

@@ -2,6 +2,8 @@ package com.xiongbeer.webveins.service;
 
 import com.xiongbeer.webveins.Configuration;
 
+import java.util.List;
+
 /**
  * 提供给用户的使用接口
  *
@@ -35,9 +37,21 @@ public class Bootstrap {
         return this;
     }
 
-    public Bootstrap ready(ProcessDataProto.ProcessData data){
+    public Bootstrap ready(ProcessDataProto.ProcessData data, List<String> newUrls){
+        if(newUrls != null){
+            upLoadNewUrls(newUrls);
+        }
         client.sentData(data);
         return this;
+    }
+
+    /**
+     * 将新的Urls持久化到本地然后上传至HDFS
+     *
+     * @param newUrls
+     */
+    public void upLoadNewUrls(List<String> newUrls){
+
     }
 
     public Bootstrap stopClient(){

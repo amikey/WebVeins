@@ -1,14 +1,15 @@
 option java_outer_classname = "ProcessDataProto";
 
 message ProcessData {
-    required string urlFilePath=1;
+    optional string urlFilePath = 1;
 
     enum Status {
-        NULL=0;
-        WAITING=1;
-        RUNNING=2;
-        FINNISHED=3;
+        NULL = 0;
+        WAITING = 1;
+        RUNNING = 2;
+        FINNISHED = 3;
+        READY = 4;
     }
 
-    required Status status=2 [default=NULL];
+    required Status status = 2 [default=NULL];
 }

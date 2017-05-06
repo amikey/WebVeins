@@ -5,6 +5,7 @@ import com.xiongbeer.webveins.service.BalanceServer;
 import com.xiongbeer.webveins.utils.InitLogger;
 import com.xiongbeer.webveins.zk.manager.Manager;
 import org.apache.zookeeper.*;
+import org.apache.zookeeper.data.Stat;
 
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
@@ -22,7 +23,6 @@ public class Master implements Watcher {
     public ZooKeeper getZK(){
         return zk;
     }
-
 
     void startZK() throws Exception{
         zk = new ZooKeeper(hostPort, 2000, this);
@@ -64,10 +64,6 @@ public class Master implements Watcher {
         //manager.manage();
         //Thread.sleep(15000);
         //manager.manage();
-
-        BalanceServer server = new BalanceServer(8080, manager);
-        server.bind();
         Thread.sleep(60000);
-
     }
 }

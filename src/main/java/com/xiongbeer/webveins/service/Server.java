@@ -1,7 +1,6 @@
 package com.xiongbeer.webveins.service;
 
-import com.xiongbeer.webveins.Configuration;
-import com.xiongbeer.webveins.utils.InitLogger;
+import com.xiongbeer.webveins.zk.task.TaskWatcher;
 import com.xiongbeer.webveins.zk.task.TaskWorker;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -17,8 +16,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.LinkedList;
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * Created by shaoxiong on 17-4-23.
@@ -28,6 +25,7 @@ public class Server {
     private Logger logger = LoggerFactory.getLogger(Server.class);
     private final int port;
     private TaskWorker taskWorker;
+    private TaskWatcher taskWatcher;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
 
@@ -45,9 +43,11 @@ public class Server {
         }
     }
 
-    public Server(int port, TaskWorker taskWorker) throws IOException {
+    public Server(int port, TaskWorker taskWorker, TaskWatcher taskWatcher)
+            throws IOException {
         this.port = port;
         this.taskWorker = taskWorker;
+        this.taskWatcher = taskWatcher;
     }
 
     public void bind(){
@@ -91,38 +91,8 @@ public class Server {
 
             socketChannel.pipeline().addLast(
                     new ProtobufVarint32LengthFieldPrepender());
-
             socketChannel.pipeline().addLast(new ProtobufEncoder());
-
-            socketChannel.pipeline().addLast(new ServerHandler(taskWorker));
-        }
-    }
-
-    public static void main(String[] args){
-        try {
-            InitLogger.init();
-            Configuration.getInstance();
-            final ProcessDataProto.ProcessData.Builder builder =
-                    ProcessDataProto.ProcessData.newBuilder();
-            builder.setStatus(ProcessDataProto.ProcessData.Status.NULL);
-            builder.setUrlFilePath("xasd");
-
-            final Server server = new Server(Configuration.LOCAL_PORT, null);
-
-            TimerTask task = new TimerTask() {
-                @Override
-                public void run() {
-                    server.sentData(builder.build());
-                    System.out.println("sent message");
-                }
-            };
-            Timer timer = new Timer();
-            timer.schedule(task, 10000, 2000);
-
-            server.bind();
-
-        } catch (IOException e) {
-            e.printStackTrace();
+            socketChannel.pipeline().addLast(new ServerHandler(taskWorker, taskWatcher));
         }
     }
 }

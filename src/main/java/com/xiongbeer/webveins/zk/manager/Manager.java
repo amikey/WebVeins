@@ -117,6 +117,7 @@ public class Manager {
      *
      */
     public void manage() throws InterruptedException, IOException, VeinsException.FilterOverflowException {
+        unfinishedTaskList.clear();
         checkTasks();
         checkWorkers();
         publishNewTasks();
