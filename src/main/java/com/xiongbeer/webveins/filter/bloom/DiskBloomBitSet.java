@@ -50,7 +50,7 @@ public class DiskBloomBitSet extends AbstractBitSet{
     /**
      *
      * @param bitIndex
-     * @param flag    占位符，无所谓具体置
+     * @param flag    占位符，无所谓具体值
      * @return
      */
     @Override

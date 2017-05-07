@@ -41,7 +41,6 @@ public class WebVeinsMain implements Watcher{
         String connectString = ip + ':'
                 + Configuration.ZOOKEEPER_MANAGER_ADDRESS.get(ip);
         zk = new ZooKeeper(connectString, 1000, this);
-
         serverId = ip;
     }
     

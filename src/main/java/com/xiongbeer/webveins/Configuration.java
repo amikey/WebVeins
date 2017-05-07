@@ -148,9 +148,9 @@ public class Configuration {
      * 设置默认值
      */
     public void init(){
-        map.put("bloom_save_path", "bloom/urlbloomvalue.dat");
-        map.put("c_bloom_save_path", "bloom/urlbloomvalue_compressed.dat");
-        map.put("r_bloom_save_path", "bloom/urlbloomvalue_ram.dat");
+        map.put("bloom_save_path", "data/bloom/urlbloomvalue.dat");
+        map.put("c_bloom_save_path", "data/bloom/urlbloomvalue_compressed.dat");
+        map.put("r_bloom_save_path", "data/bloom/urlbloomvalue_ram.dat");
 
         map.put("hdfs_root", "/webveins");
         String root = map.get("hdfs_root");
@@ -158,13 +158,14 @@ public class Configuration {
         map.put("finnsed_tasks_urls", root + "/tasks/finnsedtasks");
         map.put("new_tasks_urls", root + "/tasks/newurls");
 
+        /* HDFS的连接路径 */
         map.put("hdfs_system_path", "hdfs://localhost:9000/");
 
         /* bloom过滤器会定时备份，此为其存放的路径 */
         map.put("bloom_backup_path", root + "/bloom");
 
         /* 临时文件（UrlFile）的存放的本地路径 */
-        map.put("temp_dir", "temp");
+        map.put("temp_dir", "data/temp");
 
         /* Worker与ZooKeeper断开连接后，经过DEADTIME后认为Worker死亡 */
         map.put("worker_dead_time" , "5");
@@ -186,7 +187,7 @@ public class Configuration {
         /* 提供均衡负载之前必须首先读取信息，需要一个用于初始化的BalanceServer的ip和端口号 */
         map.put("init_server", "127.0.0.1:2181");
 
-        /* */
+        /* 均衡负载server端默认端口 */
         map.put("balance_server_port", "8080");
     }
 

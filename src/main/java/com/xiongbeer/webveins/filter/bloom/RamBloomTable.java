@@ -6,6 +6,7 @@ import java.nio.channels.FileChannel;
 
 /**
  * 存储在内存中的Bloom过滤器
+ *
  * Created by shaoxiong on 17-4-11.
  */
 public class RamBloomTable extends BloomTable{
@@ -22,6 +23,7 @@ public class RamBloomTable extends BloomTable{
 
     /**
      * 持久化当前状态
+     *
      * @param path
      * @throws IOException
      */
@@ -30,6 +32,7 @@ public class RamBloomTable extends BloomTable{
         FileOutputStream fos = new FileOutputStream(file);
         FileChannel channel = fos.getChannel();
         ByteBuffer outBuffer = ByteBuffer.allocate(1024);
+        /* TODO 受上层依赖影响目前只能读一个byte写一个byte，写的速度有待优化 */
         int limit = outBuffer.limit();
         long index = 0;
         while(index < super.size) {
@@ -48,6 +51,7 @@ public class RamBloomTable extends BloomTable{
 
     /**
      * 读取保存的状态
+     *
      * @param path
      * @throws IOException
      */

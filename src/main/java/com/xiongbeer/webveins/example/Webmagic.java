@@ -28,7 +28,7 @@ public class Webmagic extends Action{
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        bootstrap.ready(builder.build());
+        //bootstrap.ready(builder.build());
     }
 }
 
