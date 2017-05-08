@@ -7,10 +7,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.xiongbeer.webveins.service.BalanceClient;
 import com.xiongbeer.webveins.utils.IdProvider;
 import com.xiongbeer.webveins.utils.InitLogger;
-import com.xiongbeer.webveins.utils.Tracker;
 import com.xiongbeer.webveins.zk.manager.ManagerData;
 import com.xiongbeer.webveins.zk.task.TaskWatcher;
-import org.apache.zookeeper.AsyncCallback.VoidCallback;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -26,12 +24,11 @@ public class WebVeinsServer implements Watcher {
 	private Worker worker;
 	private String serverId;
 	private ZooKeeper zk;
-	private Configuration configuration;
 	private static WebVeinsServer wvServer;
 	private BalanceClient balanceClient;
     private Logger logger = LoggerFactory.getLogger(WebVeinsServer.class);
 	private WebVeinsServer() throws IOException {
-    	configuration = Configuration.getInstance();
+    	Configuration.getInstance();
         zk = new ZooKeeper(Configuration.INIT_SERVER, 1000, this);
         serverId = new IdProvider().getIp();
         balanceClient = new BalanceClient();

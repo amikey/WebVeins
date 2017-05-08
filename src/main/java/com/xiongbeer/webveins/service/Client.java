@@ -26,6 +26,7 @@ public class Client {
     public static void setChannel(Channel channel){
         Client.channel = channel;
     }
+    public static Channel getChannel(){return channel;}
 
     public void sentData(ProcessDataProto.ProcessData data){
         channel.pipeline().writeAndFlush(data);

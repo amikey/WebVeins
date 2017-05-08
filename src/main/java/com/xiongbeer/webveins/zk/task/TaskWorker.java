@@ -14,8 +14,9 @@ import java.util.Map.Entry;
 public class TaskWorker extends Task{
 
     //TODO 构建优先级队列时候可以用到
-    private static LinkedList<String> waitingList = new LinkedList<String>();
-
+    private static List<String> waitingList = new LinkedList<String>();
+    /* 任务黑名单 */
+    private static List<String> blackList = new LinkedList<String>();
     public TaskWorker(ZooKeeper zk) {
         super(zk);
     }
@@ -38,7 +39,7 @@ public class TaskWorker extends Task{
 			Map.Entry entry = (Map.Entry)iterator.next();
             String key = (String) entry.getKey();
             Epoch value = (Epoch) entry.getValue();
-            if(value.getStatus().equals(WAITING)){
+            if(!blackList.contains(value) && value.getStatus().equals(WAITING)){
                 if(setRunningTask(ZnodeInfo.TASKS_PATH + "/" + key,
                         value.getDataVersion())) {
                     task = key;
@@ -73,6 +74,20 @@ public class TaskWorker extends Task{
     }
 
     /**
+     * 清空任务黑名单
+     */
+    public void clearTaskBlackList(){
+        blackList.clear();
+    }
+
+    /**
+     * 从任务黑名单中移除某个任务
+     */
+    public void removeTaskBlakListElement(String taskName){
+        blackList.remove(taskName);
+    }
+
+    /**
      * 完成任务
      *
      * @param taskPath
@@ -88,6 +103,7 @@ public class TaskWorker extends Task{
             e.printStackTrace();
         }
     }
+
 
     /**
      * 尝试将一个task节点置为running状态

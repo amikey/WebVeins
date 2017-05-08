@@ -49,7 +49,7 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        Server.getChannels().remove(ctx.channel());
+        Client.setChannel(null);
     }
 
     @Override
