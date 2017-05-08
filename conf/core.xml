@@ -22,6 +22,6 @@
     </property>
     <property>
         <name>zookeeper_manager_address</name>
-        <value>192.168.0.115:2222</value>
+        <value>192.168.0.115:2181</value>
     </property>
 </configuration>
