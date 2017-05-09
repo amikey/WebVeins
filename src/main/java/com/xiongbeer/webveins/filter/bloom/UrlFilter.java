@@ -52,7 +52,9 @@ public class UrlFilter {
         boolean result = false;
         if(counter < maxElementNums) {
             result = filter.add(url);
-            ++counter;
+            if(result) {
+                ++counter;
+            }
         }
         else{
             throw new VeinsException.FilterOverflowException("Add new url failed.");

@@ -31,6 +31,7 @@ public class Task {
         client = zk;
     }
 
+    @Deprecated
     private ChildrenCallback checkTasksChildrenCallback = new ChildrenCallback() {
         public void processResult(int rc, String path, Object ctx, List<String> list) {
             Tracker tracker = (Tracker)ctx;
@@ -39,16 +40,13 @@ public class Task {
                     checkTasks(tracker);
                     break;
                 case OK:
-                    System.out.println(tracker);
                     /* list中存储的是children节点的name，而不是path */
                     ArrayList<String> tasks = (ArrayList<String>) list;
-                    Iterator<String> iterator = tasks.iterator();
-                    while(iterator.hasNext()){
-                        String name = iterator.next();
+                    for(String task:tasks){
                         try {
-                            checkTask(path + "/" + name);
+                            checkTask(path + "/" + task);
                         } catch (Exception e) {
-                            logger.warn("Check task: " + name + " failed.");
+                            logger.warn("Check task: " + task + " failed.");
                             e.printStackTrace();
                         }
                     }
@@ -64,12 +62,8 @@ public class Task {
         }
     };
 
-    /**
-     * 遍历目前所有任务
-     *
-     * 成功后对每个task进行checkTask
-     */
     @Async
+    @Deprecated
     public void checkTasks(Tracker tracker){
         client.getChildren(
                 ZnodeInfo.TASKS_PATH,
@@ -77,6 +71,33 @@ public class Task {
                 checkTasksChildrenCallback,
                 tracker
         );
+    }
+
+    /**
+     * 遍历目前所有任务
+     *
+     * 成功后对每个task进行checkTask
+     */
+    public void checkTasks(){
+        String path = ZnodeInfo.TASKS_PATH;
+        try {
+            List<String> tasks =
+                    client.getChildren(path, false);
+            for(String task:tasks){
+                try {
+                    checkTask(path + "/" + task);
+                } catch (Exception e) {
+                    logger.warn("Check task: " + task + " failed.");
+                    e.printStackTrace();
+                }
+            }
+        } catch (KeeperException.ConnectionLossException e) {
+            checkTasks();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (KeeperException e) {
+            e.printStackTrace();
+        }
     }
 
     /**

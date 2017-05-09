@@ -9,11 +9,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Set;
 
 /**
- * 提供给用户的使用接口
+ * 提供给用户的使用接口，引导入口
  *
  * Created by shaoxiong on 17-4-26.
  */
@@ -21,16 +20,25 @@ public class Bootstrap {
     private Action action;
     private Client client;
     private static int WIRTE_LENGTH = 1024;
-    private HDFSManager hdfsManager;
-    private IdProvider idProvider;
-    public Bootstrap(Action action){
-        Configuration.getInstance();
-        this.hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_PATH);
-        this.idProvider = new IdProvider();
-        this.action = action;
-
+    private static HDFSManager hdfsManager;
+    private static IdProvider idProvider;
+    private static final String savePath;
+    static{
+    	Configuration.getInstance();
+    	/* 持久化至本地的TEMP_DIR */
+    	savePath = Configuration.TEMP_DIR;
+    	idProvider = new IdProvider();
+    	hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_PATH);
     }
-
+    
+    public Bootstrap(Action action){
+        this.action = action;
+    }
+    
+    public String getSavePath(){
+    	return savePath;
+    }
+    
     public Bootstrap setAction(Action action){
         this.action = action;
         return this;
@@ -50,12 +58,13 @@ public class Bootstrap {
         return this;
     }
 
-    public Bootstrap ready(ProcessDataProto.ProcessData data, List<String> newUrls)
+    public Bootstrap ready()
             throws IOException {
-        if(newUrls != null){
-            upLoadNewUrls(newUrls);
-        }
-        client.sentData(data);
+        ProcessDataProto.ProcessData.Builder builder =
+                ProcessDataProto.ProcessData.newBuilder();
+        builder.setStatus(ProcessDataProto.ProcessData.Status.READY);
+        builder.setUrlFilePath("");
+        client.sentData(builder.build());
         return this;
     }
 
@@ -63,13 +72,12 @@ public class Bootstrap {
      * 将新的Urls持久化到本地然后上传至HDFS
      *
      * @param newUrls
+     * @return 返回本地保存文件的路径
      */
-    public void upLoadNewUrls(List<String> newUrls) throws IOException {
-        /* 持久化至本地的TEMP_DIR */
-        String root = Configuration.TEMP_DIR;
+    public static String upLoadNewUrls(Set<String> newUrls) throws IOException {
         /* 文件名：本机ip+生成时间 */
         /* TODO 在考虑要不要换为对文件生成MD5来命名 */
-        String path = root + File.separator +idProvider.getIp() +
+        String path = savePath + File.separator + idProvider.getIp() +
                 '@' + System.currentTimeMillis();
         File file = new File(path);
         FileOutputStream fos = new FileOutputStream(file);
@@ -92,6 +100,7 @@ public class Bootstrap {
 
         /* 上传至HDFS */
         hdfsManager.upLoad(path, Configuration.NEW_TASKS_URLS);
+        return path;
     }
 
     public Bootstrap stopClient(){

@@ -14,5 +14,5 @@ public abstract class Action {
         this.urlFilePath = urlFilePath;
     }
 
-    abstract public void run(String urlFilePath);
+    abstract public boolean run(String urlFilePath);
 }

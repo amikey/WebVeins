@@ -1,14 +1,17 @@
 package com.xiongbeer.webveins.service;
 
+import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.ZnodeInfo;
 import com.xiongbeer.webveins.zk.task.TaskWatcher;
 import com.xiongbeer.webveins.zk.task.TaskWorker;
+import com.xiongbeer.webveins.zk.worker.Worker;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.Date;
 
 /**
@@ -17,11 +20,13 @@ import java.util.Date;
 @ChannelHandler.Sharable
 public class ServerHandler extends ChannelInboundHandlerAdapter{
     private Logger logger = LoggerFactory.getLogger(ServerHandler.class);
-    private TaskWorker taskWorker;
-    private TaskWatcher taskWatcher;
-    public ServerHandler(TaskWorker taskWorker, TaskWatcher taskWatcher){
-        this.taskWorker = taskWorker;
-        this.taskWatcher = taskWatcher;
+    private Worker worker;
+    private static String currentTask;
+    /* 新任务的Data info的builder */
+    private static ProcessDataProto.ProcessData.Builder builder;
+
+    public ServerHandler(Worker worker){
+        this.worker = worker;
     }
 
     @Override
@@ -43,19 +48,30 @@ public class ServerHandler extends ChannelInboundHandlerAdapter{
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ProcessDataProto.ProcessData data = (ProcessDataProto.ProcessData) msg;
-        String taskPath = ZnodeInfo.NEW_TASK_PATH + data.getUrlFilePath();
+        String taskPath = ZnodeInfo.NEW_TASK_PATH + data.getUrlFileName();
         ProcessDataProto.ProcessData.Status status = data.getStatus();
-
+        builder = ProcessDataProto.ProcessData.newBuilder();
         switch (status){
             case NULL:
-                taskWorker.DiscardTask(taskPath);
+                currentTask = null;
+                logger.warn("Give up the task: " + taskPath);
+                worker.discardTask(taskPath);
                 break;
             case READY:
-                taskWatcher.waitForTask();
-                System.out.println(taskWorker.takeTask());
+                if(currentTask != null){
+                    builder.setStatus(ProcessDataProto.ProcessData.Status.RUNNING);
+                    builder.setUrlFilePath(Configuration.WAITING_TASKS_URLS +
+                            "/" + currentTask);
+                    builder.setUrlFileName(currentTask);
+                    ctx.writeAndFlush(builder.build());
+                    break;
+                }
+                takeNewTask(ctx);
                 break;
             case FINNISHED:
-                taskWorker.FinishTask(taskPath);
+                currentTask = null;
+                worker.finishTask(taskPath);
+                takeNewTask(ctx);
                 break;
             case WAITING:
                 break;
@@ -63,7 +79,6 @@ public class ServerHandler extends ChannelInboundHandlerAdapter{
                 break;
         }
     }
-
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
@@ -76,5 +91,24 @@ public class ServerHandler extends ChannelInboundHandlerAdapter{
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         cause.printStackTrace();
         ctx.close();
+    }
+
+    private void takeNewTask(ChannelHandlerContext ctx){
+        String taskName;
+        while(true) {
+            logger.info("Waiting for task...");
+            worker.waitForTask();
+            logger.info("Trying to get a task...");
+            taskName = worker.takeTask();
+            if(taskName != null) {
+                logger.info("Get task: " + taskName + " crawler start working...");
+                currentTask = taskName;
+                break;
+            }
+        }
+        builder.setStatus(ProcessDataProto.ProcessData.Status.RUNNING);
+        builder.setUrlFilePath(Configuration.WAITING_TASKS_URLS + "/" + taskName);
+        builder.setUrlFileName(taskName);
+        ctx.writeAndFlush(builder.build());
     }
 }

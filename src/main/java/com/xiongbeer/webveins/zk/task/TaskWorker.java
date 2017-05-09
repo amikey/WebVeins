@@ -24,16 +24,12 @@ public class TaskWorker extends Task{
     /**
      * 接管任务
      */
-    public boolean takeTask(){
+    public String takeTask(){
         Tracker tracker = new Tracker();
         String task = null;
-        checkTasks(tracker);
-        while(tracker.getStatus() == Tracker.WAITING){
-            /* 等待checkTasks任务完成 */
-        }
-        System.out.println("here!");
+        checkTasks();
         /* 抢夺未被领取的任务 */
-        Iterator<Entry<String, Epoch>> iterator = tasksInfo.entrySet().iterator();
+        Iterator<Entry<String, Epoch>> iterator = super.tasksInfo.entrySet().iterator();
         while(iterator.hasNext()){
             @SuppressWarnings("rawtypes")
 			Map.Entry entry = (Map.Entry)iterator.next();
@@ -49,10 +45,7 @@ public class TaskWorker extends Task{
         }
 
         /* 如果task不为null就说明拿到了任务 */
-        if(task != null){
-            return true;
-        }
-        return false;
+        return task;
     }
 
     /**
@@ -61,11 +54,11 @@ public class TaskWorker extends Task{
      * @param taskPath
      *
      */
-    public void DiscardTask(String taskPath){
+    public void discardTask(String taskPath){
         try {
             client.setData(taskPath, WAITING.getBytes(), -1);
         } catch (KeeperException.ConnectionLossException e) {
-            DiscardTask(taskPath);
+            discardTask(taskPath);
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (KeeperException e) {
@@ -92,11 +85,11 @@ public class TaskWorker extends Task{
      *
      * @param taskPath
      */
-    public void FinishTask(String taskPath){
+    public void finishTask(String taskPath){
         try {
             client.setData(taskPath, FINISHED.getBytes(), -1);
         } catch (KeeperException.ConnectionLossException e) {
-            DiscardTask(taskPath);
+            discardTask(taskPath);
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (KeeperException e) {
@@ -120,6 +113,8 @@ public class TaskWorker extends Task{
             result = true;
         } catch (KeeperException.ConnectionLossException e) {
             setRunningTask(path, version);
+        } catch (KeeperException.NoNodeException e){
+            super.tasksInfo.remove(path);
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (KeeperException e) {

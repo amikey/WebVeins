@@ -51,8 +51,7 @@ public class WebVeinsServer implements Watcher {
 
     public void runServer() throws IOException {
         worker = new Worker(zk, serverId);
-        server = new Server(Configuration.LOCAL_PORT,
-                worker.getTaskWorker(), new TaskWatcher(zk));
+        server = new Server(Configuration.LOCAL_PORT, worker);
         server.bind();
     }
 

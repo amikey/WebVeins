@@ -117,13 +117,9 @@ public class Manager {
      *
      */
     public void manage() throws InterruptedException, IOException, VeinsException.FilterOverflowException {
-        unfinishedTaskList.clear();
         checkTasks();
         checkWorkers();
         publishNewTasks();
-
-        System.out.println(unfinishedTaskList);
-        System.out.println(workerList);
     }
 
     /**
@@ -466,11 +462,7 @@ public class Manager {
      */
     private void checkTasks() throws InterruptedException, IOException {
         Tracker tracker = new Tracker();
-        taskManager.checkTasks(tracker);
-        while(tracker.getStatus() == Tracker.WAITING){
-            /* 等待完成 */
-            Thread.sleep(50);
-        }
+        taskManager.checkTasks();
         HashMap<String, Epoch> tasks = taskManager.getTasksInfo();
         Iterator<Entry<String, Epoch>> iterator = tasks.entrySet().iterator();
         while(iterator.hasNext()){
@@ -483,12 +475,13 @@ public class Manager {
                     unfinishedTaskList.remove(key);
                 }
                 hdfsManager.moveHDFSFile(Configuration.WAITING_TASKS_URLS + "/" + key,
-                        Configuration.FINNSED_TASKS_URLS + "/" + key);
+                        Configuration.FINISHED_TASKS_URLS + "/" + key);
                 taskManager.releaseTask(ZnodeInfo.TASKS_PATH + '/' + key);
-
             }
             else if(value.getStatus().equals(Task.RUNNING)){
                 unfinishedTaskList.put(key, value);
+            } else{
+                unfinishedTaskList.remove(key);
             }
         }
     }
@@ -509,6 +502,7 @@ public class Manager {
         }
         workersWatcher.reflushWorkerStatus();
         workerList = workersWatcher.getWorkersList();
+        System.out.println(workerList);
         while(iterator.hasNext()){
             @SuppressWarnings("rawtypes")
 			Map.Entry entry = (Map.Entry) iterator.next();
@@ -531,6 +525,7 @@ public class Manager {
      *  发布新的任务
      */
     private void  publishNewTasks() throws IOException, VeinsException.FilterOverflowException {
+        String tempSavePath = Configuration.BLOOM_TEMP_DIR;
         LinkedList<String> urlFiles = hdfsManager.listChildren(
                 Configuration.NEW_TASKS_URLS,false);
         if(urlFiles.size() == 0){
@@ -542,7 +537,7 @@ public class Manager {
             将hdfs下新任务文件下载到本地
          */
         for(String filePath:urlFiles){
-            hdfsManager.downLoad(filePath, Configuration.TEMP_DIR);
+            hdfsManager.downLoad(filePath, tempSavePath);
         }
 
 
@@ -561,20 +556,16 @@ public class Manager {
         */
         for(String filePath:urlFiles) {
             String filName = getFileName(filePath);
-            FileInputStream fis = new FileInputStream(Configuration.TEMP_DIR +
+            FileInputStream fis = new FileInputStream(tempSavePath +
                                         '/' + filName);
             FileChannel inChannel = fis.getChannel();
             ByteBuffer inBuffer = ByteBuffer.allocate(1024);
-
             FileOutputStream fos = new FileOutputStream(
-                                Configuration.TEMP_DIR + '/'+ filName + ".bak");
+                    tempSavePath + '/'+ filName + ".bak");
             FileChannel outChannel = fos.getChannel();
             ByteBuffer outBuffer = ByteBuffer.allocate(1024);
-
-
             StringBuilder builder = new StringBuilder();
             String line;
-
             char ch;
             while(inChannel.read(inBuffer) != -1){
                 inBuffer.flip();
@@ -616,10 +607,8 @@ public class Manager {
             fos.close();
         }
 
-
-
         /* 删除多余文件 */
-        File  file = new File(Configuration.TEMP_DIR);
+        File  file = new File(tempSavePath);
         File[] urls = file.listFiles();
         for(File url:urls){
             if(url.isFile()){
@@ -642,7 +631,6 @@ public class Manager {
             }
         }
 
-
         /*
             上传新任务
             成功后发布任务
@@ -655,7 +643,6 @@ public class Manager {
                 taskManager.submit(url.getName());
             }
         }
-
 
         /*
             如果bloom过滤器是ram类型的，还需要备份它
@@ -679,7 +666,6 @@ public class Manager {
             hdfsManager.deleteHDFSFile(urlPath);
         }
     }
-
 
     /**
      * 提取path中的FileName

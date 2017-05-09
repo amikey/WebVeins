@@ -1,6 +1,7 @@
 package com.xiongbeer.webveins.zk.worker;
 
 import com.xiongbeer.webveins.ZnodeInfo;
+import com.xiongbeer.webveins.zk.task.TaskWatcher;
 import com.xiongbeer.webveins.zk.task.TaskWorker;
 import org.apache.zookeeper.AsyncCallback.*;
 import org.apache.zookeeper.CreateMode;
@@ -16,20 +17,17 @@ import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
  * Created by shaoxiong on 17-4-9.
  */
 public class Worker {
-    public enum Status{
-        Initializing, Working, STOPED
-    }
     private ZooKeeper client;
     private String serverId;
     private String workerPath;
     private Logger logger = LoggerFactory.getLogger(Worker.class);
     private TaskWorker taskWorker;
-    private Status status;
+    private TaskWatcher taskWatcher;
 
     public Worker(ZooKeeper zk, String serverId){
-        status = Status.Initializing;
         client = zk;
         taskWorker = new TaskWorker(zk);
+        taskWatcher = new TaskWatcher(zk);
         this.serverId = serverId;
         signUpWorker();
     }
@@ -38,7 +36,6 @@ public class Worker {
         logger.info("Trying to stop worker." + serverId + " ...");
         try {
             client.delete(workerPath, -1);
-            status = Status.STOPED;
             logger.info("Stop " + serverId + " success.");
         } catch (KeeperException.ConnectionLossException e){
           logger.warn("Connection loss, retry ...");
@@ -50,16 +47,47 @@ public class Worker {
         }
     }
 
-    public Status getStatus(){
-        return status;
-    }
-
     public TaskWorker getTaskWorker(){
         return taskWorker;
     }
 
+    public TaskWatcher getTaskWatcher(){return taskWatcher;}
+
     public void resetZK(ZooKeeper client){
         this.client = client;
+    }
+
+    public void waitForTask(){
+        taskWatcher.waitForTask();
+    }
+
+    public void setStatus(String taskName){
+        try {
+            client.setData(workerPath, taskName.getBytes(), -1);
+        } catch (KeeperException.ConnectionLossException e) {
+            setStatus(taskName);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (KeeperException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public String takeTask(){
+        String taskName;
+        taskName = taskWorker.takeTask();
+        if(taskName != null){
+            setStatus(taskName);
+        }
+        return taskName;
+    }
+
+    public void discardTask(String taskPath){
+        taskWorker.discardTask(taskPath);;
+    }
+
+    public void finishTask(String taskPath){
+        taskWorker.finishTask(taskPath);
     }
 
     private StringCallback workerCreateCallback = new StringCallback() {
@@ -71,7 +99,6 @@ public class Worker {
                 case OK:
                     logger.info("Worker sign up success by server." + serverId);
                     workerPath = path;
-                    status = Status.Working;
                     break;
                 default:
                     logger.error("Something went wrong when sign up worker.",

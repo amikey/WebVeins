@@ -2,6 +2,7 @@ package com.xiongbeer.webveins.service;
 
 import com.xiongbeer.webveins.zk.task.TaskWatcher;
 import com.xiongbeer.webveins.zk.task.TaskWorker;
+import com.xiongbeer.webveins.zk.worker.Worker;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -24,8 +25,7 @@ public class Server {
     private static LinkedList<Channel> channels = new LinkedList<Channel>();
     private Logger logger = LoggerFactory.getLogger(Server.class);
     private final int port;
-    private TaskWorker taskWorker;
-    private TaskWatcher taskWatcher;
+    private Worker worker;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
 
@@ -43,11 +43,11 @@ public class Server {
         }
     }
 
-    public Server(int port, TaskWorker taskWorker, TaskWatcher taskWatcher)
+    public Server(int port, Worker worker)
             throws IOException {
         this.port = port;
-        this.taskWorker = taskWorker;
-        this.taskWatcher = taskWatcher;
+        this.worker = worker;
+
     }
 
     public void bind(){
@@ -92,7 +92,7 @@ public class Server {
             socketChannel.pipeline().addLast(
                     new ProtobufVarint32LengthFieldPrepender());
             socketChannel.pipeline().addLast(new ProtobufEncoder());
-            socketChannel.pipeline().addLast(new ServerHandler(taskWorker, taskWatcher));
+            socketChannel.pipeline().addLast(new ServerHandler(worker));
         }
     }
 }

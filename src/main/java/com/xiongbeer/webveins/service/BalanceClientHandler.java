@@ -26,9 +26,10 @@ public class BalanceClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        ZooKeeper zk = new ZooKeeper(managerData.getZKConnectString(), 2000,wvServer);
+        String connectString = managerData.getZKConnectString();
+        ZooKeeper zk = new ZooKeeper(connectString, 2000,wvServer);
         wvServer.setZK(zk);
-
+        logger.info("[ZK Server] Connect to " + connectString);
         new Thread("wvLocalServer"){
             @Override
             public void run(){

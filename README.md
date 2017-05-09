@@ -25,7 +25,7 @@ WebVeins是一个将单机爬虫快速整合为分布式爬虫的框架
      ├── wvWorkers
      └── wvTasks
 
-Managers下注册着分发员active_manager，还可以提供standby_manager:在active_manager挂掉的清况下，接管它的工作，让系统不会阻塞  
+Managers下注册着分发员active_manager，还可以提供standby_manager：在active_manager挂掉的清况下，接管它的工作，让系统不会阻塞  
 Manager除了负责过滤和分发新的任务，也负责维护任务表单，监控Workers的状态  
 Workers不依赖于Manager，他们只关心有没有新的任务可以领取，但是当manager死亡以后不能发布新的任务时，他们就会阻塞，他们在启动的时候会在 wvWorkers 下注册自己，一旦死亡，Manager可以立刻知道，然后将他执行的任务重新分配给其他状态正常的任务节点  
 关于Tasks，一个新的Task诞生的时候便会在 wvTasks 下永久注册自己，只有确保完成以后才会被删除，Task的状态分为3种:
@@ -47,7 +47,7 @@ bloom下存储着bloom过滤器的缓存文件
 tasks下则是用于共享的url文件，其文件名就是任务名  
 
 那么故障处理是怎么实现的呢？
-分布式系统肯定会遇到单点故障，甚至集群崩溃，为了不丢失上次的状态，主要实现的方法是实现关键步骤操作的原子性
+分布式系统肯定会遇到单点故障，甚至集群崩溃，为了不丢失上次的状态，主要实现的方法是实现关键步骤操作的原子性  
 单点故障这里可以分为
 - Manager死亡
 - Worker死亡
@@ -79,7 +79,7 @@ Worker死亡带来的主要问题是会占据Task不释放，这里Manager会定
 1. clone本项目
 2. 将本项目的根目录添加到环境变量中
 ```
-$ cat > 'WEBVEINS_HOME=$YOUR_CLONE_PATH'
+$ cat 'WEBVEINS_HOME=$YOUR_CLONE_PATH' >> /etc/profile
 ```
 3. 调整配置文件 *$WEBVEINS_HOME/conf/core.xml*
 4. 启动zookeeper服务

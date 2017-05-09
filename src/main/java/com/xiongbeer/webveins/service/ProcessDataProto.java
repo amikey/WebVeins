@@ -26,11 +26,25 @@ public final class ProcessDataProto {
         getUrlFilePathBytes();
 
     /**
-     * <code>required .ProcessData.Status status = 2 [default = NULL];</code>
+     * <code>optional string urlFileName = 2;</code>
+     */
+    boolean hasUrlFileName();
+    /**
+     * <code>optional string urlFileName = 2;</code>
+     */
+    java.lang.String getUrlFileName();
+    /**
+     * <code>optional string urlFileName = 2;</code>
+     */
+    com.google.protobuf.ByteString
+        getUrlFileNameBytes();
+
+    /**
+     * <code>required .ProcessData.Status status = 3 [default = NULL];</code>
      */
     boolean hasStatus();
     /**
-     * <code>required .ProcessData.Status status = 2 [default = NULL];</code>
+     * <code>required .ProcessData.Status status = 3 [default = NULL];</code>
      */
     ProcessDataProto.ProcessData.Status getStatus();
   }
@@ -92,13 +106,19 @@ public final class ProcessDataProto {
               urlFilePath_ = bs;
               break;
             }
-            case 16: {
+            case 18: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000002;
+              urlFileName_ = bs;
+              break;
+            }
+            case 24: {
               int rawValue = input.readEnum();
               ProcessDataProto.ProcessData.Status value = ProcessDataProto.ProcessData.Status.valueOf(rawValue);
               if (value == null) {
-                unknownFields.mergeVarintField(2, rawValue);
+                unknownFields.mergeVarintField(3, rawValue);
               } else {
-                bitField0_ |= 0x00000002;
+                bitField0_ |= 0x00000004;
                 status_ = value;
               }
               break;
@@ -294,16 +314,58 @@ public final class ProcessDataProto {
       }
     }
 
-    public static final int STATUS_FIELD_NUMBER = 2;
-    private ProcessDataProto.ProcessData.Status status_;
+    public static final int URLFILENAME_FIELD_NUMBER = 2;
+    private java.lang.Object urlFileName_;
     /**
-     * <code>required .ProcessData.Status status = 2 [default = NULL];</code>
+     * <code>optional string urlFileName = 2;</code>
      */
-    public boolean hasStatus() {
+    public boolean hasUrlFileName() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     /**
-     * <code>required .ProcessData.Status status = 2 [default = NULL];</code>
+     * <code>optional string urlFileName = 2;</code>
+     */
+    public java.lang.String getUrlFileName() {
+      java.lang.Object ref = urlFileName_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          urlFileName_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string urlFileName = 2;</code>
+     */
+    public com.google.protobuf.ByteString
+        getUrlFileNameBytes() {
+      java.lang.Object ref = urlFileName_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        urlFileName_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int STATUS_FIELD_NUMBER = 3;
+    private ProcessDataProto.ProcessData.Status status_;
+    /**
+     * <code>required .ProcessData.Status status = 3 [default = NULL];</code>
+     */
+    public boolean hasStatus() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>required .ProcessData.Status status = 3 [default = NULL];</code>
      */
     public ProcessDataProto.ProcessData.Status getStatus() {
       return status_;
@@ -311,6 +373,7 @@ public final class ProcessDataProto {
 
     private void initFields() {
       urlFilePath_ = "";
+      urlFileName_ = "";
       status_ = ProcessDataProto.ProcessData.Status.NULL;
     }
     private byte memoizedIsInitialized = -1;
@@ -334,7 +397,10 @@ public final class ProcessDataProto {
         output.writeBytes(1, getUrlFilePathBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeEnum(2, status_.getNumber());
+        output.writeBytes(2, getUrlFileNameBytes());
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeEnum(3, status_.getNumber());
       }
       getUnknownFields().writeTo(output);
     }
@@ -351,7 +417,11 @@ public final class ProcessDataProto {
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeEnumSize(2, status_.getNumber());
+          .computeBytesSize(2, getUrlFileNameBytes());
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeEnumSize(3, status_.getNumber());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -472,8 +542,10 @@ public final class ProcessDataProto {
         super.clear();
         urlFilePath_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
-        status_ = ProcessDataProto.ProcessData.Status.NULL;
+        urlFileName_ = "";
         bitField0_ = (bitField0_ & ~0x00000002);
+        status_ = ProcessDataProto.ProcessData.Status.NULL;
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -509,6 +581,10 @@ public final class ProcessDataProto {
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
+        result.urlFileName_ = urlFileName_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
         result.status_ = status_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
@@ -529,6 +605,11 @@ public final class ProcessDataProto {
         if (other.hasUrlFilePath()) {
           bitField0_ |= 0x00000001;
           urlFilePath_ = other.urlFilePath_;
+          onChanged();
+        }
+        if (other.hasUrlFileName()) {
+          bitField0_ |= 0x00000002;
+          urlFileName_ = other.urlFileName_;
           onChanged();
         }
         if (other.hasStatus()) {
@@ -641,36 +722,112 @@ public final class ProcessDataProto {
         return this;
       }
 
-      private ProcessDataProto.ProcessData.Status status_ = ProcessDataProto.ProcessData.Status.NULL;
+      private java.lang.Object urlFileName_ = "";
       /**
-       * <code>required .ProcessData.Status status = 2 [default = NULL];</code>
+       * <code>optional string urlFileName = 2;</code>
        */
-      public boolean hasStatus() {
+      public boolean hasUrlFileName() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>required .ProcessData.Status status = 2 [default = NULL];</code>
+       * <code>optional string urlFileName = 2;</code>
+       */
+      public java.lang.String getUrlFileName() {
+        java.lang.Object ref = urlFileName_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            urlFileName_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string urlFileName = 2;</code>
+       */
+      public com.google.protobuf.ByteString
+          getUrlFileNameBytes() {
+        java.lang.Object ref = urlFileName_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          urlFileName_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string urlFileName = 2;</code>
+       */
+      public Builder setUrlFileName(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000002;
+        urlFileName_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string urlFileName = 2;</code>
+       */
+      public Builder clearUrlFileName() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        urlFileName_ = getDefaultInstance().getUrlFileName();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string urlFileName = 2;</code>
+       */
+      public Builder setUrlFileNameBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000002;
+        urlFileName_ = value;
+        onChanged();
+        return this;
+      }
+
+      private ProcessDataProto.ProcessData.Status status_ = ProcessDataProto.ProcessData.Status.NULL;
+      /**
+       * <code>required .ProcessData.Status status = 3 [default = NULL];</code>
+       */
+      public boolean hasStatus() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>required .ProcessData.Status status = 3 [default = NULL];</code>
        */
       public ProcessDataProto.ProcessData.Status getStatus() {
         return status_;
       }
       /**
-       * <code>required .ProcessData.Status status = 2 [default = NULL];</code>
+       * <code>required .ProcessData.Status status = 3 [default = NULL];</code>
        */
       public Builder setStatus(ProcessDataProto.ProcessData.Status value) {
         if (value == null) {
           throw new NullPointerException();
         }
-        bitField0_ |= 0x00000002;
+        bitField0_ |= 0x00000004;
         status_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>required .ProcessData.Status status = 2 [default = NULL];</code>
+       * <code>required .ProcessData.Status status = 3 [default = NULL];</code>
        */
       public Builder clearStatus() {
-        bitField0_ = (bitField0_ & ~0x00000002);
+        bitField0_ = (bitField0_ & ~0x00000004);
         status_ = ProcessDataProto.ProcessData.Status.NULL;
         onChanged();
         return this;
@@ -701,11 +858,12 @@ public final class ProcessDataProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\021ProcessData.proto\"\225\001\n\013ProcessData\022\023\n\013u" +
-      "rlFilePath\030\001 \001(\t\022)\n\006status\030\002 \002(\0162\023.Proce" +
-      "ssData.Status:\004NULL\"F\n\006Status\022\010\n\004NULL\020\000\022" +
-      "\013\n\007WAITING\020\001\022\013\n\007RUNNING\020\002\022\r\n\tFINNISHED\020\003" +
-      "\022\t\n\005READY\020\004B\022B\020ProcessDataProto"
+      "\n\021ProcessData.proto\"\252\001\n\013ProcessData\022\023\n\013u" +
+      "rlFilePath\030\001 \001(\t\022\023\n\013urlFileName\030\002 \001(\t\022)\n" +
+      "\006status\030\003 \002(\0162\023.ProcessData.Status:\004NULL" +
+      "\"F\n\006Status\022\010\n\004NULL\020\000\022\013\n\007WAITING\020\001\022\013\n\007RUN" +
+      "NING\020\002\022\r\n\tFINNISHED\020\003\022\t\n\005READY\020\004B\022B\020Proc" +
+      "essDataProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -724,7 +882,7 @@ public final class ProcessDataProto {
     internal_static_ProcessData_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_ProcessData_descriptor,
-        new java.lang.String[] { "UrlFilePath", "Status", });
+        new java.lang.String[] { "UrlFilePath", "UrlFileName", "Status", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

@@ -1,5 +1,7 @@
 package com.xiongbeer.webveins.service;
 
+import com.xiongbeer.webveins.Configuration;
+import com.xiongbeer.webveins.saver.HDFSManager;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -7,6 +9,8 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Date;
 
 /**
@@ -16,6 +20,7 @@ import java.util.Date;
 public class ClientHandler extends ChannelInboundHandlerAdapter {
     private Logger logger = LoggerFactory.getLogger(ClientHandler.class);
     private Action action;
+    private static HDFSManager hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_PATH);
 
     public ClientHandler(Action action){
         this.action = action;
@@ -39,16 +44,33 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
      * @throws Exception
      */
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws IOException {
         ProcessDataProto.ProcessData data =
                 (ProcessDataProto.ProcessData) msg;
         String urlFilePath = data.getUrlFilePath();
-        action.run(urlFilePath);
-        logger.info("Crawler get the task success at {}", new Date().toString());
+        logger.info("Crawler get the task:" + urlFilePath
+                + "success at {}", new Date().toString());
+        hdfsManager.downLoad(urlFilePath, Configuration.TEMP_DIR);
+        /*
+            true 标识run成功，返回READY状态，领取下一个任务
+            false 标识run失败，返回NULL状态，放弃该任务，让其他爬虫去领取该任务
+         */
+        boolean flag = action.run(Configuration.TEMP_DIR + '/'
+                + data.getUrlFileName());
+        ProcessDataProto.ProcessData.Builder builder =
+                ProcessDataProto.ProcessData.newBuilder();
+        builder.setUrlFilePath("");
+        builder.setUrlFileName(data.getUrlFileName());
+        builder.setStatus(flag?ProcessDataProto.ProcessData.Status.FINNISHED
+                :ProcessDataProto.ProcessData.Status.NULL);
+        String result = flag?"successed":"failed";
+        logger.info("Run task " + result);
+        ctx.writeAndFlush(builder.build());
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        logger.warn("Server disconnect.");
         Client.setChannel(null);
     }
 

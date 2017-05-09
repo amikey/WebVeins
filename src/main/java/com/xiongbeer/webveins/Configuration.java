@@ -44,11 +44,12 @@ public class Configuration {
     public static String R_BLOOM_SAVE_PATH;
     public static String HDFS_ROOT;
     public static String WAITING_TASKS_URLS;
-    public static String FINNSED_TASKS_URLS;
+    public static String FINISHED_TASKS_URLS;
     public static String NEW_TASKS_URLS;
     public static String BLOOM_BACKUP_PATH;
     public static String HDFS_SYSTEM_PATH;
     public static String TEMP_DIR;
+    public static String BLOOM_TEMP_DIR;
     public static int WORKER_DEAD_TIME;
     public static int CHECK_TIME;
     public static String TEMP_SUFFIX = ".bak";
@@ -56,8 +57,10 @@ public class Configuration {
     public static int LOCAL_PORT;
     public static String INIT_SERVER;
     public static int BALANCE_SERVER_PORT;
+    public static String LOCAL_NEW_URLS_SAVE_PATH;
+
     private static UrlFilter URL_FILTER;
-    
+
     private Configuration() throws SAXException, IOException, ParserConfigurationException {
         /* 读取配置信息失败，后续的任务肯定无法进行了 */
     	logger.info("Checking...");
@@ -76,11 +79,12 @@ public class Configuration {
 
         HDFS_ROOT = map.get("hdfs_root");
         WAITING_TASKS_URLS = map.get("waiting_tasks_urls");
-        FINNSED_TASKS_URLS = map.get("finnsed_tasks_urls");
+        FINISHED_TASKS_URLS = map.get("finished_tasks_urls");
         NEW_TASKS_URLS = map.get("new_tasks_urls");
         BLOOM_BACKUP_PATH = map.get("bloom_backup_path");
 
         TEMP_DIR = map.get("temp_dir");
+        BLOOM_TEMP_DIR = map.get("bloom_temp_dir");
 
         WORKER_DEAD_TIME = Integer.parseInt(map.get("worker_dead_time"));
         CHECK_TIME = Integer.parseInt(map.get("check_time"));
@@ -155,7 +159,7 @@ public class Configuration {
         map.put("hdfs_root", "/webveins");
         String root = map.get("hdfs_root");
         map.put("waiting_tasks_urls", root + "/tasks/waitingtasks");
-        map.put("finnsed_tasks_urls", root + "/tasks/finnsedtasks");
+        map.put("finished_tasks_urls", root + "/tasks/finishedtasks");
         map.put("new_tasks_urls", root + "/tasks/newurls");
 
         /* HDFS的连接路径 */
@@ -183,7 +187,9 @@ public class Configuration {
         map.put("bloom_filter_fpr", "0.0000001");
         /* bloom过滤器的预计最大容量 */
         map.put("bloom_filter_enums", "1000000");
-        
+        /* bloom过滤器过滤url文件的暂存位置 */
+        map.put("bloom_temp_dir", "data/bloom/temp");
+
         /* 提供均衡负载之前必须首先读取信息，需要一个用于初始化的BalanceServer的ip和端口号 */
         map.put("init_server", "127.0.0.1:2181");
 
