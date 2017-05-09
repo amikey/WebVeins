@@ -91,11 +91,11 @@ $ cat 'WEBVEINS_HOME=$YOUR_CLONE_PATH' >> /etc/profile
 5. 启动hdfs服务
 6. 启动Manager服务
 ```
-$ $WEBVEINS_HOME/wvManager.sh
+$ $WEBVEINS_HOME/bin/wvManager.sh
 ```
 7. 启动Server服务
 ```
-$ $WEBVEINS_HOME/wvServer.sh
+$ $WEBVEINS_HOME/bin/wvServer.sh
 ```
 8. 编写自己的爬虫端
 
