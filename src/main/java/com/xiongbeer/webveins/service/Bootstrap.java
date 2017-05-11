@@ -25,6 +25,7 @@ public class Bootstrap {
     private static final String savePath;
     static{
     	Configuration.getInstance();
+
     	/* 持久化至本地的TEMP_DIR */
     	savePath = Configuration.TEMP_DIR;
     	idProvider = new IdProvider();

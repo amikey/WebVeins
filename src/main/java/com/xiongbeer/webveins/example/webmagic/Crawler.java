@@ -60,7 +60,6 @@ public class Crawler extends Action implements PageProcessor {
         Pattern pattern = Pattern.compile("(?<=<a href=\")(?!" + selfUrl
                 + ")https://en.wikipedia.org/wiki/.*?(?=\")");
         Matcher matcher = pattern.matcher(html);
-        String mainName = "";
         while(matcher.find()){
         	newUrls.add(matcher.group());
         }

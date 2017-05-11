@@ -19,8 +19,9 @@ public class HDFSManager {
     public HDFSManager(String hdfsFileSystem){
         Configuration conf = new Configuration();
         /*
-         	这里设置这个属性的原因是在打jar包时hadoop-common中的services会覆盖hadoop-hdfs中的，
+         	打jar包时hadoop-common中的services会覆盖hadoop-hdfs中的services，
          	所以运行时会抛出java.io.IOException: No FileSystem for scheme: hdfs
+         	设置这个属性便不会发生这个问题
          */
         conf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
         try {
@@ -73,20 +74,11 @@ public class HDFSManager {
     /**
      * 判断文件是否存在
      *
-     * @param path 文件路径
-     * @param fileSystem 文件系统
+     * @param path HDFS中的文件路径
      * @return
      */
-    public boolean exist(String path, String fileSystem) throws IOException {
-        boolean bool = false;
-        if(fileSystem == "hdfs") {
-            bool = fs.exists(new Path(path));
-        }
-        else{
-            File file = new File(path);
-            return file.exists();
-        }
-        return bool;
+    public boolean exist(String path) throws IOException {
+        return fs.exists(new Path(path));
     }
 
     /**
@@ -113,8 +105,8 @@ public class HDFSManager {
 
     /**
      * 列出目录下的文件
-     * 注意，只会列出文件
-     * 不会列出目录
+     *
+     * 注意：只会列出文件不会列出目录
      *
      * @param src 目标文件夹路径
      * @param recursive 是否递归

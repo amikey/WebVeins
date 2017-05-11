@@ -1,4 +1,4 @@
-package com.xiongbeer.webveins;
+package com.xiongbeer.webveins.exception;
 
 /**
  * Created by shaoxiong on 17-4-15.

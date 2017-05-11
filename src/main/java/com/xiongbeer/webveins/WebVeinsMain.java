@@ -1,6 +1,9 @@
 package com.xiongbeer.webveins;
 
-import com.xiongbeer.webveins.filter.bloom.UrlFilter;
+import com.xiongbeer.webveins.check.SelfTest;
+import com.xiongbeer.webveins.exception.VeinsException;
+import com.xiongbeer.webveins.filter.UrlFilter;
+
 import com.xiongbeer.webveins.service.BalanceServer;
 import com.xiongbeer.webveins.utils.IdProvider;
 import com.xiongbeer.webveins.utils.InitLogger;
@@ -40,7 +43,8 @@ public class WebVeinsMain implements Watcher{
 
         String connectString = ip + ':'
                 + Configuration.ZOOKEEPER_MANAGER_ADDRESS.get(ip);
-        zk = new ZooKeeper(connectString, 1000, this);
+        zk = new ZooKeeper(connectString,
+                Configuration.ZK_SESSION_TIMEOUT, this);
         serverId = ip;
     }
     

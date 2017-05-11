@@ -4,11 +4,11 @@ import java.io.IOException;
 import java.util.*;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.xiongbeer.webveins.check.SelfTest;
 import com.xiongbeer.webveins.service.BalanceClient;
 import com.xiongbeer.webveins.utils.IdProvider;
 import com.xiongbeer.webveins.utils.InitLogger;
 import com.xiongbeer.webveins.zk.manager.ManagerData;
-import com.xiongbeer.webveins.zk.task.TaskWatcher;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -29,7 +29,8 @@ public class WebVeinsServer implements Watcher {
     private Logger logger = LoggerFactory.getLogger(WebVeinsServer.class);
 	private WebVeinsServer() throws IOException {
     	Configuration.getInstance();
-        zk = new ZooKeeper(Configuration.INIT_SERVER, 1000, this);
+        zk = new ZooKeeper(Configuration.INIT_SERVER,
+                Configuration.ZK_SESSION_TIMEOUT, this);
         serverId = new IdProvider().getIp();
         balanceClient = new BalanceClient();
     }

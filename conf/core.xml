@@ -5,22 +5,6 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="config.xsd">
     <property>
-        <name>bloom_save_path</name>
-        <value>data/temp/urlbloomvalue.dat</value>
-    </property>
-    <property>
-        <name>c_bloom_save_path</name>
-        <value>data/temp/urlbloomvalue_compressed.dat</value>
-    </property>
-    <property>
-        <name>check_time</name>
-        <value>45</value>
-    </property>
-    <property>
-        <name>temp_dir</name>
-        <value>data/temp</value>
-    </property>
-    <property>
         <name>zookeeper_manager_address</name>
         <value>192.168.0.115:2181</value>
     </property>

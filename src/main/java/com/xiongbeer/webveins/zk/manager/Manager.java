@@ -1,12 +1,15 @@
 package com.xiongbeer.webveins.zk.manager;
 
+import com.google.common.io.Files;
+import com.google.common.io.LineProcessor;
 import com.xiongbeer.webveins.*;
-import com.xiongbeer.webveins.filter.bloom.RamBloomTable;
-import com.xiongbeer.webveins.filter.bloom.UrlFilter;
+import com.xiongbeer.webveins.exception.VeinsException;
+import com.xiongbeer.webveins.filter.UrlFilter;
 import com.xiongbeer.webveins.saver.HDFSManager;
 import com.xiongbeer.webveins.service.BalanceDataProto;
 import com.xiongbeer.webveins.utils.Async;
 import com.xiongbeer.webveins.utils.IdProvider;
+import com.xiongbeer.webveins.utils.MD5Maker;
 import com.xiongbeer.webveins.utils.Tracker;
 import com.xiongbeer.webveins.zk.task.Epoch;
 import com.xiongbeer.webveins.zk.task.Task;
@@ -21,13 +24,13 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
@@ -35,7 +38,7 @@ import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
  * @author shaoxiong
  * Manager用于管理整个事务
  * 其中active_manager为活动的Server，而standby manager
- * 监听active manager，一旦活动节点失效则接管其工作。
+ * 监听active manager，一旦活动节点失效则接管其工作
  */
 public class Manager {
     /**
@@ -237,6 +240,7 @@ public class Manager {
                 default:
                     logger.error("Something went wrong when recoving for active manager.",
                             KeeperException.create(Code.get(rc), path));
+                    break;
             }
         }
     };
@@ -333,7 +337,9 @@ public class Manager {
                     }
                     break;
                 default:
-
+                    logger.error("Something went wrong when check standby manager itself.",
+                            KeeperException.create(Code.get(rc), path));
+                    break;
             }
         }
     };
@@ -372,7 +378,7 @@ public class Manager {
                 default:
                     logger.error("Something went wrong when running for active manager.",
                             KeeperException.create(Code.get(rc), path));
-
+                    break;
             }
         }
     };
@@ -408,6 +414,7 @@ public class Manager {
                 default:
                     logger.error("Something went wrong when running for stand manager.",
                             KeeperException.create(Code.get(rc), path));
+                    break;
             }
         }
     };
@@ -437,6 +444,8 @@ public class Manager {
                     recoverActiveManager();
                     break;
 			default:
+                logger.error("Something went wrong when check active manager.",
+                        KeeperException.create(Code.get(rc), path));
 				break;
             }
         }
@@ -492,17 +501,10 @@ public class Manager {
      * 它之前领取的任务。
      */
     private void checkWorkers() throws InterruptedException {
-        Tracker tracker = new Tracker();
         Iterator<Entry<String, Epoch>> iterator = unfinishedTaskList.entrySet().iterator();
-        tracker.setStatus(Tracker.WAITING);
-        workersWatcher.getWorkers(tracker);
-        while(tracker.getStatus() == Tracker.WAITING){
-            /* 等待完成 */
-            Thread.sleep(50);
-        }
+        workersWatcher.getWorkers();
         workersWatcher.reflushWorkerStatus();
         workerList = workersWatcher.getWorkersList();
-        System.out.println(workerList);
         while(iterator.hasNext()){
             @SuppressWarnings("rawtypes")
 			Map.Entry entry = (Map.Entry) iterator.next();
@@ -526,90 +528,58 @@ public class Manager {
      */
     private void  publishNewTasks() throws IOException, VeinsException.FilterOverflowException {
         String tempSavePath = Configuration.BLOOM_TEMP_DIR;
-        LinkedList<String> urlFiles = hdfsManager.listChildren(
+        List<String> urlFiles = hdfsManager.listChildren(
                 Configuration.NEW_TASKS_URLS,false);
         if(urlFiles.size() == 0){
-            logger.info("No new urls to assign");
+            /* 没有需要处理的新URL文件 */
             return;
         }
 
+        urlFiles = downloadTaskFile(urlFiles, tempSavePath);
         /*
-            将hdfs下新任务文件下载到本地
-         */
-        for(String filePath:urlFiles){
-            hdfsManager.downLoad(filePath, tempSavePath);
-        }
-
-
-        /*
-             TODO 目前的方案不是很合理
-
+            后续整体工作流程：
             对每个文件进行逐个按行读取，在开始读的同时也会
             在本地新建一个同名的.bak文件每读一行后会尝试将
             其录入过滤器，若成功则说明此url是新的url，会将
             其写入.bak文件中。完毕后会删除其他非.bak的文件
-            ，并去掉.bak文件的.bak后缀。
+            ，再去掉.bak文件的.bak后缀。
             然后将处理后的所有文件上传到hdfs上，确保上传成
             功后才会到znode中发布任务
-
-            特别注意：读取的URL中目前不支持中文
         */
-        for(String filePath:urlFiles) {
-            String filName = getFileName(filePath);
-            FileInputStream fis = new FileInputStream(tempSavePath +
-                                        '/' + filName);
-            FileChannel inChannel = fis.getChannel();
-            ByteBuffer inBuffer = ByteBuffer.allocate(1024);
-            FileOutputStream fos = new FileOutputStream(
-                    tempSavePath + '/'+ filName + ".bak");
-            FileChannel outChannel = fos.getChannel();
-            ByteBuffer outBuffer = ByteBuffer.allocate(1024);
-            StringBuilder builder = new StringBuilder();
-            String line;
-            char ch;
-            while(inChannel.read(inBuffer) != -1){
-                inBuffer.flip();
-                while(inBuffer.hasRemaining()){
-                    ch = (char) inBuffer.get();
-                    if(ch != '\n'){
-                        builder.append(ch);
-                    }
-                    else{
-                        line = builder.toString();
-                        /*
-                            向过滤器添加URL，成功
-                            则说明之前不存在，将其
-                            加入新任务文件中
-                        */
-                        if(filter.add(line)){
-                            line += '\n';
-                            byte[] bytes = line.getBytes();
-                            int len = bytes.length;
-                            int limit = outBuffer.limit();
-                            int index = 0;
-                            while(index < len) {
-                                while (index < len && outBuffer.position() < limit){
-                                    outBuffer.put(bytes[index++]);
-                                }
-                                outBuffer.flip();
-                                outChannel.write(outBuffer);
-                                outBuffer.clear();
-                            }
-                        }
-                        builder = new StringBuilder();
-                    }
-                }
-                inBuffer.clear();
-            }
-            inChannel.close();
-            outChannel.close();
-            fis.close();
-            fos.close();
-        }
+        filterUrlAndSave(urlFiles, tempSavePath);
+        File file = new File(tempSavePath);
+        deleteNormalFiles(file);
+        removeTempSuffix(file);
+        submitNewTasks(file);
 
-        /* 删除多余文件 */
-        File  file = new File(tempSavePath);
-        File[] urls = file.listFiles();
+        /*
+            TODO：
+            当文件很大时会占用大量IO
+            需要另外一种方式来备份
+            目前想参照fsimage的模式
+            这个需要阅读其实现源码
+        */
+        /* 备份 */
+        String bloomFilePath = filter.save(Configuration.BLOOM_SAVE_PATH);
+        hdfsManager.upLoad(bloomFilePath,
+                Configuration.BLOOM_BACKUP_PATH);
+
+        /*
+            在hdfs上删除处理
+            完毕的的new url文件
+         */
+        for(String urlPath:urlFiles){
+            hdfsManager.deleteHDFSFile(urlPath);
+        }
+    }
+
+    /**
+     * 删除多余文件(不以Configuration.TEMP_SUFFIX结尾的文件)
+     *
+     * @param tempSaveDir
+     */
+    private void deleteNormalFiles(File tempSaveDir){
+        File[] urls = tempSaveDir.listFiles();
         for(File url:urls){
             if(url.isFile()){
                 String path = url.getAbsolutePath();
@@ -618,66 +588,134 @@ public class Manager {
                 }
             }
         }
+    }
 
-        /* 去除.bak后缀 */
-        urls = file.listFiles();
-        for(File url:urls){
-            if(url.isFile()){
-                String path = url.getAbsolutePath();
+    /**
+     * 去除文件的Configuration.TEMP_SUFFIX后缀
+     *
+     * @param dir
+     */
+    private void removeTempSuffix(File dir){
+        File[] files = dir.listFiles();
+        for(File file:files){
+            if(file.isFile()){
+                String path = file.getAbsolutePath();
                 if(path.endsWith(Configuration.TEMP_SUFFIX)){
-                    url.renameTo(new File(path.substring(0,
+                    file.renameTo(new File(path.substring(0,
                             path.length() - Configuration.TEMP_SUFFIX.length())));
                 }
             }
         }
-
-        /*
-            上传新任务
-            成功后发布任务
-         */
-        urls = file.listFiles();
-        for(File url:urls){
-            if(!url.isDirectory()) {
-                hdfsManager.upLoad(url.getAbsolutePath(),
-                        Configuration.WAITING_TASKS_URLS +  '/' + url.getName());
-                taskManager.submit(url.getName());
-            }
-        }
-
-        /*
-            如果bloom过滤器是ram类型的，还需要备份它
-
-            注意：如果存储的url达到过千万级别，
-            而且要求精度较高，请不要使用ram_bloom
-         */
-        if(filter.getMode().equals(UrlFilter.CreateMode.RAM)){
-            RamBloomTable table = (RamBloomTable) filter.getTable();
-            table.save(Configuration.R_BLOOM_SAVE_PATH);
-            hdfsManager.upLoad(Configuration.R_BLOOM_SAVE_PATH,
-                    Configuration.BLOOM_BACKUP_PATH);
-        }
-
-        /*
-            在hdfs上删除处理
-            完毕的的new url文件
-         */
-
-        for(String urlPath:urlFiles){
-            hdfsManager.deleteHDFSFile(urlPath);
-        }
     }
 
     /**
-     * 提取path中的FileName
+     * 上传新任务到HDFS，然后发布任务到ZooKeeper中
      *
-     * @param path
-     * @return
+     * @param dir
+     * @throws IOException
      */
-    private String getFileName(String path){
-        String[] items = path.split("/");
-        if(items == null){
-            return null;
+    private void submitNewTasks(File dir) throws IOException {
+        File[] files = dir.listFiles();
+        for(File file:files){
+            if(!file.isDirectory()) {
+                String filePath = file.getAbsolutePath();
+                /*
+                    若文件已存在则直接跳过
+                    可以这么做的原因是文件名是根据内容生成的md5码
+                    相同则基本可以确定就是同一个文件，没必要重复上传
+                */
+                if(!hdfsManager.exist(filePath)) {
+                    hdfsManager.upLoad(filePath,
+                            Configuration.WAITING_TASKS_URLS + '/' + file.getName());
+                }
+                taskManager.submit(file.getName());
+            }
         }
-        return items[items.length-1];
+    }
+
+    private List<String> downloadTaskFile(List<String> urlFiles
+            , String savePath) throws IOException {
+        List<String> localUrlFiles = new LinkedList<String>();
+        /* 将hdfs下新任务文件下载到本地 */
+        for(String filePath:urlFiles){
+            /*
+                若文件已存在则直接跳过
+                可以这么做的原因是文件名是根据内容生成的md5码
+                相同则基本可以确定就是同一个文件，没必要重复下载
+            */
+            File temp = new File(filePath);
+            File localFile = new File(savePath
+                    + File.separator + temp.getName());
+            if(!localFile.exists()) {
+                hdfsManager.downLoad(filePath, savePath);
+            }
+            localUrlFiles.add(localFile.getAbsolutePath());
+        }
+        return localUrlFiles;
+    }
+
+    /**
+     * 遍历下载下来的保存着url的文件
+     * 以行为单位将其放入过滤器
+     * 过滤后的url会被以固定的数量
+     * 切分为若干个文件
+     *
+     * @param urlFiles
+     * @throws IOException
+     */
+    private void filterUrlAndSave(List<String> urlFiles
+            , final String saveDir) throws IOException {
+        /* 用AtomicLong的原因只是为了能在匿名类中计数 */
+        final AtomicLong newUrlCounter = new AtomicLong(0);
+        final StringBuilder newUrls = new StringBuilder();
+        final MD5Maker md5 = new MD5Maker();
+        for(String filePath:urlFiles) {
+            /* 每读一定数量的URLS就将其写入新的文件 */
+            Files.readLines(new File(filePath),
+                    Charset.defaultCharset(), new LineProcessor<Object>() {
+                @Override
+                public boolean processLine(String line) throws IOException {
+                    String newLine = line + System.getProperty("line.separator");
+                    /* 到filter中确认url是不是已经存在，已经存在就丢弃 */
+                    if(filter.put(line)){
+                        md5.update(newLine);
+                        if(newUrlCounter.get() <= Configuration.TASK_URLS_NUM) {
+                            newUrls.append(newLine);
+                            newUrlCounter.incrementAndGet();
+                        } else {
+                            /* 文件名是根据其内容生成的md5值 */
+                            String urlFileName = saveDir + File.separator
+                                    + md5.toString()
+                                    + Configuration.TEMP_SUFFIX;
+                            Files.write(newUrls.toString().getBytes()
+                                    , new File(urlFileName));
+                            newUrls.delete(0, newUrls.length());
+                            newUrlCounter.set(0);
+                            md5.reset();
+                        }
+                    }
+                    return true;
+                }
+
+                @Override
+                public Object getResult() {
+                    /* 处理残留的urls */
+                    if(newUrls.length() > 0){
+                        String urlFileName = saveDir + File.separator
+                                + md5.toString()
+                                + Configuration.TEMP_SUFFIX;
+                        try {
+                            Files.write(newUrls.toString().getBytes()
+                                    , new File(urlFileName));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        newUrls.delete(0, newUrls.length());
+                        newUrlCounter.set(0);
+                    }
+                    return null;
+                }
+            });
+        }
     }
 }

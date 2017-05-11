@@ -14,11 +14,10 @@ import static org.junit.Assert.assertEquals;
  * Created by shaoxiong on 17-5-4.
  */
 public class ManagerDataTest {
-    BalanceDataProto.BalanceData.Builder builder =
-            BalanceDataProto.BalanceData.newBuilder();
-
     @Test
     public void sortTest() throws InvalidProtocolBufferException {
+        BalanceDataProto.BalanceData.Builder builder =
+            BalanceDataProto.BalanceData.newBuilder();
         builder.setZkPort(0);
         builder.setZkIp("");
         builder.setIp("");
