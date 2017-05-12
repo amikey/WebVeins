@@ -5,7 +5,7 @@ import java.util.*;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.xiongbeer.webveins.check.SelfTest;
-import com.xiongbeer.webveins.service.BalanceClient;
+import com.xiongbeer.webveins.service.balance.BalanceClient;
 import com.xiongbeer.webveins.utils.IdProvider;
 import com.xiongbeer.webveins.utils.InitLogger;
 import com.xiongbeer.webveins.zk.manager.ManagerData;
@@ -14,7 +14,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 
-import com.xiongbeer.webveins.service.Server;
+import com.xiongbeer.webveins.service.local.Server;
 import com.xiongbeer.webveins.zk.worker.Worker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

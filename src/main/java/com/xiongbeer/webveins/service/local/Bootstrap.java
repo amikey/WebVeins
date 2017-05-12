@@ -1,4 +1,4 @@
-package com.xiongbeer.webveins.service;
+package com.xiongbeer.webveins.service.local;
 
 import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.saver.HDFSManager;

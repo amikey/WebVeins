@@ -4,7 +4,7 @@ import com.xiongbeer.webveins.check.SelfTest;
 import com.xiongbeer.webveins.exception.VeinsException;
 import com.xiongbeer.webveins.filter.UrlFilter;
 
-import com.xiongbeer.webveins.service.BalanceServer;
+import com.xiongbeer.webveins.service.balance.BalanceServer;
 import com.xiongbeer.webveins.utils.IdProvider;
 import com.xiongbeer.webveins.utils.InitLogger;
 import com.xiongbeer.webveins.zk.manager.Manager;

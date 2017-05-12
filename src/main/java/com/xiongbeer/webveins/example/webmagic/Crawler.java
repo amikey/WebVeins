@@ -1,15 +1,14 @@
 package com.xiongbeer.webveins.example.webmagic;
 
-import com.xiongbeer.webveins.service.Action;
-import com.xiongbeer.webveins.service.Bootstrap;
-import com.xiongbeer.webveins.service.ProcessDataProto;
+import com.xiongbeer.webveins.service.local.Action;
+import com.xiongbeer.webveins.service.local.Bootstrap;
+import com.xiongbeer.webveins.service.local.ProcessDataProto;
 import com.xiongbeer.webveins.utils.InitLogger;
 import com.xiongbeer.webveins.utils.UrlFileLoader;
 
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.Spider;
-import us.codecraft.webmagic.pipeline.FilePipeline;
 import us.codecraft.webmagic.processor.PageProcessor;
 
 import java.io.IOException;

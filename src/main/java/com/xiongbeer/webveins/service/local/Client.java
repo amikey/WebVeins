@@ -1,4 +1,4 @@
-package com.xiongbeer.webveins.service;
+package com.xiongbeer.webveins.service.local;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -11,8 +11,6 @@ import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.LinkedList;
 
 
 /**

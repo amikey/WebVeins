@@ -1,4 +1,4 @@
-package com.xiongbeer.webveins.service;
+package com.xiongbeer.webveins.service.balance;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.xiongbeer.webveins.ZnodeInfo;

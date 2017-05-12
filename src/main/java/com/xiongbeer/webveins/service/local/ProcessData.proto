@@ -10,6 +10,6 @@ message ProcessData {
         FINNISHED = 3;
         READY = 4;
     }
-
-    required Status status = 3 [default=NULL];
+    optional Status status = 3 [default=NULL];
+    optional string command = 4;
 }

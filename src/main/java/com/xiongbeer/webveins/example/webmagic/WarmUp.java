@@ -6,9 +6,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.xiongbeer.webveins.service.Action;
-import com.xiongbeer.webveins.service.Bootstrap;
-import com.xiongbeer.webveins.service.ProcessDataProto;
+import com.xiongbeer.webveins.service.local.Bootstrap;
 import com.xiongbeer.webveins.utils.InitLogger;
 
 import us.codecraft.webmagic.Page;

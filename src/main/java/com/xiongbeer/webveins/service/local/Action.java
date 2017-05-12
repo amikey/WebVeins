@@ -1,4 +1,4 @@
-package com.xiongbeer.webveins.service;
+package com.xiongbeer.webveins.service.local;
 
 /**
  * Created by shaoxiong on 17-4-26.

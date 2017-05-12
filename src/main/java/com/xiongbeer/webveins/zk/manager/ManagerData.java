@@ -1,7 +1,7 @@
 package com.xiongbeer.webveins.zk.manager;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.xiongbeer.webveins.service.BalanceDataProto;
+import com.xiongbeer.webveins.service.balance.BalanceDataProto;
 
 /**
  * Created by shaoxiong on 17-5-2.

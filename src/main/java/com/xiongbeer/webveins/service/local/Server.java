@@ -1,7 +1,5 @@
-package com.xiongbeer.webveins.service;
+package com.xiongbeer.webveins.service.local;
 
-import com.xiongbeer.webveins.zk.task.TaskWatcher;
-import com.xiongbeer.webveins.zk.task.TaskWorker;
 import com.xiongbeer.webveins.zk.worker.Worker;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;

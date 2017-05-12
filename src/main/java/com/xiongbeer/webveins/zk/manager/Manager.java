@@ -6,7 +6,7 @@ import com.xiongbeer.webveins.*;
 import com.xiongbeer.webveins.exception.VeinsException;
 import com.xiongbeer.webveins.filter.UrlFilter;
 import com.xiongbeer.webveins.saver.HDFSManager;
-import com.xiongbeer.webveins.service.BalanceDataProto;
+import com.xiongbeer.webveins.service.balance.BalanceDataProto;
 import com.xiongbeer.webveins.utils.Async;
 import com.xiongbeer.webveins.utils.IdProvider;
 import com.xiongbeer.webveins.utils.MD5Maker;

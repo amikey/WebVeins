@@ -1,4 +1,4 @@
-package com.xiongbeer.webveins.service;
+package com.xiongbeer.webveins.service.balance;
 
 import com.xiongbeer.webveins.zk.manager.Manager;
 import io.netty.channel.ChannelHandler;
