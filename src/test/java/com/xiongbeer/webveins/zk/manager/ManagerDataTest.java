@@ -1,7 +1,7 @@
 package com.xiongbeer.webveins.zk.manager;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.xiongbeer.webveins.service.BalanceDataProto;
+import com.xiongbeer.webveins.service.balance.BalanceDataProto;
 import org.junit.Test;
 
 import java.util.Collections;
