@@ -3,6 +3,7 @@ package com.xiongbeer.webveins.filter;
 import com.xiongbeer.webveins.Configuration;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -107,10 +108,11 @@ public class BloomFileInfo {
      */
     @Override
     public String toString(){
+        DecimalFormat df = new DecimalFormat("0.###############");
         return Configuration.BLOOM_CACHE_FILE_PREFIX
                 + PREFIX + urlCounter
                 + INFIX  + expectedInsertions
-                + INFIX + fpp.doubleValue() + SUFFIX
+                + INFIX + df.format(fpp.doubleValue()) + SUFFIX
                 + Configuration.BLOOM_CACHE_FILE_SUFFIX;
     }
 

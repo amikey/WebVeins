@@ -35,7 +35,8 @@ public class WebVeinsServer implements Watcher {
         balanceClient = new BalanceClient();
     }
     
-    public static synchronized WebVeinsServer getInstance() throws IOException {
+    public static synchronized WebVeinsServer getInstance()
+            throws IOException {
         if(wvServer == null){
         	wvServer = new WebVeinsServer();
         }
@@ -56,13 +57,15 @@ public class WebVeinsServer implements Watcher {
         server.bind();
     }
 
-    public void connectBalanceManager() throws KeeperException, InterruptedException {
+    public void connectBalanceManager()
+            throws KeeperException, InterruptedException {
         ArrayList<String> children =
-                (ArrayList<String>) zk.getChildren(ZnodeInfo.MANAGERS_PATH, false);
+                (ArrayList<String>) zk.getChildren(
+                        ZnodeInfo.MANAGERS_PATH, false);
         List<ManagerData> managerData = new LinkedList<ManagerData>();
         for(String child:children){
-            byte[] data = zk.getData(ZnodeInfo.MANAGERS_PATH + '/' + child,
-                    false, null);
+            byte[] data = zk.getData(ZnodeInfo.MANAGERS_PATH
+                            + '/' + child, false, null);
             try {
                 managerData.add(new ManagerData(data));
             } catch (InvalidProtocolBufferException e) {
@@ -92,7 +95,8 @@ public class WebVeinsServer implements Watcher {
     @Override
 	public void process(WatchedEvent arg0) {}
     
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args)
+            throws IOException, InterruptedException {
         if(SelfTest.check(WebVeinsServer.class.getSimpleName())){
             System.out.println("[Error] Service has already running");
             System.exit(1);

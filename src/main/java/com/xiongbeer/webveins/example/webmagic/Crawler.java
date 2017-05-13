@@ -2,7 +2,6 @@ package com.xiongbeer.webveins.example.webmagic;
 
 import com.xiongbeer.webveins.service.local.Action;
 import com.xiongbeer.webveins.service.local.Bootstrap;
-import com.xiongbeer.webveins.service.local.ProcessDataProto;
 import com.xiongbeer.webveins.utils.InitLogger;
 import com.xiongbeer.webveins.utils.UrlFileLoader;
 
@@ -27,8 +26,6 @@ public class Crawler extends Action implements PageProcessor {
             .setUserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36");
     private static Set<String> newUrls = new HashSet<String>();
     private static Spider spider = Spider.create(new Crawler());
-    private static ProcessDataProto.ProcessData.Builder builder =
-            ProcessDataProto.ProcessData.newBuilder();
 
     @Override
     public boolean run(String urlFilePath) {

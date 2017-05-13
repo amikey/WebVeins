@@ -1,5 +1,7 @@
 package com.xiongbeer.webveins.api.jsondata;
 
+import java.util.Date;
+
 /**
  * Created by shaoxiong on 17-5-12.
  */
@@ -15,16 +17,16 @@ public class TaskJson implements JData {
     /* 失败次数 */
     private int failedTimes;
 
-    public long getCtime() {
-        return cTime;
+    public String getCtime() {
+        return new Date(cTime).toString();
     }
 
     public void setCtime(long cTime) {
         this.cTime = cTime;
     }
 
-    public long getMtime() {
-        return mTime;
+    public String getMtime() {
+        return new Date(mTime).toString();
     }
 
     public void setMtime(long mTime) {

@@ -14,7 +14,6 @@ public class BalanceClient {
     public void connect(ManagerData managerData, WebVeinsServer wvServer) {
         String host = managerData.getIp();
         int port = managerData.getPort();
-
         EventLoopGroup group = new NioEventLoopGroup();
         try {
             io.netty.bootstrap.Bootstrap b = new io.netty.bootstrap.Bootstrap();

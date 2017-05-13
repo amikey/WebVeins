@@ -2,6 +2,7 @@ package com.xiongbeer.webveins.service.local;
 
 import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.saver.HDFSManager;
+import com.xiongbeer.webveins.service.ProcessDataProto;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;

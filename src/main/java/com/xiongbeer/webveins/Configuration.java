@@ -55,17 +55,19 @@ public class Configuration {
     public static String BLOOM_CACHE_FILE_SUFFIX = ".dat";
     public static String LOCAL_HOST;
     public static int LOCAL_PORT;
+    public static int LOCAL_SHELL_PORT;
     public static String INIT_SERVER;
     public static int BALANCE_SERVER_PORT;
     public static String LOCAL_NEW_URLS_SAVE_PATH;
     public static int TASK_URLS_NUM;
     public static int ZK_SESSION_TIMEOUT;
+    public static String HOME_PATH;
     private static UrlFilter URL_FILTER;
 
     private Configuration() throws SAXException, IOException, ParserConfigurationException {
         /* 获取环境变量 */
-        String home = System.getenv("WEBVEINS_HOME");
-        confPath = home + "conf/";
+    	HOME_PATH = System.getenv("WEBVEINS_HOME");
+        confPath = HOME_PATH + "conf/";
 
         /* 读取配置信息失败，后续的任务肯定无法进行了 */
     	logger.info("Checking...");
@@ -88,6 +90,7 @@ public class Configuration {
         BLOOM_TEMP_DIR = map.get("bloom_temp_dir");
         LOCAL_HOST = map.get("local_host");
         LOCAL_PORT = Integer.parseInt(map.get("local_port"));
+        LOCAL_SHELL_PORT = Integer.parseInt(map.get("local_shell_port"));
         HDFS_SYSTEM_PATH = map.get("hdfs_system_path");
         INIT_SERVER = map.get("init_server");
 
@@ -157,7 +160,7 @@ public class Configuration {
      * 设置默认值
      */
     public void init(){
-        map.put("bloom_save_path", "data/bloom");
+        map.put("bloom_save_path", HOME_PATH + "/data/bloom");
         map.put("hdfs_root", "/webveins");
         String root = map.get("hdfs_root");
         map.put("waiting_tasks_urls", root + "/tasks/waitingtasks");
@@ -168,15 +171,17 @@ public class Configuration {
         /* bloom过滤器会定时备份，此为其存放的路径 */
         map.put("bloom_backup_path", root + "/bloom");
         /* 临时文件（UrlFile）的存放的本地路径 */
-        map.put("temp_dir", "data/temp");
+        map.put("temp_dir", HOME_PATH + "/data/temp");
         /* Worker与ZooKeeper断开连接后，经过DEADTIME后认为Worker死亡 */
         map.put("worker_dead_time" , "5");
         /* Manager进行检查的间隔 */
-        map.put("check_time", "2");
+        map.put("check_time", "45");
         /* 本机ip Worker节点需要配置 */
         map.put("local_host" , "127.0.0.1");
         /* Worker服务使用的端口 Worker节点需要配置 */
         map.put("local_port", "22000");
+        /* 命令行API服务所使用的端口 */
+        map.put("local_shell_port", "22001");
         /* bloom过滤器的模式 */
         map.put("bloom_filter", "ram");
         /* bloom过滤器出错的概率 */
@@ -184,7 +189,7 @@ public class Configuration {
         /* bloom过滤器的预计最大容量 */
         map.put("bloom_filter_enums", "1000000");
         /* bloom过滤器过滤url文件的暂存位置 */
-        map.put("bloom_temp_dir", "data/bloom/temp");
+        map.put("bloom_temp_dir", HOME_PATH + "/data/bloom/temp");
         /* 提供均衡负载之前必须首先读取信息，需要一个用于初始化的BalanceServer的ip和端口号 */
         map.put("init_server", "127.0.0.1:2181");
         /* 均衡负载server端默认端口 */

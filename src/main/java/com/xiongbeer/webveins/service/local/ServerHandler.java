@@ -2,6 +2,7 @@ package com.xiongbeer.webveins.service.local;
 
 import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.ZnodeInfo;
+import com.xiongbeer.webveins.service.ProcessDataProto;
 import com.xiongbeer.webveins.zk.worker.Worker;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;

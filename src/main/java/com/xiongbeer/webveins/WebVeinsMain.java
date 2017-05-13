@@ -48,7 +48,8 @@ public class WebVeinsMain implements Watcher{
         serverId = ip;
     }
     
-    public static synchronized WebVeinsMain getInstance() throws IOException {
+    public static synchronized WebVeinsMain getInstance()
+            throws IOException {
         if(wvMain == null){
             wvMain = new WebVeinsMain();
         }
@@ -90,7 +91,8 @@ public class WebVeinsMain implements Watcher{
             @Override
             public void run(){
                 try {
-                    balanceServer = new BalanceServer(Configuration.BALANCE_SERVER_PORT, manager);
+                    balanceServer = new BalanceServer(
+                            Configuration.BALANCE_SERVER_PORT, manager);
                     balanceServer.bind();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -99,8 +101,6 @@ public class WebVeinsMain implements Watcher{
             }
         }.start();
     }
-
-
 
     @Override
     public void process(WatchedEvent watchedEvent) {}

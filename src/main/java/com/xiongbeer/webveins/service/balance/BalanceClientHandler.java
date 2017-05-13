@@ -2,6 +2,7 @@ package com.xiongbeer.webveins.service.balance;
 
 import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.WebVeinsServer;
+import com.xiongbeer.webveins.service.api.APIServer;
 import com.xiongbeer.webveins.zk.manager.ManagerData;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -28,10 +29,11 @@ public class BalanceClientHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         String connectString = managerData.getZKConnectString();
-        ZooKeeper zk = new ZooKeeper(connectString,
+        final ZooKeeper zk = new ZooKeeper(connectString,
                 Configuration.ZK_SESSION_TIMEOUT, wvServer);
         wvServer.setZK(zk);
         logger.info("[ZK Server] Connect to " + connectString);
+        /* 主服务 */
         new Thread("wvLocalServer"){
             @Override
             public void run(){
@@ -44,6 +46,17 @@ public class BalanceClientHandler extends ChannelInboundHandlerAdapter {
                 }
             }
         }.start();
+
+        /* 本地命令行服务 */
+        Thread apiService = new Thread("apiService"){
+            @Override
+            public void run() {
+                APIServer apiServer = new APIServer(zk);
+                apiServer.run(Configuration.LOCAL_SHELL_PORT);
+            }
+        };
+        apiService.setDaemon(true);
+        apiService.start();
     }
 
     @Override

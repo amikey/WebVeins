@@ -12,4 +12,5 @@ message ProcessData {
     }
     optional Status status = 3 [default=NULL];
     optional string command = 4;
+    optional string commandReasult = 5;
 }

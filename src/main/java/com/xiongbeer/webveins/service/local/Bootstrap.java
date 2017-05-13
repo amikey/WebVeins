@@ -2,6 +2,7 @@ package com.xiongbeer.webveins.service.local;
 
 import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.saver.HDFSManager;
+import com.xiongbeer.webveins.service.ProcessDataProto;
 import com.xiongbeer.webveins.utils.IdProvider;
 
 import java.io.File;

@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
  * Created by shaoxiong on 17-5-10.
  */
 public class UrlFilter {
-    private BloomFilter bloomFilter;
+    private BloomFilter<CharSequence> bloomFilter;
     private AtomicLong urlCounter;
     private double fpp;
     private long expectedInsertions;

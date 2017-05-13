@@ -1,5 +1,6 @@
 package com.xiongbeer.webveins.service.local;
 
+import com.xiongbeer.webveins.service.ProcessDataProto;
 import com.xiongbeer.webveins.zk.worker.Worker;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -60,7 +61,6 @@ public class Server {
 
             final ChannelFuture future = bootStrap.bind(port).sync();
             future.channel().closeFuture().sync();
-
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {

@@ -10,7 +10,6 @@ import com.xiongbeer.webveins.service.balance.BalanceDataProto;
 import com.xiongbeer.webveins.utils.Async;
 import com.xiongbeer.webveins.utils.IdProvider;
 import com.xiongbeer.webveins.utils.MD5Maker;
-import com.xiongbeer.webveins.utils.Tracker;
 import com.xiongbeer.webveins.zk.task.Epoch;
 import com.xiongbeer.webveins.zk.task.Task;
 import com.xiongbeer.webveins.zk.task.TaskManager;
@@ -294,12 +293,6 @@ public class Manager {
                         recoverActiveManager();
                         break;
                     }
-                    if(status == Status.ELECTED){
-                        logger.info("Active manager working well. watching by itself");
-                    }
-                    else {
-                        logger.info("Active manager working well. watching by " + serverId);
-                    }
                     break;
                 default:
                     checkActiveManager();
@@ -314,9 +307,11 @@ public class Manager {
      */
     @Async
     private void activeManagerExists(){
+        Watcher watcher = status==Status.NOT_ELECTED?
+                actManagerExistsWatcher:null;
         zk.exists(
                 ZnodeInfo.ACTIVE_MANAGER_PATH,
-                actManagerExistsWatcher,
+                watcher,
                 actManagerExistsCallback,
                 null
         );
@@ -470,7 +465,6 @@ public class Manager {
      * 存放url的文件移出等待队列
      */
     private void checkTasks() throws InterruptedException, IOException {
-        Tracker tracker = new Tracker();
         taskManager.checkTasks();
         HashMap<String, Epoch> tasks = taskManager.getTasksInfo();
         Iterator<Entry<String, Epoch>> iterator = tasks.entrySet().iterator();
