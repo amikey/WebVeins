@@ -522,7 +522,7 @@ public class Manager {
      */
     private void  publishNewTasks() throws IOException, VeinsException.FilterOverflowException {
         String tempSavePath = Configuration.BLOOM_TEMP_DIR;
-        List<String> urlFiles = hdfsManager.listChildren(
+        List<String> urlFiles = hdfsManager.listFiles(
                 Configuration.NEW_TASKS_URLS,false);
         if(urlFiles.size() == 0){
             /* 没有需要处理的新URL文件 */

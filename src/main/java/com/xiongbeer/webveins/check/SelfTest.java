@@ -1,5 +1,11 @@
 package com.xiongbeer.webveins.check;
 
+import com.xiongbeer.webveins.Configuration;
+import com.xiongbeer.webveins.Test;
+import com.xiongbeer.webveins.utils.IdProvider;
+import com.xiongbeer.webveins.utils.InitLogger;
+import org.apache.zookeeper.ZooKeeper;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -35,6 +41,7 @@ public class SelfTest {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         return result;
     }
 }

@@ -1,6 +1,7 @@
 package com.xiongbeer.webveins.service.api;
 
 import com.xiongbeer.webveins.Configuration;
+import com.xiongbeer.webveins.utils.Color;
 import com.xiongbeer.webveins.utils.InitLogger;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
@@ -57,9 +58,13 @@ public class APIClient {
             command.append(" ");
         }
         System.out.println("[info] command: " + command.toString());
-        //APIClient client = new APIClient(command.toString());
-        APIClient client = new APIClient("listtasks");
-        client.run(port);
-
+        APIClient client = new APIClient(command.toString());
+        try {
+            client.run(port);
+        } catch (Throwable e) {
+            System.out.println(Color.error("[Error] Connect to api server failed:"
+                    + " Please make sure local server service has started."));
+            System.exit(1);
+        }
     }
 }

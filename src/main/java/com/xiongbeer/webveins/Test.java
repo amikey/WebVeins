@@ -16,11 +16,14 @@ import io.bretty.console.table.Table;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.fusesource.jansi.AnsiConsole;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.EnumSet;
+
+import static org.fusesource.jansi.Ansi.ansi;
 
 /**
  * Created by shaoxiong on 17-4-9.
@@ -28,12 +31,8 @@ import java.util.EnumSet;
 public class Test implements Watcher{
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        Test test = new Test();
-        ZooKeeper zk = new ZooKeeper("127.0.0.1:2181", 2000, test);
-        TaskInfo info = new TaskInfo(zk);
-        info.getCurrentTasks();
-        OutputFormatter formatter = new OutputFormatter(info.getInfo());
-        System.out.println(formatter.format());
+        AnsiConsole.systemInstall();
+        System.out.println(ansi().eraseScreen().fgRed().a("asdasdasd").reset());
     }
 
     @Override

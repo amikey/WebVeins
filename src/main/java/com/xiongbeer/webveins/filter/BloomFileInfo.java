@@ -139,4 +139,13 @@ public class BloomFileInfo {
     public void setFpp(Double fpp) {
         this.fpp = fpp;
     }
+
+    /**
+     * TODO
+     *
+     * @return
+     */
+    public String getUniqueID(){
+        return "NULL";
+    }
 }

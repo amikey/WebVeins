@@ -34,7 +34,6 @@ public class WebVeinsMain implements Watcher{
     private BalanceServer balanceServer;
     private WebVeinsMain() throws IOException {
     	configuration = Configuration.getInstance();
-
         /* 检查本机ip是否与zk的ip匹配 */
         if(!Configuration.ZOOKEEPER_MANAGER_ADDRESS
                 .containsKey(ip)){
@@ -45,6 +44,7 @@ public class WebVeinsMain implements Watcher{
                 + Configuration.ZOOKEEPER_MANAGER_ADDRESS.get(ip);
         zk = new ZooKeeper(connectString,
                 Configuration.ZK_SESSION_TIMEOUT, this);
+
         serverId = ip;
     }
     

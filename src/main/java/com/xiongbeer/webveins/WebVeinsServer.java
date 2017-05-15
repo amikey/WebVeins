@@ -27,6 +27,7 @@ public class WebVeinsServer implements Watcher {
 	private static WebVeinsServer wvServer;
 	private BalanceClient balanceClient;
     private Logger logger = LoggerFactory.getLogger(WebVeinsServer.class);
+
 	private WebVeinsServer() throws IOException {
     	Configuration.getInstance();
         zk = new ZooKeeper(Configuration.INIT_SERVER,

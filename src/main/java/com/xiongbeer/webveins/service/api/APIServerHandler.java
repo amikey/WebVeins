@@ -1,17 +1,21 @@
 package com.xiongbeer.webveins.service.api;
 
 
-import com.alibaba.fastjson.JSON;
+import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.api.Command;
 import com.xiongbeer.webveins.api.OutputFormatter;
+import com.xiongbeer.webveins.api.info.FilterInfo;
 import com.xiongbeer.webveins.api.info.TaskInfo;
+import com.xiongbeer.webveins.api.info.WorkerInfo;
 import com.xiongbeer.webveins.api.jsondata.JData;
+import com.xiongbeer.webveins.saver.HDFSManager;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.apache.zookeeper.ZooKeeper;
 
+import java.io.IOException;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -23,9 +27,11 @@ import java.util.regex.Pattern;
  */
 public class APIServerHandler extends ChannelInboundHandlerAdapter {
     private ZooKeeper zk;
+    private HDFSManager hdfsManager;
 
-    public APIServerHandler(ZooKeeper zk){
+    public APIServerHandler(ZooKeeper zk, HDFSManager hdfsManager){
         this.zk = zk;
+        this.hdfsManager = hdfsManager;
     }
 
     @Override
@@ -57,18 +63,33 @@ public class APIServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     private String operation(Command command){
-        List<JData> dataSet;
+        List<JData> dataSet = null;
         String result = null;
         if(command == null){
             return "[Error] Empty input";
         }
         switch (command){
             case LISTTASKS:
-                TaskInfo info  = new TaskInfo(zk);
-                dataSet = info.getCurrentTasks().getInfo();
+                TaskInfo taskInfo  = new TaskInfo(zk);
+                dataSet = taskInfo.getCurrentTasks().getInfo();
                 result = JDecoder(dataSet);
                 break;
-
+            case LISTFILTERS:
+                FilterInfo filterInfo = new FilterInfo(zk, hdfsManager);
+                try {
+                    dataSet = filterInfo
+                            .getBloomCacheInfo(Configuration.BLOOM_BACKUP_PATH)
+                            .getInfo();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                result = JDecoder(dataSet);
+                break;
+            case LISTWORKERS:
+                WorkerInfo workerInfo = new WorkerInfo(zk);
+                dataSet = workerInfo.getCurrentWoker().getInfo();
+                result = JDecoder(dataSet);
+                break;
             default:
                 break;
         }
@@ -76,7 +97,7 @@ public class APIServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     private String JDecoder(List<JData> dataSet){
-        if(dataSet.size() == 0){
+        if(dataSet == null|| dataSet.size() == 0){
             return "Unknow Error";
         }
         return new OutputFormatter(dataSet).format();

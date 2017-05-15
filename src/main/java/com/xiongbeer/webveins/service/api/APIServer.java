@@ -1,6 +1,7 @@
 package com.xiongbeer.webveins.service.api;
 
 
+import com.xiongbeer.webveins.saver.HDFSManager;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -17,9 +18,11 @@ import org.apache.zookeeper.ZooKeeper;
  */
 public class APIServer {
     private ZooKeeper zk;
+    private HDFSManager hdfsManager;
 
-    public APIServer(ZooKeeper zk){
+    public APIServer(ZooKeeper zk, HDFSManager hdfsManager){
         this.zk = zk;
+        this.hdfsManager = hdfsManager;
     }
 
     public void run(int port){
@@ -34,7 +37,7 @@ public class APIServer {
                             throws Exception {
                         channel.pipeline().addLast(new LineBasedFrameDecoder(1024));
                         channel.pipeline().addLast(new StringDecoder());
-                        channel.pipeline().addLast(new APIServerHandler(zk));
+                        channel.pipeline().addLast(new APIServerHandler(zk, hdfsManager));
                     }
                 });
         try {

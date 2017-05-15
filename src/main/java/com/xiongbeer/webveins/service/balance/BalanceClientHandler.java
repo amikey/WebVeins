@@ -2,6 +2,7 @@ package com.xiongbeer.webveins.service.balance;
 
 import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.WebVeinsServer;
+import com.xiongbeer.webveins.saver.HDFSManager;
 import com.xiongbeer.webveins.service.api.APIServer;
 import com.xiongbeer.webveins.zk.manager.ManagerData;
 import io.netty.channel.ChannelHandler;
@@ -20,9 +21,13 @@ import java.io.IOException;
 public class BalanceClientHandler extends ChannelInboundHandlerAdapter {
     private ManagerData managerData;
     private WebVeinsServer wvServer;
+    private HDFSManager hdfsManager;
     private Logger logger = LoggerFactory.getLogger(BalanceClientHandler.class);
-    public BalanceClientHandler(ManagerData managerData, WebVeinsServer wvServer){
+
+    public BalanceClientHandler(ManagerData managerData
+            , WebVeinsServer wvServer, HDFSManager hdfsManager){
         this.managerData = managerData;
+        this.hdfsManager = hdfsManager;
         this.wvServer = wvServer;
     }
 
@@ -51,7 +56,7 @@ public class BalanceClientHandler extends ChannelInboundHandlerAdapter {
         Thread apiService = new Thread("apiService"){
             @Override
             public void run() {
-                APIServer apiServer = new APIServer(zk);
+                APIServer apiServer = new APIServer(zk, hdfsManager);
                 apiServer.run(Configuration.LOCAL_SHELL_PORT);
             }
         };

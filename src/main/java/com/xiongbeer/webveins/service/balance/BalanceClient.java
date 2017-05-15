@@ -1,6 +1,8 @@
 package com.xiongbeer.webveins.service.balance;
 
+import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.WebVeinsServer;
+import com.xiongbeer.webveins.saver.HDFSManager;
 import com.xiongbeer.webveins.zk.manager.ManagerData;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -11,6 +13,8 @@ import io.netty.channel.socket.nio.NioSocketChannel;
  */
 public class BalanceClient {
     private static Channel channel;
+    private static HDFSManager hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_PATH);
+
     public void connect(ManagerData managerData, WebVeinsServer wvServer) {
         String host = managerData.getIp();
         int port = managerData.getPort();
@@ -19,7 +23,7 @@ public class BalanceClient {
             io.netty.bootstrap.Bootstrap b = new io.netty.bootstrap.Bootstrap();
             b.group(group).channel(NioSocketChannel.class)
                     .option(ChannelOption.TCP_NODELAY, true)
-                    .handler(new BalanceClientHandler(managerData, wvServer));
+                    .handler(new BalanceClientHandler(managerData, wvServer, hdfsManager));
             ChannelFuture f = b.connect(host, port).sync();
             f.channel().closeFuture().sync();
         } catch (InterruptedException e) {

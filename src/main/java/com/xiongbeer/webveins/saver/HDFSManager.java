@@ -8,6 +8,7 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Created by shaoxiong on 17-4-13.
@@ -100,6 +101,29 @@ public class HDFSManager {
      */
     public void downLoad(String src, String dst) throws IOException {
         fs.copyToLocalFile(false, new Path(src), new Path(dst));
+
+    }
+
+    /**
+     * 获取文件最后一次修改的时间
+     *
+     * @param src 源文件路径
+     * @return
+     * @throws IOException
+     */
+    public long getFileModificationTime(String src) throws IOException {
+        return fs.getFileStatus(new Path(src)).getModificationTime();
+    }
+
+    /**
+     * 获取文件大小
+     *
+     * @param src 源文件路径
+     * @return
+     * @throws IOException
+     */
+    public long getFileLen(String src) throws IOException {
+        return fs.getFileStatus(new Path(src)).getLen();
     }
 
     /**
@@ -111,8 +135,8 @@ public class HDFSManager {
      * @param recursive 是否递归
      * @return
      */
-    public LinkedList<String> listChildren(String src, boolean recursive) throws IOException {
-        LinkedList<String> filePath = new LinkedList<String>();
+    public List<String> listFiles(String src, boolean recursive) throws IOException {
+        List<String> filePath = new LinkedList<String>();
         RemoteIterator<LocatedFileStatus> iterator = fs.listFiles(new Path(src), recursive);
         while(iterator.hasNext()){
             LocatedFileStatus child = (LocatedFileStatus) iterator.next();
