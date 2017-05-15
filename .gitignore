@@ -1,6 +1,6 @@
 /target
 .classpath
 .project
-webveins.iml
+*.iml
 /data/bloom
 /data/temp
