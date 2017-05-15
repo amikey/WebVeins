@@ -1,11 +1,126 @@
-#!/bin/sh
+#!/bin/bash
+version=0.1-alpha
+
 WEBVEINS_PATH=""
 for i in "$WEBVEINS_HOME"/lib/*.jar
 do
     WEBVEINS_PATH="$i:$WEBVEINS_PATH"
 done
 WEBVEINS_PATH=$WEBVEINS_HOME/webveins.jar:$WEBVEINS_PATH
-
 export WEBVEINS_CONF_PATH=$WEBVEINS_HOME/conf
 
-java -cp $WEBVEINS_PATH:webveins.jar com.xiongbeer.webveins.service.api.APIClient listtasks
+function print_usage(){
+  echo "Usage: "
+  echo "        webveins [COMMAND] [OPTIONS]"
+  echo "COMMAND:"
+  echo "        -v                                  print the version"
+  echo "        -h                                  this help message"
+  echo "        -l [workers|tasks|filters]          list the status"
+  echo "        -r [manager|worker]                 run service"
+  echo "        -s [manager|worker]                 stop service"
+}
+
+if [ $# = 0 ]; then
+  print_usage
+  exit
+fi
+
+while getopts "vhfr:l:s:" optname
+  do
+    case "$optname" in
+      "v")
+        echo $version
+        exit
+        ;;
+      "h")
+        print_usage
+        exit
+        ;;
+      "l")
+        list_op="java"
+        list_para=$OPTARG
+        case $OPTARG in
+            workers|filters|tasks)
+                java -cp $WEBVEINS_PATH:webveins.jar com.xiongbeer.webveins.service.api.APIClient list$OPTARG
+                exit $?
+            ;;
+            *)
+                echo "Unknown option $OPTARG"
+                exit 1
+            ;;
+        esac
+        ;;
+      #TODO
+      "f")
+        if [ "$list_op" == "" ] ; then
+            echo "Unknown option $OPTARG"
+        else
+            echo $list_para
+        fi
+        ;;
+      "r")
+        case $OPTARG in
+            manager)
+                java -cp $WEBVEINS_PATH:webveins.jar com.xiongbeer.webveins.WebVeinsMain >/dev/null 2>&1 &
+                echo "Trying to start manager service, it should take a while"
+                echo "after you could use 'jps' to check if 'WebVeinsMain' has started. "
+                echo "for more details you should to check out logs."
+                exit
+            ;;
+            worker)
+                java -cp $WEBVEINS_PATH:webveins.jar com.xiongbeer.webveins.WebVeinsServer >/dev/null 2>&1 &
+                echo "Trying to start worker service, it should take a while"
+                echo "after you could use 'jps' to check if 'WebVeinsServer' has started. "
+                echo "for more details you should to check out logs."
+                exit
+            ;;
+            *)
+                echo "Unknown option $OPTARG"
+                exit 1
+            ;;
+        esac
+        ;;
+      #TODO
+      "s")
+        case $OPTARG in
+            manager)
+                pid=`jps | grep  WebVeinsMain | grep -o '[0-9]*'`
+                if [ "$pid" == "" ] ; then
+                    echo "manager service isn't running"
+                else
+                    kill -9 $pid >/dev/null 2>&1
+                    free >/dev/null 2>&1
+                    echo "stop manager service"
+                fi
+                exit
+            ;;
+            worker)
+                pid=`jps | grep  WebVeinsServer | grep -o '[0-9]*'`
+                if [ "$pid" == "" ] ; then
+                    echo "worker service isn't running"
+                else
+                    kill -9 $pid >/dev/null 2>&1
+                    free >/dev/null 2>&1
+                    echo "stop manager service"
+                fi
+                exit
+                exit
+            ;;
+            *)
+                echo "Unknown option $OPTARG"
+                exit 1
+            ;;
+        esac
+        ;;
+      "?")
+        echo "Unknown option $OPTARG"
+        ;;
+      ":")
+        echo "No argument value for option $OPTARG"
+        ;;
+      *)
+      # Should not occur
+        echo "Unknown error while processing options"
+        ;;
+    esac
+  done
