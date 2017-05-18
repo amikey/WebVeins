@@ -1,4 +1,6 @@
 # WebVeins
+
+[![Join the chat at https://gitter.im/WebVeins/Lobby](https://badges.gitter.im/WebVeins/Lobby.svg)](https://gitter.im/WebVeins/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/xiongbeer/WebVeins.svg?branch=master)](https://travis-ci.org/xiongbeer/WebVeins)
 [![LICENCE](https://img.shields.io/badge/licence-MIT-blue.svg)](https://raw.githubusercontent.com/xiongbeer/WebVeins/master/LICENSE.txt)
 [![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://xiongbeer.gitbooks.io/webveinsguide/content/)
