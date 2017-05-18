@@ -2,5 +2,8 @@
 .classpath
 .project
 *.iml
+*.bak
+*.dat
+*.log
 /data/bloom
 /data/temp
