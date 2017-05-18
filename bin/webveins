@@ -1,6 +1,8 @@
 #!/bin/bash
 version=0.1-alpha
 
+max_stop_time=5
+
 WEBVEINS_PATH=""
 for i in "$WEBVEINS_HOME"/lib/*.jar
 do
@@ -18,6 +20,7 @@ function print_usage(){
   echo "        -l [workers|tasks|filters]          list the status"
   echo "        -r [manager|worker]                 run service"
   echo "        -s [manager|worker]                 stop service"
+  echo "        -c [manager|worker]                 check if the service is running"
 }
 
 if [ $# = 0 ]; then
@@ -25,7 +28,7 @@ if [ $# = 0 ]; then
   exit
 fi
 
-while getopts "vhfr:l:s:" optname
+while getopts "vhfc:r:l:s:" optname
   do
     case "$optname" in
       "v")
@@ -61,14 +64,14 @@ while getopts "vhfr:l:s:" optname
       "r")
         case $OPTARG in
             manager)
-                java -cp $WEBVEINS_PATH:webveins.jar com.xiongbeer.webveins.WebVeinsMain >/dev/null 2>&1 &
+                nohup java -cp $WEBVEINS_PATH:webveins.jar com.xiongbeer.webveins.WebVeinsMain >./manager.log 2>&1 &
                 echo "Trying to start manager service, it should take a while"
                 echo "after you could use 'jps' to check if 'WebVeinsMain' has started. "
                 echo "for more details you should to check out logs."
                 exit
             ;;
             worker)
-                java -cp $WEBVEINS_PATH:webveins.jar com.xiongbeer.webveins.WebVeinsServer >/dev/null 2>&1 &
+                nohup java -cp $WEBVEINS_PATH:webveins.jar com.xiongbeer.webveins.WebVeinsServer >./worker.log 2>&1 &
                 echo "Trying to start worker service, it should take a while"
                 echo "after you could use 'jps' to check if 'WebVeinsServer' has started. "
                 echo "for more details you should to check out logs."
@@ -80,7 +83,6 @@ while getopts "vhfr:l:s:" optname
             ;;
         esac
         ;;
-      #TODO
       "s")
         case $OPTARG in
             manager)
@@ -88,9 +90,13 @@ while getopts "vhfr:l:s:" optname
                 if [ "$pid" == "" ] ; then
                     echo "manager service isn't running"
                 else
-                    kill -9 $pid >/dev/null 2>&1
-                    free >/dev/null 2>&1
-                    echo "stop manager service"
+                    kill $pid >/dev/null 2>&1
+                    echo "stoping manager service"
+                    sleep $max_stop_time
+                    if kill -0 $pid > /dev/null 2>&1; then
+                        echo "command did not stop gracefully after $max_stop_time seconds: killing with kill -9"
+                        kill -9 $pid > /dev/null 2>&1
+                    fi
                 fi
                 exit
             ;;
@@ -99,12 +105,42 @@ while getopts "vhfr:l:s:" optname
                 if [ "$pid" == "" ] ; then
                     echo "worker service isn't running"
                 else
-                    kill -9 $pid >/dev/null 2>&1
-                    free >/dev/null 2>&1
-                    echo "stop manager service"
+                    kill $pid > /dev/null 2>&1
+                    echo "stop server service"
+                    sleep $max_stop_time
+                    if kill -0 $pid > /dev/null 2>&1; then
+                        echo "command did not stop gracefully after $max_stop_time seconds: killing with kill -9"
+                        kill -9 $pid > /dev/null 2>&1
+                    fi
                 fi
                 exit
                 exit
+            ;;
+            *)
+                echo "Unknown option $OPTARG"
+                exit 1
+            ;;
+        esac
+        ;;
+      "c")
+        case $OPTARG in
+            manager)
+                pid=`jps | grep WebVeinsMain | grep -o '[0-9]*'`
+                if [ "$pid" == "" ] ; then
+                    echo "manager isn't working"
+                else
+                    echo "manager is working"
+                fi
+                exit
+            ;;
+            worker)
+               pid=`jps | grep WebVeinsServer | grep -o '[0-9]*'`
+               if [ "$pid" == "" ] ; then
+                   echo "worker isn't working"
+               else
+                   echo "worker is working"
+               fi
+               exit
             ;;
             *)
                 echo "Unknown option $OPTARG"
