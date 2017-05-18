@@ -40,12 +40,12 @@ public class UrlFilter {
      * 默认当前只存在一个bloom缓存文件
      * 将其读取到内存中来
      *
-     * @param cachePath 存取缓存文件的文件夹路径
+     * @param cacheDir 存取缓存文件的文件夹路径
      * @throws IOException
      */
-    public UrlFilter(String cachePath) throws IOException {
-        File cacheDir = new File(cachePath);
-        File file = new File(getBloomFileName(cacheDir));
+    public UrlFilter(String cacheDir) throws IOException {
+        File dir = new File(cacheDir);
+        File file = new File(getBloomFileName(dir));
         BloomFileInfo info = new BloomFileInfo(file.getName());
         urlCounter = new AtomicLong(info.getUrlCounter().longValue());
         expectedInsertions = info.getExpectedInsertions().longValue();
@@ -58,14 +58,14 @@ public class UrlFilter {
      *
      * 读取某个特定的名字的bloom缓存文件
      *
-     * @param cachePath 存取缓存文件的文件夹路径
+     * @param cacheDir 存取缓存文件的文件夹路径
      * @param uniqueMarkupRegex 能捕获包含唯一标识符的bloom缓存文件的正则表达式
      * @throws IOException
      */
-    public UrlFilter(String cachePath, String uniqueMarkupRegex) throws IOException {
-        File cacheDir = new File(cachePath);
-        String bloomFileName = getBloomFileName(cacheDir, uniqueMarkupRegex);
-        File file = new File(cachePath + File.separator + bloomFileName);
+    public UrlFilter(String cacheDir, String uniqueMarkupRegex) throws IOException {
+        File dir = new File(cacheDir);
+        String bloomFileName = getBloomFileName(dir, uniqueMarkupRegex);
+        File file = new File(cacheDir + File.separator + bloomFileName);
         BloomFileInfo info = new BloomFileInfo(bloomFileName);
         urlCounter = new AtomicLong(info.getUrlCounter().longValue());
         expectedInsertions = info.getExpectedInsertions().longValue();
@@ -94,8 +94,8 @@ public class UrlFilter {
                 return false;
             }
         });
-        if(files.length != 1){
-            throw new IOException("No bloom cache file exist or duplicate bloom files");
+        if(files.length == 0){
+            throw new IOException("No bloom cache file exist.");
         }
         return files[0].getAbsolutePath();
     }
@@ -147,7 +147,8 @@ public class UrlFilter {
         BloomFileInfo info = new BloomFileInfo(
                 urlCounter.longValue(),
                 expectedInsertions, fpp);
-        String newName = targetDir + File.separator + info.toString();
+        String newName = targetDir + File.separator + info.toString()
+                + Configuration.TEMP_SUFFIX;
         File file = new File(newName);
         FileOutputStream fos = new FileOutputStream(file);
         bloomFilter.writeTo(fos);

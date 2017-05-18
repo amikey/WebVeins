@@ -144,4 +144,13 @@ public class HDFSManager {
         }
         return filePath;
     }
+
+    /**
+     * 断开与HDFS的连接
+     *
+     * @throws IOException
+     */
+    public void close() throws IOException {
+        fs.close();
+    }
 }

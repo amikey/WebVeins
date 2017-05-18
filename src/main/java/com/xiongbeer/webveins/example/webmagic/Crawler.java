@@ -5,6 +5,7 @@ import com.xiongbeer.webveins.service.local.Bootstrap;
 import com.xiongbeer.webveins.utils.InitLogger;
 import com.xiongbeer.webveins.utils.UrlFileLoader;
 
+import io.netty.util.internal.ConcurrentSet;
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.Spider;
@@ -14,6 +15,8 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,8 +27,8 @@ public class Crawler extends Action implements PageProcessor {
     private Site site = Site.me().setRetryTimes(3)
             .setSleepTime(1000).setUseGzip(true)
             .setUserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36");
-    private static Set<String> newUrls = new HashSet<String>();
-    private static Spider spider = Spider.create(new Crawler());
+    private static Set<String> newUrls = new ConcurrentSet<String>();
+    private static Spider spider = Spider.create(new Crawler()).thread(3);
 
     @Override
     public boolean run(String urlFilePath) {
@@ -57,7 +60,12 @@ public class Crawler extends Action implements PageProcessor {
                 + ")https://en.wikipedia.org/wiki/.*?(?=\")");
         Matcher matcher = pattern.matcher(html);
         while(matcher.find()){
-        	newUrls.add(matcher.group());
+            if(newUrls.size() <= 200) {
+                newUrls.add(matcher.group());
+            }
+            else{
+              return;
+            }
         }
     }
 

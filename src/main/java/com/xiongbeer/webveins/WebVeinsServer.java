@@ -1,11 +1,15 @@
 package com.xiongbeer.webveins;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.*;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.xiongbeer.webveins.check.SelfTest;
+import com.xiongbeer.webveins.saver.HDFSManager;
+import com.xiongbeer.webveins.service.api.APIServer;
 import com.xiongbeer.webveins.service.balance.BalanceClient;
+import com.xiongbeer.webveins.utils.Color;
 import com.xiongbeer.webveins.utils.IdProvider;
 import com.xiongbeer.webveins.utils.InitLogger;
 import com.xiongbeer.webveins.zk.manager.ManagerData;
@@ -18,6 +22,9 @@ import com.xiongbeer.webveins.service.local.Server;
 import com.xiongbeer.webveins.zk.worker.Worker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.dc.pr.PRError;
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
 public class WebVeinsServer implements Watcher {
 	private Server server;
@@ -26,14 +33,23 @@ public class WebVeinsServer implements Watcher {
 	private ZooKeeper zk;
 	private static WebVeinsServer wvServer;
 	private BalanceClient balanceClient;
+	private APIServer apiServer;
+	private HDFSManager hdfsManager;
     private Logger logger = LoggerFactory.getLogger(WebVeinsServer.class);
 
 	private WebVeinsServer() throws IOException {
     	Configuration.getInstance();
+    	hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_PATH);
         zk = new ZooKeeper(Configuration.INIT_SERVER,
                 Configuration.ZK_SESSION_TIMEOUT, this);
         serverId = new IdProvider().getIp();
         balanceClient = new BalanceClient();
+        apiServer = new APIServer(zk, hdfsManager);
+
+        /* 监听kill信号 */
+        SignalHandler handler = new StopSignalHandler();
+        Signal termSignal = new Signal("TERM");
+        Signal.handle(termSignal, handler);
     }
     
     public static synchronized WebVeinsServer getInstance()
@@ -76,9 +92,14 @@ public class WebVeinsServer implements Watcher {
         Collections.sort(managerData);
 
         /* 拿到负载最小的Manager */
-        ManagerData manager = managerData.get(0);
-
-        balanceClient.connect(manager, this);
+        ManagerData manager = null;
+        try {
+            manager = managerData.get(0);
+        } catch (Throwable e){
+            logger.error(Color.error("Cannot connect to manager balance server."));
+            System.exit(1);
+        }
+        balanceClient.connect(manager, this, apiServer, hdfsManager);
     }
 
     public void run(){
@@ -95,7 +116,27 @@ public class WebVeinsServer implements Watcher {
 
     @Override
 	public void process(WatchedEvent arg0) {}
-    
+
+    @SuppressWarnings("restriction")
+    private class StopSignalHandler implements SignalHandler {
+        @Override
+        public void handle(Signal signal) {
+            try {
+                logger.info("stoping server...");
+                server.stop();
+                logger.info("stoping balance client...");
+                balanceClient.stop();
+                logger.info("stoping api service...");
+                apiServer.stop();
+                hdfsManager.close();
+            } catch (Throwable e) {
+                System.out.println("handle|Signal handler" + "failed, reason "
+                        + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+
     public static void main(String[] args)
             throws IOException, InterruptedException {
         if(SelfTest.check(WebVeinsServer.class.getSimpleName())){

@@ -1,6 +1,7 @@
 package com.xiongbeer.webveins;
 
 import com.xiongbeer.webveins.filter.UrlFilter;
+import com.xiongbeer.webveins.saver.HDFSManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.*;
@@ -17,7 +18,10 @@ import javax.xml.validation.Validator;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by shaoxiong on 17-4-11.
@@ -102,7 +106,8 @@ public class Configuration {
     }
 
     /**
-     * 默认新建一个filter
+     * 默认先到hdfs中查询是否已经存在缓存文件
+     * 否则新建一个filter
      *
      * UrlFilter需要延迟初始化，因为
      * 只有manager需要持有它，而且它会
@@ -111,11 +116,33 @@ public class Configuration {
      * @return
      */
     public UrlFilter getUrlFilter(){
+        HDFSManager hdfsManager = new HDFSManager(HDFS_SYSTEM_PATH);
         long elementNums = Long.parseLong(map.get("bloom_filter_enums"));
         double falsePositiveRate = Double.parseDouble(
                 map.get("bloom_filter_fpr"));
-        if(URL_FILTER == null) {
-            URL_FILTER = new UrlFilter(elementNums, falsePositiveRate);
+        try {
+            if(URL_FILTER == null) {
+                List<String> bloomfiles
+                        = hdfsManager.listFiles(BLOOM_BACKUP_PATH, false);
+                for(String filePath:bloomfiles){
+                    File file = new File(filePath);
+                    String fileName = file.getName();
+                    Pattern pattern = Pattern.compile(BLOOM_CACHE_FILE_PREFIX + ".*");
+                    Matcher matcher = pattern.matcher(fileName);
+                    while(matcher.find()){
+                        logger.info("find filter: " + fileName + " loading...");
+                        hdfsManager.downLoad(BLOOM_BACKUP_PATH + '/' + fileName
+                                , BLOOM_SAVE_PATH);
+                        return new UrlFilter(BLOOM_SAVE_PATH);
+                    }
+                }
+                /* hdfs中没有则新建一个 */
+                logger.info("no filter cache file, create a new filter...");
+                URL_FILTER = new UrlFilter(elementNums, falsePositiveRate);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
         }
         return URL_FILTER;
     }
@@ -173,7 +200,7 @@ public class Configuration {
         /* 临时文件（UrlFile）的存放的本地路径 */
         map.put("temp_dir", HOME_PATH + "/data/temp");
         /* Worker与ZooKeeper断开连接后，经过DEADTIME后认为Worker死亡 */
-        map.put("worker_dead_time" , "5");
+        map.put("worker_dead_time" , "30");
         /* Manager进行检查的间隔 */
         map.put("check_time", "45");
         /* 本机ip Worker节点需要配置 */
@@ -195,7 +222,7 @@ public class Configuration {
         /* 均衡负载server端默认端口 */
         map.put("balance_server_port", "8080");
         /* 每个任务包含的URL的数量 */
-        map.put("task_urls_num", "50");
+        map.put("task_urls_num", "100");
         /* zookeeper的session过期时间 */
         map.put("zk_session_timeout", "1000");
     }

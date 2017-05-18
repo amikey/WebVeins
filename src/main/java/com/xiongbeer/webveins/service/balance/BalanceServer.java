@@ -36,16 +36,11 @@ public class BalanceServer {
             future.channel().closeFuture().sync();
         } catch (InterruptedException e) {
             e.printStackTrace();
-        } finally {
-            workerGroup.shutdownGracefully();
-            bossGroup.shutdownGracefully();
         }
     }
 
-    /**
-     * TODO
-     */
     public void stop(){
-
+        workerGroup.shutdownGracefully();
+        bossGroup.shutdownGracefully();
     }
 }

@@ -7,7 +7,10 @@ import com.xiongbeer.webveins.api.OutputFormatter;
 import com.xiongbeer.webveins.api.info.FilterInfo;
 import com.xiongbeer.webveins.api.info.TaskInfo;
 import com.xiongbeer.webveins.api.info.WorkerInfo;
+import com.xiongbeer.webveins.api.job.HDFSJob;
+import com.xiongbeer.webveins.api.job.TaskJob;
 import com.xiongbeer.webveins.api.jsondata.JData;
+import com.xiongbeer.webveins.exception.VeinsException;
 import com.xiongbeer.webveins.saver.HDFSManager;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -36,8 +39,9 @@ public class APIServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        Command result = analysis((String)msg);
-        byte[] content = (operation(result)
+        String[] args = ((String)msg).split(" ");
+        Command result = analysis((String) msg);
+        byte[] content = (operation(result, args)
                 + System.getProperty("line.separator"))
                 .getBytes();
         ByteBuf message = Unpooled.buffer(content.length);
@@ -62,7 +66,7 @@ public class APIServerHandler extends ChannelInboundHandlerAdapter {
         return null;
     }
 
-    private String operation(Command command){
+    private String operation(Command command, String... args){
         List<JData> dataSet = null;
         String result = null;
         if(command == null){
@@ -90,6 +94,21 @@ public class APIServerHandler extends ChannelInboundHandlerAdapter {
                 dataSet = workerInfo.getCurrentWoker().getInfo();
                 result = JDecoder(dataSet);
                 break;
+            case REMOVETASKS:
+                TaskJob taskJob = new TaskJob(zk, hdfsManager);
+                if(args.length >= 2) {
+                    result += taskJob.removeTasks(args[1]);
+                }
+                else{
+                    return "[Error] lack of args";
+                }
+                result += "Done.";
+                break;
+            case EMPTYHDFSTRASH:
+                HDFSJob hdfsJob = new HDFSJob(hdfsManager);
+                hdfsJob.EmptyTrash();
+                result = "Done.";
+                break;
             default:
                 break;
         }
@@ -98,7 +117,7 @@ public class APIServerHandler extends ChannelInboundHandlerAdapter {
 
     private String JDecoder(List<JData> dataSet){
         if(dataSet == null|| dataSet.size() == 0){
-            return "Unknow Error";
+            return "Null dataSet";
         }
         return new OutputFormatter(dataSet).format();
     }

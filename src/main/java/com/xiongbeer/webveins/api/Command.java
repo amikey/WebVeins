@@ -5,4 +5,5 @@ package com.xiongbeer.webveins.api;
  */
 public enum Command {
     LISTTASKS, LISTFILTERS, LISTWORKERS
+    , REMOVETASKS, EMPTYHDFSTRASH
 }

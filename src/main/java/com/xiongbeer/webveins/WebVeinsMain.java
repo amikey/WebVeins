@@ -4,6 +4,7 @@ import com.xiongbeer.webveins.check.SelfTest;
 import com.xiongbeer.webveins.exception.VeinsException;
 import com.xiongbeer.webveins.filter.UrlFilter;
 
+import com.xiongbeer.webveins.saver.HDFSManager;
 import com.xiongbeer.webveins.service.balance.BalanceServer;
 import com.xiongbeer.webveins.utils.IdProvider;
 import com.xiongbeer.webveins.utils.InitLogger;
@@ -14,6 +15,8 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
 import java.io.IOException;
 import java.util.Timer;
@@ -32,8 +35,12 @@ public class WebVeinsMain implements Watcher{
     private Logger logger = LoggerFactory.getLogger(WebVeinsMain.class);
     private String ip = new IdProvider().getIp();
     private BalanceServer balanceServer;
+    private Manager manager;
+    private HDFSManager hdfsManager;
+
     private WebVeinsMain() throws IOException {
     	configuration = Configuration.getInstance();
+    	//TODO 取消ip限制
         /* 检查本机ip是否与zk的ip匹配 */
         if(!Configuration.ZOOKEEPER_MANAGER_ADDRESS
                 .containsKey(ip)){
@@ -44,8 +51,13 @@ public class WebVeinsMain implements Watcher{
                 + Configuration.ZOOKEEPER_MANAGER_ADDRESS.get(ip);
         zk = new ZooKeeper(connectString,
                 Configuration.ZK_SESSION_TIMEOUT, this);
-
         serverId = ip;
+        hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_PATH);
+
+        /* 监听kill信号 */
+        SignalHandler handler = new StopSignalHandler();
+        Signal termSignal = new Signal("TERM");
+        Signal.handle(termSignal, handler);
     }
     
     public static synchronized WebVeinsMain getInstance()
@@ -65,8 +77,9 @@ public class WebVeinsMain implements Watcher{
      */
     private void run(){
         UrlFilter filter = configuration.getUrlFilter();
-        final Manager manager = new Manager(zk, serverId,
-                Configuration.HDFS_SYSTEM_PATH, filter);
+        manager = new Manager(zk, serverId,
+                hdfsManager, filter);
+
         TimerTask task = new TimerTask() {
             @Override
             public void run() {
@@ -102,6 +115,25 @@ public class WebVeinsMain implements Watcher{
         }.start();
     }
 
+
+    @SuppressWarnings("restriction")
+    private class StopSignalHandler implements SignalHandler {
+        @Override
+        public void handle(Signal signal) {
+            try {
+                logger.info("stoping manager...");
+                managerTimer.cancel();
+                logger.info("stoping balance server...");
+                balanceServer.stop();
+                hdfsManager.close();
+            } catch (Throwable e) {
+                System.out.println("handle|Signal handler" + "failed, reason "
+                        + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+
     @Override
     public void process(WatchedEvent watchedEvent) {}
 
@@ -112,6 +144,6 @@ public class WebVeinsMain implements Watcher{
         }
         InitLogger.init();
         WebVeinsMain main = WebVeinsMain.getInstance();
-        main.run();;
+        main.run();
     }
 }

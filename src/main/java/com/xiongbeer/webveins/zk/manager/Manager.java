@@ -73,7 +73,7 @@ public class Manager {
     private BalanceDataProto.BalanceData.Builder builder;
 
     public Manager(ZooKeeper zk, String serverId,
-                   String hdfsFileSystem, UrlFilter filter){
+                   HDFSManager hdfsManager, UrlFilter filter){
         /* 初始化负载数据 */
         builder = BalanceDataProto.BalanceData.newBuilder();
         String ip = new IdProvider().getIp();
@@ -89,7 +89,7 @@ public class Manager {
         this.zk = zk;
         this.serverId = serverId;
         taskManager = new TaskManager(zk);
-        hdfsManager = new HDFSManager(hdfsFileSystem);
+        this.hdfsManager = hdfsManager;
         workersWatcher = new WorkersWatcher(zk);
         this.filter = filter;
         toBeActive();
@@ -115,9 +115,6 @@ public class Manager {
         return balanceData;
     }
 
-    /**
-     *
-     */
     public void manage() throws InterruptedException, IOException, VeinsException.FilterOverflowException {
         checkTasks();
         checkWorkers();
@@ -522,14 +519,14 @@ public class Manager {
      */
     private void  publishNewTasks() throws IOException, VeinsException.FilterOverflowException {
         String tempSavePath = Configuration.BLOOM_TEMP_DIR;
-        List<String> urlFiles = hdfsManager.listFiles(
+        List<String> hdfsUrlFiles = hdfsManager.listFiles(
                 Configuration.NEW_TASKS_URLS,false);
-        if(urlFiles.size() == 0){
+        if(hdfsUrlFiles.size() == 0){
             /* 没有需要处理的新URL文件 */
             return;
         }
 
-        urlFiles = downloadTaskFile(urlFiles, tempSavePath);
+        List<String> urlFiles = downloadTaskFile(hdfsUrlFiles, tempSavePath);
         /*
             后续整体工作流程：
             对每个文件进行逐个按行读取，在开始读的同时也会
@@ -554,15 +551,13 @@ public class Manager {
             这个需要阅读其实现源码
         */
         /* 备份 */
-        String bloomFilePath = filter.save(Configuration.BLOOM_SAVE_PATH);
-        hdfsManager.upLoad(bloomFilePath,
-                Configuration.BLOOM_BACKUP_PATH);
+        backUpFilterCache();
 
         /*
             在hdfs上删除处理
             完毕的的new url文件
          */
-        for(String urlPath:urlFiles){
+        for(String urlPath:hdfsUrlFiles){
             hdfsManager.deleteHDFSFile(urlPath);
         }
     }
@@ -627,10 +622,17 @@ public class Manager {
         }
     }
 
+    /**
+     * 从hdfs下新任务文件下载到本地
+     *
+     * @param urlFiles hdfs中的文件路径
+     * @param savePath 保存路径
+     * @return
+     * @throws IOException
+     */
     private List<String> downloadTaskFile(List<String> urlFiles
             , String savePath) throws IOException {
         List<String> localUrlFiles = new LinkedList<String>();
-        /* 将hdfs下新任务文件下载到本地 */
         for(String filePath:urlFiles){
             /*
                 若文件已存在则直接跳过
@@ -649,6 +651,42 @@ public class Manager {
     }
 
     /**
+     * 备份filter的缓存文件到hdfs
+     * 注意：目前而言，会删除原来的旧缓存文件（无论是本地还是hdfs中）
+     *
+     * @throws IOException
+     */
+    public void backUpFilterCache() throws IOException {
+        /* 备份之前删除原来的缓存文件 */
+        File localSave = new File(Configuration.BLOOM_SAVE_PATH);
+        File[] localFiles = localSave.listFiles();
+        for(File file:localFiles){
+            if(file.isFile()){
+                file.delete();
+            }
+        }
+        /* 备份至本地 */
+        String bloomFilePath = filter.save(Configuration.BLOOM_SAVE_PATH);
+        /* 上传至hdfs */
+        hdfsManager.upLoad(bloomFilePath,
+                Configuration.BLOOM_BACKUP_PATH);
+
+        /* 删除hdfs上旧的缓存文件，去除新缓存文件的TEMP_SUFFIX后缀 */
+        List<String> cacheFiles
+                = hdfsManager.listFiles(Configuration.BLOOM_BACKUP_PATH, false);
+        for(String cache:cacheFiles){
+            if(!cache.endsWith(Configuration.TEMP_SUFFIX)) {
+                hdfsManager.deleteHDFSFile(cache);
+            }
+            else{
+                String newName = cache.substring(0,
+                        cache.length() - Configuration.TEMP_SUFFIX.length());
+                hdfsManager.moveHDFSFile(cache, newName);
+            }
+        }
+    }
+
+    /**
      * 遍历下载下来的保存着url的文件
      * 以行为单位将其放入过滤器
      * 过滤后的url会被以固定的数量
@@ -664,8 +702,9 @@ public class Manager {
         final StringBuilder newUrls = new StringBuilder();
         final MD5Maker md5 = new MD5Maker();
         for(String filePath:urlFiles) {
+            File file = new File(filePath);
             /* 每读一定数量的URLS就将其写入新的文件 */
-            Files.readLines(new File(filePath),
+            Files.readLines(file,
                     Charset.defaultCharset(), new LineProcessor<Object>() {
                 @Override
                 public boolean processLine(String line) throws IOException {

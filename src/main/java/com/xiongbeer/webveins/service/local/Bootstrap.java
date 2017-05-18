@@ -4,6 +4,7 @@ import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.saver.HDFSManager;
 import com.xiongbeer.webveins.service.ProcessDataProto;
 import com.xiongbeer.webveins.utils.IdProvider;
+import com.xiongbeer.webveins.utils.MD5Maker;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -77,16 +78,18 @@ public class Bootstrap {
      * @return 返回本地保存文件的路径
      */
     public static String upLoadNewUrls(Set<String> newUrls) throws IOException {
-        /* 文件名：本机ip+生成时间 */
-        /* TODO 在考虑要不要换为对文件生成MD5来命名 */
-        String path = savePath + File.separator + idProvider.getIp() +
+        /* 临时文件名：本机ip+生成时间 */
+        String path = savePath + File.separator;
+        String tempName = idProvider.getIp() +
                 '@' + System.currentTimeMillis();
-        File file = new File(path);
+        MD5Maker md5Maker = new MD5Maker();
+        File file = new File(path+tempName);
         FileOutputStream fos = new FileOutputStream(file);
         FileChannel channel = fos.getChannel();
         ByteBuffer outBuffer = ByteBuffer.allocate(WIRTE_LENGTH);
         for(String url:newUrls){
             String line = url+'\n';
+            md5Maker.update(line);
             byte[] data = line.getBytes();
             int len = data.length;
             for(int i=0; i<=len/WIRTE_LENGTH; ++i){
@@ -99,9 +102,10 @@ public class Bootstrap {
         }
         channel.close();
         fos.close();
-
+        String newName = md5Maker.toString();
+        file.renameTo(new File(path+newName));
         /* 上传至HDFS */
-        hdfsManager.upLoad(path, Configuration.NEW_TASKS_URLS);
+        hdfsManager.upLoad(path+newName, Configuration.NEW_TASKS_URLS);
         return path;
     }
 

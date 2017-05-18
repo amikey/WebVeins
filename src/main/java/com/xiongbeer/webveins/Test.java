@@ -17,6 +17,9 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.fusesource.jansi.AnsiConsole;
+import org.omg.Messaging.SYNC_WITH_TRANSPORT;
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,15 +31,13 @@ import static org.fusesource.jansi.Ansi.ansi;
 /**
  * Created by shaoxiong on 17-4-9.
  */
-public class Test implements Watcher{
-
-    public static void main(String[] args) throws IOException, InterruptedException {
-        AnsiConsole.systemInstall();
-        System.out.println(ansi().eraseScreen().fgRed().a("asdasdasd").reset());
+public class Test {
+    public static void fun(String... args){
+        System.out.println(args.length);
     }
 
-    @Override
-    public void process(WatchedEvent watchedEvent) {
-
+    public static void main(String[] args) {
+        String[] a = {"1", "2"};
+        Test.fun(a);
     }
 }

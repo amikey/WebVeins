@@ -16,9 +16,9 @@ public class BloomFileInfo {
     private Long urlCounter;
     private Long expectedInsertions;
     private Double fpp;
-    public static final String PREFIX = "$_";
-    public static final String INFIX = "$";
-    public static final String SUFFIX = "_$";
+    public static final String PREFIX = "#_";
+    public static final String INFIX = "#";
+    public static final String SUFFIX = "_#";
     public BloomFileInfo(){}
 
     public BloomFileInfo(String bloomFileName) throws IOException {
@@ -42,7 +42,7 @@ public class BloomFileInfo {
      */
     private Long getUrlCounter(String bloomFileName) throws IOException {
         Long value = null;
-        Pattern pattern = Pattern.compile("(?<=\\$_)\\d*(?=\\$)");
+        Pattern pattern = Pattern.compile("(?<=\\#_)\\d*(?=\\#)");
         Matcher matcher = pattern.matcher(bloomFileName);
         while(matcher.find()){
             value = Long.parseLong(matcher.group());
@@ -63,7 +63,7 @@ public class BloomFileInfo {
      */
     private Long getExpectedInsertions(String bloomFileName) throws IOException {
         Long value = null;
-        Pattern pattern = Pattern.compile("(?<=\\$)\\d*(?=\\$)");
+        Pattern pattern = Pattern.compile("(?<=\\#)\\d*(?=\\#)");
         Matcher matcher = pattern.matcher(bloomFileName);
         while(matcher.find()){
             value = Long.parseLong(matcher.group());
@@ -84,7 +84,7 @@ public class BloomFileInfo {
      */
     private Double getFpp(String bloomFileName) throws IOException {
         Double value = null;
-        Pattern pattern = Pattern.compile("(?<=\\$)0{1}\\.{1}\\d*(?=_\\$)");
+        Pattern pattern = Pattern.compile("(?<=\\#)0{1}\\.{1}\\d*(?=_\\#)");
         Matcher matcher = pattern.matcher(bloomFileName);
         while(matcher.find()){
             value = Double.parseDouble(matcher.group());

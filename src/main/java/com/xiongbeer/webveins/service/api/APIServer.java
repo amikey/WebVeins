@@ -19,6 +19,8 @@ import org.apache.zookeeper.ZooKeeper;
 public class APIServer {
     private ZooKeeper zk;
     private HDFSManager hdfsManager;
+    private EventLoopGroup bossGroup;
+    private EventLoopGroup workerGroup;
 
     public APIServer(ZooKeeper zk, HDFSManager hdfsManager){
         this.zk = zk;
@@ -26,8 +28,8 @@ public class APIServer {
     }
 
     public void run(int port){
-        EventLoopGroup bossGroup = new NioEventLoopGroup();
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        bossGroup = new NioEventLoopGroup();
+        workerGroup = new NioEventLoopGroup();
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
@@ -45,9 +47,11 @@ public class APIServer {
             future.channel().closeFuture().sync();
         } catch (InterruptedException e) {
             e.printStackTrace();
-        } finally {
-            bossGroup.shutdownGracefully();
-            workerGroup.shutdownGracefully();
         }
+    }
+
+    public void stop(){
+        bossGroup.shutdownGracefully();
+        workerGroup.shutdownGracefully();
     }
 }

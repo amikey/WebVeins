@@ -1,0 +1,1 @@
+- 新增一项检查Task: HDFS中的waitingtasks中的tasks必须保持与Znode中非finished状态下的tasks一致

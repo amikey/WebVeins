@@ -22,12 +22,14 @@ public class BalanceClientHandler extends ChannelInboundHandlerAdapter {
     private ManagerData managerData;
     private WebVeinsServer wvServer;
     private HDFSManager hdfsManager;
+    private APIServer apiServer;
     private Logger logger = LoggerFactory.getLogger(BalanceClientHandler.class);
 
-    public BalanceClientHandler(ManagerData managerData
+    public BalanceClientHandler(ManagerData managerData, APIServer apiServer
             , WebVeinsServer wvServer, HDFSManager hdfsManager){
         this.managerData = managerData;
         this.hdfsManager = hdfsManager;
+        this.apiServer = apiServer;
         this.wvServer = wvServer;
     }
 
@@ -56,18 +58,11 @@ public class BalanceClientHandler extends ChannelInboundHandlerAdapter {
         Thread apiService = new Thread("apiService"){
             @Override
             public void run() {
-                APIServer apiServer = new APIServer(zk, hdfsManager);
                 apiServer.run(Configuration.LOCAL_SHELL_PORT);
             }
         };
         apiService.setDaemon(true);
         apiService.start();
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        wvServer.stopServer();
-        System.out.println("log out");
     }
 
     @Override
