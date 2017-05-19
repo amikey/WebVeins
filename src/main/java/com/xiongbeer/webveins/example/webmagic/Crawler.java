@@ -12,11 +12,8 @@ import us.codecraft.webmagic.Spider;
 import us.codecraft.webmagic.processor.PageProcessor;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -60,7 +57,7 @@ public class Crawler extends Action implements PageProcessor {
                 + ")https://en.wikipedia.org/wiki/.*?(?=\")");
         Matcher matcher = pattern.matcher(html);
         while(matcher.find()){
-            if(newUrls.size() <= 200) {
+            if(newUrls.size() <= 1000) {
                 newUrls.add(matcher.group());
             }
             else{

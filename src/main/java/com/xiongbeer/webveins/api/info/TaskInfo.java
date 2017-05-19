@@ -55,8 +55,6 @@ public class TaskInfo implements SimpleInfo {
         TaskJson foo = new TaskJson();
         String status = new String(data);
         foo.setStatus(status);
-        int ftimes = getFailedTimes(taskStat.getVersion(), status);
-        foo.setFailedTimes(ftimes);
         foo.setCtime(taskStat.getCtime());
         foo.setMtime(taskStat.getMtime());
         foo.setName(name);
@@ -70,6 +68,7 @@ public class TaskInfo implements SimpleInfo {
      * @param currentStatus 当前的状态
      * @return 失败次数
      */
+    @Deprecated
     private int getFailedTimes(int mTimes, String currentStatus){
         int ftimes = 0;
         if(mTimes > 0) {

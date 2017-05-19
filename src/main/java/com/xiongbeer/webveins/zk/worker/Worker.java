@@ -82,12 +82,18 @@ public class Worker {
         return taskName;
     }
 
+    public void beat(String taskName){
+        taskWorker.setRunningTask(ZnodeInfo.TASKS_PATH + '/' + taskName, -1);
+        setStatus(taskName);
+    }
+
     public void discardTask(String taskPath){
         taskWorker.discardTask(taskPath);;
     }
 
     public void finishTask(String taskPath){
         taskWorker.finishTask(taskPath);
+        setStatus("");
     }
 
     private StringCallback workerCreateCallback = new StringCallback() {

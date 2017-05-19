@@ -101,12 +101,13 @@ public class TaskWorker extends Task{
     /**
      * 尝试将一个task节点置为running状态
      * 若成功即拿到了该任务
+     * 也可作为心跳信息（改变了mtime）
      *
      * @param path
      * @param version
      * @return
      */
-    private boolean setRunningTask(String path, int version){
+    public boolean setRunningTask(String path, int version){
         boolean result = false;
         try {
             client.setData(path, RUNNING.getBytes(), version);

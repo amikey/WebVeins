@@ -463,8 +463,11 @@ public class Manager {
      */
     private void checkTasks() throws InterruptedException, IOException {
         taskManager.checkTasks();
-        HashMap<String, Epoch> tasks = taskManager.getTasksInfo();
+        Map<String, Epoch> tasks = taskManager.getTasksInfo();
         Iterator<Entry<String, Epoch>> iterator = tasks.entrySet().iterator();
+        /* 把要移除或要添加的任务先缓存起来，直接移除会触发fastfail */
+        List<String> dropList = new LinkedList<String>();
+        Map<String, Epoch> addList = new HashMap<String, Epoch>();
         while(iterator.hasNext()){
             @SuppressWarnings("rawtypes")
 			Map.Entry entry = (Map.Entry)iterator.next();
@@ -472,18 +475,31 @@ public class Manager {
             Epoch value = (Epoch) entry.getValue();
             if(value.getStatus().equals(Task.FINISHED)){
                 if(unfinishedTaskList.containsKey(key)){
-                    unfinishedTaskList.remove(key);
+                    dropList.add(key);
                 }
                 hdfsManager.moveHDFSFile(Configuration.WAITING_TASKS_URLS + "/" + key,
                         Configuration.FINISHED_TASKS_URLS + "/" + key);
                 taskManager.releaseTask(ZnodeInfo.TASKS_PATH + '/' + key);
             }
             else if(value.getStatus().equals(Task.RUNNING)){
-                unfinishedTaskList.put(key, value);
+                addList.put(key, value);
             } else{
-                unfinishedTaskList.remove(key);
+                dropList.add(key);
             }
         }
+        for(String key:dropList){
+            unfinishedTaskList.remove(key);
+        }
+        iterator = addList.entrySet().iterator();
+        while(iterator.hasNext()){
+            @SuppressWarnings("rawtypes")
+            Map.Entry entry = (Map.Entry)iterator.next();
+            String key = (String) entry.getKey();
+            Epoch value = (Epoch) entry.getValue();
+            unfinishedTaskList.put(key, value);
+        }
+        dropList = null;
+        addList = null;
     }
 
     /**

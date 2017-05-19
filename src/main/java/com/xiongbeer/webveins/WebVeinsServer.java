@@ -39,7 +39,8 @@ public class WebVeinsServer implements Watcher {
 
 	private WebVeinsServer() throws IOException {
     	Configuration.getInstance();
-    	hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_PATH);
+    	hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_CONF
+                , Configuration.HDFS_SYSTEM_PATH);
         zk = new ZooKeeper(Configuration.INIT_SERVER,
                 Configuration.ZK_SESSION_TIMEOUT, this);
         serverId = new IdProvider().getIp();

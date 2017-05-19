@@ -2,6 +2,7 @@ package com.xiongbeer.webveins.service.local;
 
 import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.ZnodeInfo;
+import com.xiongbeer.webveins.exception.VeinsException;
 import com.xiongbeer.webveins.service.ProcessDataProto;
 import com.xiongbeer.webveins.zk.worker.Worker;
 import io.netty.channel.ChannelHandler;
@@ -10,7 +11,10 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Created by shaoxiong on 17-4-23.
@@ -18,8 +22,10 @@ import java.util.Date;
 @ChannelHandler.Sharable
 public class ServerHandler extends ChannelInboundHandlerAdapter{
     private Logger logger = LoggerFactory.getLogger(ServerHandler.class);
-    private Worker worker;
     private static String currentTask;
+    private Timer heartBeat;
+    private Worker worker;
+
     /* 新任务的Data info的builder */
     private static ProcessDataProto.ProcessData.Builder builder;
 
@@ -67,6 +73,8 @@ public class ServerHandler extends ChannelInboundHandlerAdapter{
                 takeNewTask(ctx);
                 break;
             case FINNISHED:
+                heartBeat.purge();
+                heartBeat.cancel();
                 currentTask = null;
                 worker.finishTask(taskPath);
                 takeNewTask(ctx);
@@ -108,5 +116,24 @@ public class ServerHandler extends ChannelInboundHandlerAdapter{
         builder.setUrlFilePath(Configuration.WAITING_TASKS_URLS + "/" + taskName);
         builder.setUrlFileName(taskName);
         ctx.writeAndFlush(builder.build());
+
+        /* 拿到任务后会定时改变任务的mtime，防止被manager错误的重置 */
+        TimerTask heart = new HeartBeat(taskName);
+        heartBeat = new Timer();
+        long delay = Configuration.WORKER_HEART_BEAT;
+        long intevalPeriod = Configuration.WORKER_HEART_BEAT * 1000;
+        heartBeat.scheduleAtFixedRate(heart, delay, intevalPeriod);
+    }
+
+    class HeartBeat extends TimerTask{
+        String taskName;
+        public HeartBeat(String taskName){
+            this.taskName = taskName;
+        }
+
+        @Override
+        public void run() {
+            worker.beat(taskName);
+        }
     }
 }

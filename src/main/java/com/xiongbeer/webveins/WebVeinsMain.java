@@ -40,19 +40,13 @@ public class WebVeinsMain implements Watcher{
 
     private WebVeinsMain() throws IOException {
     	configuration = Configuration.getInstance();
-    	//TODO 取消ip限制
-        /* 检查本机ip是否与zk的ip匹配 */
-        if(!Configuration.ZOOKEEPER_MANAGER_ADDRESS
-                .containsKey(ip)){
-            throw new RuntimeException("Manager ip is invaild");
-        }
-
         String connectString = ip + ':'
                 + Configuration.ZOOKEEPER_MANAGER_ADDRESS.get(ip);
         zk = new ZooKeeper(connectString,
-                Configuration.ZK_SESSION_TIMEOUT, this);
+                    Configuration.ZK_SESSION_TIMEOUT, this);
         serverId = ip;
-        hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_PATH);
+        hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_CONF
+                , Configuration.HDFS_SYSTEM_PATH);
 
         /* 监听kill信号 */
         SignalHandler handler = new StopSignalHandler();
@@ -91,6 +85,8 @@ public class WebVeinsMain implements Watcher{
                     e.printStackTrace();
                 } catch (VeinsException.FilterOverflowException e) {
                     e.printStackTrace();
+                } catch (Throwable e){
+                    e.printStackTrace();
                 }
             }
         };
@@ -122,6 +118,8 @@ public class WebVeinsMain implements Watcher{
         public void handle(Signal signal) {
             try {
                 logger.info("stoping manager...");
+                /* 必须先purge，否则可能会在main线程退出后还运行一次 */
+                managerTimer.purge();
                 managerTimer.cancel();
                 logger.info("stoping balance server...");
                 balanceServer.stop();

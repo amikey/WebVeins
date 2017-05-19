@@ -20,7 +20,8 @@ import java.util.Date;
 public class ClientHandler extends ChannelInboundHandlerAdapter {
     private Logger logger = LoggerFactory.getLogger(ClientHandler.class);
     private Action action;
-    private static HDFSManager hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_PATH);
+    private static HDFSManager hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_CONF
+            , Configuration.HDFS_SYSTEM_PATH);
 
     public ClientHandler(Action action){
         this.action = action;

@@ -2,6 +2,7 @@ package com.xiongbeer.webveins;
 
 import com.xiongbeer.webveins.filter.UrlFilter;
 import com.xiongbeer.webveins.saver.HDFSManager;
+import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.*;
@@ -49,6 +50,7 @@ public class Configuration {
     public static String FINISHED_TASKS_URLS;
     public static String NEW_TASKS_URLS;
     public static String BLOOM_BACKUP_PATH;
+    public static org.apache.hadoop.conf.Configuration HDFS_SYSTEM_CONF;
     public static String HDFS_SYSTEM_PATH;
     public static String TEMP_DIR;
     public static String BLOOM_TEMP_DIR;
@@ -66,10 +68,12 @@ public class Configuration {
     public static int TASK_URLS_NUM;
     public static int ZK_SESSION_TIMEOUT;
     public static String HOME_PATH;
+    public static int WORKER_HEART_BEAT;
     private static UrlFilter URL_FILTER;
 
     private Configuration() throws SAXException, IOException, ParserConfigurationException {
         /* 获取环境变量 */
+        String HADOOP_HOME_PATH = System.getenv("HADOOP_HOME");
     	HOME_PATH = System.getenv("WEBVEINS_HOME");
         confPath = HOME_PATH + "conf/";
 
@@ -95,7 +99,6 @@ public class Configuration {
         LOCAL_HOST = map.get("local_host");
         LOCAL_PORT = Integer.parseInt(map.get("local_port"));
         LOCAL_SHELL_PORT = Integer.parseInt(map.get("local_shell_port"));
-        HDFS_SYSTEM_PATH = map.get("hdfs_system_path");
         INIT_SERVER = map.get("init_server");
 
         BALANCE_SERVER_PORT = Integer.parseInt(map.get("balance_server_port"));
@@ -103,6 +106,19 @@ public class Configuration {
         WORKER_DEAD_TIME = Integer.parseInt(map.get("worker_dead_time"));
         CHECK_TIME = Integer.parseInt(map.get("check_time"));
         ZK_SESSION_TIMEOUT = Integer.parseInt(map.get("zk_session_timeout"));
+        WORKER_HEART_BEAT = Integer.parseInt(map.get("worker_heart_beat"));
+        HDFS_SYSTEM_PATH = map.get("hdfs_system_path");
+
+        /* 读取HDFS信息 */
+        HDFS_SYSTEM_CONF = new org.apache.hadoop.conf.Configuration();
+        HDFS_SYSTEM_CONF.addResource(
+                new Path(HADOOP_HOME_PATH + "/etc/hadoop/" + "core-site.xml"));
+        HDFS_SYSTEM_CONF.addResource(
+                new Path(HADOOP_HOME_PATH + "/etc/hadoop/" + "hdfs-site.xml"));
+        HDFS_SYSTEM_CONF.addResource(
+                new Path(HADOOP_HOME_PATH + "/etc/hadoop/" + "mapred-site.xml"));
+        HDFS_SYSTEM_CONF.addResource(
+                new Path(HADOOP_HOME_PATH + "/etc/hadoop/" + "yarn-site.xml"));
     }
 
     /**
@@ -116,7 +132,7 @@ public class Configuration {
      * @return
      */
     public UrlFilter getUrlFilter(){
-        HDFSManager hdfsManager = new HDFSManager(HDFS_SYSTEM_PATH);
+        HDFSManager hdfsManager = new HDFSManager(HDFS_SYSTEM_CONF, HDFS_SYSTEM_PATH);
         long elementNums = Long.parseLong(map.get("bloom_filter_enums"));
         double falsePositiveRate = Double.parseDouble(
                 map.get("bloom_filter_fpr"));
@@ -193,14 +209,12 @@ public class Configuration {
         map.put("waiting_tasks_urls", root + "/tasks/waitingtasks");
         map.put("finished_tasks_urls", root + "/tasks/finishedtasks");
         map.put("new_tasks_urls", root + "/tasks/newurls");
-        /* HDFS的连接路径 */
-        map.put("hdfs_system_path", "hdfs://localhost:9000/");
         /* bloom过滤器会定时备份，此为其存放的路径 */
         map.put("bloom_backup_path", root + "/bloom");
         /* 临时文件（UrlFile）的存放的本地路径 */
         map.put("temp_dir", HOME_PATH + "/data/temp");
         /* Worker与ZooKeeper断开连接后，经过DEADTIME后认为Worker死亡 */
-        map.put("worker_dead_time" , "30");
+        map.put("worker_dead_time" , "120");
         /* Manager进行检查的间隔 */
         map.put("check_time", "45");
         /* 本机ip Worker节点需要配置 */
@@ -222,9 +236,13 @@ public class Configuration {
         /* 均衡负载server端默认端口 */
         map.put("balance_server_port", "8080");
         /* 每个任务包含的URL的数量 */
-        map.put("task_urls_num", "100");
+        map.put("task_urls_num", "200");
         /* zookeeper的session过期时间 */
-        map.put("zk_session_timeout", "1000");
+        map.put("zk_session_timeout", "40000");
+        /* HDFS文件系统的nameservice路径 */
+        map.put("hdfs_system_path", "");
+        /* worker接取任务后的心跳频率 */
+        map.put("worker_heart_beat", "15");
     }
 
 

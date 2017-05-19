@@ -31,7 +31,8 @@ public class Bootstrap {
     	/* 持久化至本地的TEMP_DIR */
     	savePath = Configuration.TEMP_DIR;
     	idProvider = new IdProvider();
-    	hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_PATH);
+    	hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_CONF
+                , Configuration.HDFS_SYSTEM_PATH);
     }
     
     public Bootstrap(Action action){

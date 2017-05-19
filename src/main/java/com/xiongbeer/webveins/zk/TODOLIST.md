@@ -1,1 +1,2 @@
 - 新增一项检查Task: HDFS中的waitingtasks中的tasks必须保持与Znode中非finished状态下的tasks一致
+- 在启动manager服务的时候要检查active_manager的ip，若与本机相同则说明有过断开马上重启或者中间有失连

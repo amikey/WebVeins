@@ -14,8 +14,6 @@ public class TaskJson implements JData {
     private String name;
     /* 状态 */
     private String status;
-    /* 失败次数 */
-    private int failedTimes;
 
     public String getCtime() {
         return new Date(cTime).toString();
@@ -47,13 +45,5 @@ public class TaskJson implements JData {
 
     public void setStatus(String status) {
         this.status = status;
-    }
-
-    public int getFailedTimes() {
-        return failedTimes;
-    }
-
-    public void setFailedTimes(int failedTimes) {
-        this.failedTimes = failedTimes;
     }
 }

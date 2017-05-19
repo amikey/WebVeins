@@ -16,18 +16,23 @@ import java.util.List;
 public class HDFSManager {
     FileSystem fs;
 
-    public HDFSManager(String hdfsFileSystem){
-        Configuration conf = new Configuration();
+    public HDFSManager(Configuration conf, String hdfsSystemPath){
         /*
          	打jar包时hadoop-common中的services会覆盖hadoop-hdfs中的services，
          	所以运行时会抛出java.io.IOException: No FileSystem for scheme: hdfs
          	设置这个属性便不会发生这个问题
          */
-        conf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
         try {
-            fs = FileSystem.get(URI.create(hdfsFileSystem), conf);
-        } catch (IOException e) {
-            e.printStackTrace();
+            if (hdfsSystemPath.equals("")) {
+                conf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
+                fs = FileSystem.get(conf);
+            } else {
+                conf = new Configuration();
+                conf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
+                fs = FileSystem.get(URI.create(hdfsSystemPath), conf);
+            }
+        } catch (IOException e){
+          e.printStackTrace();
         }
     }
 
