@@ -73,7 +73,7 @@ public class TaskJob implements SimpleJob {
 
     public void removeFromHDFS(String taskName)
             throws IOException {
-        hdfsManager.deleteHDFSFile(Configuration.WAITING_TASKS_URLS + '/' + taskName);
+        hdfsManager.delete(Configuration.WAITING_TASKS_URLS + '/' + taskName, false);
     }
 
     public List<String> getTasksName()

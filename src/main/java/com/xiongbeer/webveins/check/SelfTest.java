@@ -1,8 +1,15 @@
 package com.xiongbeer.webveins.check;
 
+import com.xiongbeer.webveins.Configuration;
+import com.xiongbeer.webveins.ZnodeInfo;
+import com.xiongbeer.webveins.saver.HDFSManager;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.HashMap;
 
 /**
  * Created by shaoxiong on 17-5-6.
@@ -15,7 +22,7 @@ public class SelfTest {
      * @param className
      * @return
      */
-    public static boolean check(String className){
+    public static boolean checkRunning(String className){
         boolean result = false;
         int counter = 0;
         try {
@@ -37,5 +44,44 @@ public class SelfTest {
         }
 
         return result;
+    }
+
+    /**
+     * 检查ZooKeeper的连接状态和它的Znode目录树
+     * @param
+     * @return
+     */
+    public static ZooKeeper checkZK(Watcher watcher) {
+        ZooKeeper zk;
+        try {
+            zk = new ZooKeeper(Configuration.INIT_SERVER, Configuration.ZK_SESSION_TIMEOUT, watcher);
+            zk.exists(ZnodeInfo.TASKS_PATH, false);
+            zk.exists(ZnodeInfo.MANAGERS_PATH, false);
+            zk.exists(ZnodeInfo.WORKERS_PATH, false);
+        } catch (Throwable e) {
+            e.printStackTrace();
+            return null;
+        }
+        return zk;
+    }
+
+    /**
+     * 检查HDFS的连接状态和它的目录树
+     *
+     * @return
+     */
+    public static HDFSManager checkHDFS(){
+        HDFSManager hdfsManager;
+        try{
+            hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_CONF, Configuration.HDFS_SYSTEM_PATH);
+            hdfsManager.exist(Configuration.BLOOM_BACKUP_PATH);
+            hdfsManager.exist(Configuration.FINISHED_TASKS_URLS);
+            hdfsManager.exist(Configuration.WAITING_TASKS_URLS);
+            hdfsManager.exist(Configuration.NEW_TASKS_URLS);
+        } catch (Throwable e){
+            e.printStackTrace();
+            return null;
+        }
+        return hdfsManager;
     }
 }

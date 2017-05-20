@@ -3,6 +3,7 @@ package com.xiongbeer.webveins;
 
 import com.alibaba.fastjson.JSON;
 import com.google.common.io.Files;
+import com.google.protobuf.compiler.PluginProtos;
 import com.xiongbeer.webveins.api.Command;
 import com.xiongbeer.webveins.api.OutputFormatter;
 import com.xiongbeer.webveins.api.info.TaskInfo;
@@ -36,22 +37,7 @@ public class Test {
         System.out.println(args.length);
     }
 
-    public static void main(String[] args) {
-        HashMap<Integer, Integer> a = new HashMap<Integer, Integer>();
-        for(int i=0; i<10; ++i){
-            a.put(new Integer(i), new Integer(2));
-        }
-        Map<Integer, Integer> b = (Map<Integer, Integer>) a.clone();
-        Iterator<Map.Entry<Integer, Integer>> it = b.entrySet().iterator();
-        while(it.hasNext()){
-            Map.Entry entry = it.next();
-            Integer key = (Integer) entry.getKey();
-            Integer value = (Integer) entry.getValue();
-            if(key == 1){
-                a.remove(new Integer(1));
-            }
-        }
-        System.out.println(a);
-        System.out.println(b);
+    public static void main(String[] args) throws IOException {
+
     }
 }

@@ -76,6 +76,12 @@ public class Configuration {
         /* 获取环境变量 */
         String HADOOP_HOME_PATH = System.getenv("HADOOP_HOME");
     	HOME_PATH = System.getenv("WEBVEINS_HOME");
+    	if(!HADOOP_HOME_PATH.endsWith(File.separator)){
+    	    HADOOP_HOME_PATH += File.separator;
+        }
+        if(!HOME_PATH.endsWith(File.separator)){
+    	    HOME_PATH += File.separator;
+        }
         confPath = HOME_PATH + "conf/";
 
         /* 读取配置信息失败，后续的任务肯定无法进行了 */
@@ -114,13 +120,13 @@ public class Configuration {
         /* 读取HDFS信息 */
         HDFS_SYSTEM_CONF = new org.apache.hadoop.conf.Configuration();
         HDFS_SYSTEM_CONF.addResource(
-                new Path(HADOOP_HOME_PATH + "/etc/hadoop/" + "core-site.xml"));
+                new Path(HADOOP_HOME_PATH + "etc/hadoop/" + "core-site.xml"));
         HDFS_SYSTEM_CONF.addResource(
-                new Path(HADOOP_HOME_PATH + "/etc/hadoop/" + "hdfs-site.xml"));
+                new Path(HADOOP_HOME_PATH + "etc/hadoop/" + "hdfs-site.xml"));
         HDFS_SYSTEM_CONF.addResource(
-                new Path(HADOOP_HOME_PATH + "/etc/hadoop/" + "mapred-site.xml"));
+                new Path(HADOOP_HOME_PATH + "etc/hadoop/" + "mapred-site.xml"));
         HDFS_SYSTEM_CONF.addResource(
-                new Path(HADOOP_HOME_PATH + "/etc/hadoop/" + "yarn-site.xml"));
+                new Path(HADOOP_HOME_PATH + "etc/hadoop/" + "yarn-site.xml"));
     }
 
     /**
@@ -233,7 +239,7 @@ public class Configuration {
         /* 提供均衡负载之前必须首先读取信息，需要一个用于初始化的BalanceServer的ip和端口号 */
         map.put("init_server", "127.0.0.1:2181");
         /* 均衡负载server端默认端口 */
-        map.put("balance_server_port", "8080");
+        map.put("balance_server_port", "8081");
         /* 每个任务包含的URL的数量 */
         map.put("task_urls_num", "200");
         /* zookeeper的session过期时间 */

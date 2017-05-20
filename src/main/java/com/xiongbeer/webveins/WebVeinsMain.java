@@ -38,17 +38,23 @@ public class WebVeinsMain implements Watcher{
     private BalanceServer balanceServer;
     private Manager manager;
     private HDFSManager hdfsManager;
-
+    private static int ZK_RETRY_TIME = 3;
     private WebVeinsMain() throws IOException {
     	configuration = Configuration.getInstance();
         String connectString = ip + ':'
                 + Configuration.ZOOKEEPER_MANAGER_ADDRESS.get(ip);
-        zk = new ZooKeeper(connectString,
-                    Configuration.ZK_SESSION_TIMEOUT, this);
-        serverId = ip;
-        hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_CONF
-                , Configuration.HDFS_SYSTEM_PATH);
+        zk = SelfTest.checkZK(this);
+        if(zk == null){
+            logger.error("[init] Connect to zookeeper server failed.");
+            System.exit(1);
+        }
+        hdfsManager = SelfTest.checkHDFS();
+        if(hdfsManager == null){
+            logger.error("[init] Connect to hdfs failed.");
+            System.exit(1);
+        }
 
+        serverId = ip;
         /* 监听kill信号 */
         SignalHandler handler = new StopSignalHandler();
         Signal termSignal = new Signal("TERM");
@@ -137,7 +143,7 @@ public class WebVeinsMain implements Watcher{
     public void process(WatchedEvent watchedEvent) {}
 
     public static void main(String[] args) throws IOException {
-        if(SelfTest.check(WebVeinsMain.class.getSimpleName())){
+        if(SelfTest.checkRunning(WebVeinsMain.class.getSimpleName())){
             System.out.println("[Error] Service has already running");
             System.exit(1);
         }

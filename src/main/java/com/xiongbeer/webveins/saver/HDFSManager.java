@@ -23,7 +23,7 @@ public class HDFSManager {
          	设置这个属性便不会发生这个问题
          */
         try {
-            if (hdfsSystemPath.equals("")) {
+            if (hdfsSystemPath.equals("default")) {
                 conf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
                 fs = FileSystem.get(conf);
             } else {
@@ -62,8 +62,8 @@ public class HDFSManager {
      * @param path
      * @throws IOException
      */
-    public void deleteHDFSFile(String path) throws IOException {
-        fs.delete(new Path(path), false);
+    public void delete(String path, boolean recursive) throws IOException {
+        fs.delete(new Path(path), recursive);
     }
 
     /**
@@ -148,6 +148,18 @@ public class HDFSManager {
             filePath.add(child.getPath().toString());
         }
         return filePath;
+    }
+
+    /**
+     * 新建一个文件夹
+     * 可以递归创建，不会覆盖已经存在的文件夹
+     *
+     * @param src
+     * @return
+     * @throws IOException
+     */
+    public boolean mkdir(String src) throws IOException {
+        return fs.mkdirs(new Path(src));
     }
 
     /**

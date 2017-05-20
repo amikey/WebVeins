@@ -149,14 +149,17 @@ while getopts "vhfc:r:l:s:" optname
         esac
         ;;
       "?")
-        echo "Unknown option $OPTARG"
+          echo "Unknown option $OPTARG"
+	  exit 1
         ;;
       ":")
-        echo "No argument value for option $OPTARG"
+          echo "No argument value for option $OPTARG"
+          exit 1
         ;;
       *)
       # Should not occur
-        echo "Unknown error while processing options"
+          echo "Unknown error while processing options" 
+          exit 1
         ;;
     esac
   done

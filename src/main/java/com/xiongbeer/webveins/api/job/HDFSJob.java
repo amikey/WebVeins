@@ -23,7 +23,7 @@ public class HDFSJob implements SimpleJob {
             List<String> files
                     = hdfsManager.listFiles(Configuration.FINISHED_TASKS_URLS, false);
             for(String file:files){
-                hdfsManager.deleteHDFSFile(file);
+                hdfsManager.delete(file, false);
             }
         } catch (IOException e) {
             throw new VeinsException.OperationFailedException(e.getMessage());

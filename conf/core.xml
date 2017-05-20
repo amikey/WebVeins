@@ -4,12 +4,96 @@
 <configuration
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="config.xsd">
+    <!-- Manager进行检查的间隔，也决定了任务刷新的频率，这个值最好大于worker_heart_beat，否则可能会错误地认为任务持有节点已经死亡-->
+    <property>
+        <name>check_time</name>
+        <value>45</value>
+    </property>
+    <!-- 提供均衡负载之前必须首先读取信息，需要一个入口zookeeper的connect-stirng -->
+    <property>
+        <name>init_server</name>
+        <value>127.0.0.1:2181</value>
+    </property>
+    <!-- manager运行那台机器上zookeeper的connect-string 单机模式也请填写实际ip地址，不要使用127.xxx.xxx.xxx的形式-->
     <property>
         <name>zookeeper_manager_address</name>
         <value>192.168.0.115:2181</value>
     </property>
+	<!-- 
+		如果有其他standby manager 也可添加进来
+		<property>
+		    <name>zookeeper_manager_address</name>
+		    <value>xxx.xxx.xxx.xxx:xxx</value>
+		</property>
+
+		.......
+
+		<property>
+		    <name>zookeeper_manager_address</name>
+		    <value>xxx.xxx.xxx.xxx:xxx</value>
+		</property>
+	-->
+
+    <!-- 任务切片包含url数量的最大值，这个值整个集群的配置文件都应该是一致的（不一致不会导致集群运行出现问题，但是很可能会对性能造成影响） -->
     <property>
-	<name>balance_server_port</name>
-	<value>8081</value>
+        <name>task_urls_num</name>
+        <value>200</value>
+    </property>
+    <!-- 客户端session的过期时间 单位为ms -->
+    <property>
+        <name>zk_session_timeout</name>
+        <value>40000</value>
+    </property>
+    <!--
+        HDFS文件系统的name-service路径，一般不需要设定，如果你正确的设定了HADOOP_HOME，系统初始化的时候会自动取读取配置文件
+        如果默认读取失败你才需要配置这个值，注意：一旦这个值不为 default 的话系统初始化时就不会读取默认设置了
+        它的值应该是name-service的值，但也可以是运行name-node机器的ip地址：dfs服务端口号（推荐）
+             eg：hdfs://192.168.1.1：9000
+    -->
+    <property>
+        <name>hdfs_system_path</name>
+        <value>default</value>
+    </property>
+    <!-- 这个值为可选项，它只影响本地web可视化页面刷新数据的频率，不同机器上的值可以不同 单位为s -->
+    <property>
+        <name>tomcat_heart_beat</name>
+        <value>5</value>
+    </property>
+    <!-- worker领取到任务会按此值为间隔定期报告自己的状态，请不要把这个值设置得太小，否则在集群数量较大时会对zookeeper集群造成很大的负担 单位为s -->
+    <property>
+        <name>worker_heart_beat</name>
+        <value>15</value>
+    </property>
+    <!--
+        在当前的版本运行时有且只有一个filter，当hdfs系统无法寻找到历史cache文件时便会新建一个filter
+        enums为预期存储最大的url的数量
+        fpr为理论上的误差概率
+        请提前做好规划，这个很重要
+        参考值：
+            预期1亿存储量-亿分之一误差概率的filter大概需要500多MB的内存
+            预期1百万存储量-百万之一误差概率的filter大概需要4MB的内存
+    -->
+    <property>
+        <name>bloom_filter_enums</name>
+        <value>1000000</value>
+    </property>
+    <property>
+        <name>bloom_filter_fpr</name>
+        <value>0.0000001</value>
+    </property>
+    <!-- Worker服务使用的端口 Worker节点需要配置，不同机器上的值可以不同 -->
+    <property>
+        <name>local_port</name>
+        <value>22000</value>
+    </property>
+    <!--  本地命令行API服务所使用的端口，不同机器上的值可以不同 -->
+    <property>
+        <name>local_shell_port</name>
+        <value>22001</value>
+    </property>
+    <!-- 均衡负载server端默认端口，这个值整个集群都应该是一样的，否则会导致worker启动失败 -->
+    <property>
+        <name>balance_server_port</name>
+        <value>8081</value>
     </property>
 </configuration>

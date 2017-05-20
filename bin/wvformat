@@ -1,0 +1,47 @@
+#!/bin/bash
+
+WEBVEINS_PATH=""
+for i in "$WEBVEINS_HOME"/lib/*.jar
+do
+    WEBVEINS_PATH="$i:$WEBVEINS_PATH"
+done
+WEBVEINS_PATH=$WEBVEINS_HOME/webveins.jar:$WEBVEINS_PATH
+export WEBVEINS_CONF_PATH=$WEBVEINS_HOME/conf
+
+function print_usage(){
+  echo "Usage: "
+  echo "        wvformat -n|-f   "
+  echo "        	with -n means normal initialize zookeeper and hdfs"
+  echo "        	with -f arg means force format, that will delete all old setting"
+}
+
+if [ $# = 0 ]; then
+  print_usage
+  exit
+fi
+
+while getopts "nhf" optname
+  do
+    case "$optname" in
+      h)
+        print_usage
+        exit
+      ;;
+      n)
+	java -cp $WEBVEINS_PATH:webveins.jar com.xiongbeer.webveins.ClusterFormatter
+	exit
+      ;;
+      f)
+	java -cp $WEBVEINS_PATH:webveins.jar com.xiongbeer.webveins.ClusterFormatter -f
+	exit
+      ;;
+      "?")
+        echo "Unknown option $OPTARG"
+        exit 1
+      ;;
+      *)
+        echo "Unknown error while processing options"
+        exit 1
+      ;;
+    esac
+  done

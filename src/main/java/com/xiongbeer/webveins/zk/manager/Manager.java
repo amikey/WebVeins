@@ -575,7 +575,7 @@ public class Manager {
             完毕的的new url文件
          */
         for(String urlPath:hdfsUrlFiles){
-            hdfsManager.deleteHDFSFile(urlPath);
+            hdfsManager.delete(urlPath, false);
         }
     }
 
@@ -693,7 +693,7 @@ public class Manager {
                 = hdfsManager.listFiles(Configuration.BLOOM_BACKUP_PATH, false);
         for(String cache:cacheFiles){
             if(!cache.endsWith(Configuration.TEMP_SUFFIX)) {
-                hdfsManager.deleteHDFSFile(cache);
+                hdfsManager.delete(cache, false);
             }
             else{
                 String newName = cache.substring(0,
