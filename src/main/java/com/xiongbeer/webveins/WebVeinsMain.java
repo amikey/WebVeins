@@ -3,7 +3,6 @@ package com.xiongbeer.webveins;
 import com.xiongbeer.webveins.check.SelfTest;
 import com.xiongbeer.webveins.exception.VeinsException;
 import com.xiongbeer.webveins.filter.UrlFilter;
-
 import com.xiongbeer.webveins.saver.HDFSManager;
 import com.xiongbeer.webveins.service.balance.BalanceServer;
 import com.xiongbeer.webveins.utils.IdProvider;
@@ -15,6 +14,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
@@ -26,6 +26,7 @@ import java.util.TimerTask;
  * 启动入口
  * Created by shaoxiong on 17-4-20.
  */
+@SuppressWarnings("restriction")
 public class WebVeinsMain implements Watcher{
     private static WebVeinsMain wvMain;
     private ZooKeeper zk;

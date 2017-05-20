@@ -4,8 +4,6 @@ package com.xiongbeer.webveins;
  * Created by shaoxiong on 17-4-6.
  */
 public class ZnodeInfo {
-
-    //各目录path
     public static final String ROOT_PATH            = "/";
     public static final String WORKERS_PATH         = ROOT_PATH + "wvWorkers";
     public static final String TASKS_PATH           = ROOT_PATH + "wvTasks";
@@ -14,11 +12,5 @@ public class ZnodeInfo {
     public static final String ACTIVE_MANAGER_PATH  = MANAGERS_PATH + "/active_manager";
     public static final String STANDBY_MANAGER_PATH = MANAGERS_PATH + "/standby_manager_";
     public static final String NEW_TASK_PATH        = TASKS_PATH    + "/";
-
-    public static final int TICKTIME                = 100;
-
-
-    public static final int JITTER_DELAY            = 5;
-
-    public static final int TASK_DEAD_DELAY         = 30;
+    public static final int JITTER_DELAY            = 10;
 }

@@ -69,6 +69,7 @@ public class Configuration {
     public static int ZK_SESSION_TIMEOUT;
     public static String HOME_PATH;
     public static int WORKER_HEART_BEAT;
+    public static int TOMCAT_HEART_BEAT;
     private static UrlFilter URL_FILTER;
 
     private Configuration() throws SAXException, IOException, ParserConfigurationException {
@@ -107,6 +108,7 @@ public class Configuration {
         CHECK_TIME = Integer.parseInt(map.get("check_time"));
         ZK_SESSION_TIMEOUT = Integer.parseInt(map.get("zk_session_timeout"));
         WORKER_HEART_BEAT = Integer.parseInt(map.get("worker_heart_beat"));
+        TOMCAT_HEART_BEAT = Integer.parseInt(map.get("tomcat_heart_beat"));
         HDFS_SYSTEM_PATH = map.get("hdfs_system_path");
 
         /* 读取HDFS信息 */
@@ -172,9 +174,6 @@ public class Configuration {
      * @return
      */
     public UrlFilter getUrlFilter(String dir) throws IOException {
-        long elementNums = Long.parseLong(map.get("bloom_filter_enums"));
-        double falsePositiveRate = Double.parseDouble(
-                map.get("bloom_filter_fpr"));
         if(URL_FILTER == null) {
             URL_FILTER = new UrlFilter(dir);
         }
@@ -243,6 +242,8 @@ public class Configuration {
         map.put("hdfs_system_path", "");
         /* worker接取任务后的心跳频率 */
         map.put("worker_heart_beat", "15");
+        /* tomcat服务器刷新数据的间隔 */
+        map.put("tomcat_heart_beat", "5");
     }
 
 

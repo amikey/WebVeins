@@ -1,5 +1,7 @@
 package com.xiongbeer.webveins.api.jsondata;
 
+import com.xiongbeer.webveins.zk.task.Task;
+
 import java.util.Date;
 
 /**
@@ -40,7 +42,21 @@ public class TaskJson implements JData {
     }
 
     public String getStatus() {
-        return status;
+        String result = "Unknow";
+        switch (status) {
+            case Task.WAITING:
+                result = "WAITING";
+                break;
+            case Task.RUNNING:
+                result = "RUNNING";
+                break;
+            case Task.FINISHED:
+                result = "FINISHED";
+                break;
+            default:
+                break;
+        }
+        return result;
     }
 
     public void setStatus(String status) {

@@ -6,6 +6,7 @@ import com.xiongbeer.webveins.api.jsondata.JData;
 import com.xiongbeer.webveins.api.jsondata.TaskJson;
 import com.xiongbeer.webveins.exception.VeinsException.OperationFailedException;
 import com.xiongbeer.webveins.zk.task.Task;
+
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
@@ -68,7 +69,8 @@ public class TaskInfo implements SimpleInfo {
      * @param currentStatus 当前的状态
      * @return 失败次数
      */
-    @Deprecated
+    @SuppressWarnings("unused")
+	@Deprecated
     private int getFailedTimes(int mTimes, String currentStatus){
         int ftimes = 0;
         if(mTimes > 0) {

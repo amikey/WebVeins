@@ -2,7 +2,6 @@ package com.xiongbeer.webveins.service.local;
 
 import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.ZnodeInfo;
-import com.xiongbeer.webveins.exception.VeinsException;
 import com.xiongbeer.webveins.service.ProcessDataProto;
 import com.xiongbeer.webveins.zk.worker.Worker;
 import io.netty.channel.ChannelHandler;
@@ -11,7 +10,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;

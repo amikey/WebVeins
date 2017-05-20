@@ -24,7 +24,7 @@ import sun.misc.SignalHandler;
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
-import java.util.EnumSet;
+import java.util.*;
 
 import static org.fusesource.jansi.Ansi.ansi;
 
@@ -37,7 +37,21 @@ public class Test {
     }
 
     public static void main(String[] args) {
-        String[] a = {"1", "2"};
-        Test.fun(a);
+        HashMap<Integer, Integer> a = new HashMap<Integer, Integer>();
+        for(int i=0; i<10; ++i){
+            a.put(new Integer(i), new Integer(2));
+        }
+        Map<Integer, Integer> b = (Map<Integer, Integer>) a.clone();
+        Iterator<Map.Entry<Integer, Integer>> it = b.entrySet().iterator();
+        while(it.hasNext()){
+            Map.Entry entry = it.next();
+            Integer key = (Integer) entry.getKey();
+            Integer value = (Integer) entry.getValue();
+            if(key == 1){
+                a.remove(new Integer(1));
+            }
+        }
+        System.out.println(a);
+        System.out.println(b);
     }
 }

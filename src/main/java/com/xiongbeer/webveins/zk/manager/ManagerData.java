@@ -11,7 +11,6 @@ public class ManagerData implements Comparable<ManagerData> {
 
     public ManagerData(byte[] dataFlow) throws InvalidProtocolBufferException {
         data = BalanceDataProto.BalanceData.parseFrom(dataFlow);
-
     }
 
     public void setData(byte[] dataFlow) throws InvalidProtocolBufferException {

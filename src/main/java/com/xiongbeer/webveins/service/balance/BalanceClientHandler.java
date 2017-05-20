@@ -21,14 +21,12 @@ import java.io.IOException;
 public class BalanceClientHandler extends ChannelInboundHandlerAdapter {
     private ManagerData managerData;
     private WebVeinsServer wvServer;
-    private HDFSManager hdfsManager;
     private APIServer apiServer;
     private Logger logger = LoggerFactory.getLogger(BalanceClientHandler.class);
 
     public BalanceClientHandler(ManagerData managerData, APIServer apiServer
             , WebVeinsServer wvServer, HDFSManager hdfsManager){
         this.managerData = managerData;
-        this.hdfsManager = hdfsManager;
         this.apiServer = apiServer;
         this.wvServer = wvServer;
     }

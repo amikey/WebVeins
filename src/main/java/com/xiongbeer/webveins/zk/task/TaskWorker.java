@@ -1,6 +1,5 @@
 package com.xiongbeer.webveins.zk.task;
 
-import com.xiongbeer.webveins.utils.Tracker;
 import com.xiongbeer.webveins.ZnodeInfo;
 
 import org.apache.zookeeper.*;
@@ -14,7 +13,8 @@ import java.util.Map.Entry;
 public class TaskWorker extends Task{
 
     //TODO 构建优先级队列时候可以用到
-    private static List<String> waitingList = new LinkedList<String>();
+    //private static List<String> waitingList = new LinkedList<String>();
+	
     /* 任务黑名单 */
     private static List<String> blackList = new LinkedList<String>();
     public TaskWorker(ZooKeeper zk) {
@@ -25,7 +25,6 @@ public class TaskWorker extends Task{
      * 接管任务
      */
     public String takeTask(){
-        Tracker tracker = new Tracker();
         String task = null;
         checkTasks();
         /* 抢夺未被领取的任务 */

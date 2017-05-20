@@ -3,6 +3,7 @@ package com.xiongbeer.webveins.api;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.xiongbeer.webveins.api.jsondata.JData;
+
 import io.bretty.console.table.Alignment;
 import io.bretty.console.table.ColumnFormatter;
 import io.bretty.console.table.Precision;
@@ -33,18 +34,17 @@ public class OutputFormatter {
         return getFormatTable();
     }
 
-    private String getFormatTable(){
+    @SuppressWarnings("rawtypes")
+	private String getFormatTable(){
         int limit = fullPrint?Integer.MAX_VALUE:LIMIT;
         int boundLen = 0;
         List<Integer> colMaxLenCounter = new LinkedList<Integer>();
         List<List<String>> content = new LinkedList<List<String>>();
         List<String> keys = new LinkedList<String>();
         int counter = 0;
-        boolean full = true;
         /* 读取制表数据 */
         for(JData data:dataSet){
             if(counter >= limit){
-                full = false;
                 break;
             }
             int colCounter = 0;

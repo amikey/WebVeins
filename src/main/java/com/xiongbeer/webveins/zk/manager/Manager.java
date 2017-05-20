@@ -47,7 +47,7 @@ public class Manager {
      * NOT_ELECTED:   从节点
      */
     public enum Status{
-        Initializing, ELECTED, NOT_ELECTED
+        Initializing, ELECTED, NOT_ELECTED, RECOVERING
     }
     private ZooKeeper zk;
     private String serverId;
@@ -115,10 +115,13 @@ public class Manager {
         return balanceData;
     }
 
-    public void manage() throws InterruptedException, IOException, VeinsException.FilterOverflowException {
-        checkTasks();
-        checkWorkers();
-        publishNewTasks();
+    public void manage() throws InterruptedException
+            , IOException, VeinsException.FilterOverflowException {
+        if(status == Status.ELECTED) {
+            checkTasks();
+            checkWorkers();
+            publishNewTasks();
+        }
     }
 
     /**
@@ -161,9 +164,11 @@ public class Manager {
     private Watcher stdManagerExistsWatcher = new Watcher() {
         public void process(WatchedEvent watchedEvent) {
             assert managerPath.equals(watchedEvent.getPath());
-            logger.warn("standby manager deleted, now trying to recover it. by server."
-                    + serverId + " ...");
-            toBeStandBy();
+            if(status == Status.NOT_ELECTED) {
+                logger.warn("standby manager deleted, now trying to recover it. by server."
+                        + serverId + " ...");
+                toBeStandBy();
+            }
         }
     };
 
@@ -182,7 +187,7 @@ public class Manager {
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (KeeperException e) {
-            e.printStackTrace();
+            logger.warn(e.getMessage());
         }
 
     }
@@ -202,7 +207,7 @@ public class Manager {
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (KeeperException e) {
-            e.printStackTrace();
+            logger.warn(e.getMessage());
         }
     }
 
@@ -225,15 +230,18 @@ public class Manager {
                     break;
                 case OK:
                     status = Status.ELECTED;
-                    logger.info("Recover active manager success. now server." + serverId +
-                            " is active manager.");
+                    managerPath = ZnodeInfo.ACTIVE_MANAGER_PATH;
+                    logger.info("Recover active manager success. now server." + serverId
+                            + " is active manager.");
                     activeManagerExists();
                     break;
                 case NODEEXISTS:
+                    status = Status.NOT_ELECTED;
                     logger.info("Active manager has already recover by other server.");
                     activeManagerExists();
                     break;
                 default:
+                    status = Status.NOT_ELECTED;
                     logger.error("Something went wrong when recoving for active manager.",
                             KeeperException.create(Code.get(rc), path));
                     break;
@@ -254,16 +262,17 @@ public class Manager {
     @Async
     private void recoverActiveManager(){
         final ArrayList<Op> process = new ArrayList<Op>();
-        process.add(Op.delete(managerPath, 0));
+        process.add(Op.delete(managerPath, -1));
         process.add(Op.create(
                 ZnodeInfo.ACTIVE_MANAGER_PATH,
-                serverId.getBytes(),
+                balanceData.toByteArray(),
                 OPEN_ACL_UNSAFE,
                 CreateMode.EPHEMERAL
                 )
         );
 
         if(status == Status.NOT_ELECTED) {
+            status = Status.RECOVERING;
             delayExector.schedule(new Runnable(){
                 public void run(){
                     zk.multi(
@@ -321,11 +330,14 @@ public class Manager {
                     standbyManagerExists();
                     break;
                 case OK:
-                    if(stat == null){
+                    // pass
+                    break;
+                case NONODE:
+                    /* 有可能是standy节点转为了active状态，那个时候便不需要重新设置standby节点 */
+                    if(status == Status.NOT_ELECTED) {
                         toBeStandBy();
                         logger.warn("standby manager deleted, now trying to recover it. by server."
                                 + serverId + " ...");
-                        break;
                     }
                     break;
                 default:
@@ -365,7 +377,6 @@ public class Manager {
                 case NODEEXISTS:
                     logger.info("Active manger already exists, turn to set standby manager...");
                     toBeStandBy();
-
                     break;
                 default:
                     logger.error("Something went wrong when running for active manager.",
@@ -402,6 +413,9 @@ public class Manager {
                     logger.info("Server." + serverId + " registered. at {}", new Date().toString());
                     activeManagerExists();
                     standbyManagerExists();
+                    break;
+                case NODEEXISTS:
+
                     break;
                 default:
                     logger.error("Something went wrong when running for stand manager.",
@@ -462,12 +476,12 @@ public class Manager {
      * 存放url的文件移出等待队列
      */
     private void checkTasks() throws InterruptedException, IOException {
+        /* 更新tasksInfo状态表 */
         taskManager.checkTasks();
-        Map<String, Epoch> tasks = taskManager.getTasksInfo();
+        /* 用浅克隆的map进行迭代，直接用原map操作会导致fail-fast */
+        @SuppressWarnings("unchecked")
+		Map<String, Epoch> tasks = (Map<String, Epoch>) taskManager.getTasksInfo().clone();
         Iterator<Entry<String, Epoch>> iterator = tasks.entrySet().iterator();
-        /* 把要移除或要添加的任务先缓存起来，直接移除会触发fastfail */
-        List<String> dropList = new LinkedList<String>();
-        Map<String, Epoch> addList = new HashMap<String, Epoch>();
         while(iterator.hasNext()){
             @SuppressWarnings("rawtypes")
 			Map.Entry entry = (Map.Entry)iterator.next();
@@ -475,31 +489,18 @@ public class Manager {
             Epoch value = (Epoch) entry.getValue();
             if(value.getStatus().equals(Task.FINISHED)){
                 if(unfinishedTaskList.containsKey(key)){
-                    dropList.add(key);
+                    unfinishedTaskList.remove(key);
                 }
                 hdfsManager.moveHDFSFile(Configuration.WAITING_TASKS_URLS + "/" + key,
                         Configuration.FINISHED_TASKS_URLS + "/" + key);
                 taskManager.releaseTask(ZnodeInfo.TASKS_PATH + '/' + key);
             }
             else if(value.getStatus().equals(Task.RUNNING)){
-                addList.put(key, value);
+                unfinishedTaskList.put(key, value);
             } else{
-                dropList.add(key);
+                unfinishedTaskList.remove(key);
             }
         }
-        for(String key:dropList){
-            unfinishedTaskList.remove(key);
-        }
-        iterator = addList.entrySet().iterator();
-        while(iterator.hasNext()){
-            @SuppressWarnings("rawtypes")
-            Map.Entry entry = (Map.Entry)iterator.next();
-            String key = (String) entry.getKey();
-            Epoch value = (Epoch) entry.getValue();
-            unfinishedTaskList.put(key, value);
-        }
-        dropList = null;
-        addList = null;
     }
 
     /**

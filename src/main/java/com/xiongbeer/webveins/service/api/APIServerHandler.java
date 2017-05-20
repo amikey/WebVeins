@@ -10,7 +10,6 @@ import com.xiongbeer.webveins.api.info.WorkerInfo;
 import com.xiongbeer.webveins.api.job.HDFSJob;
 import com.xiongbeer.webveins.api.job.TaskJob;
 import com.xiongbeer.webveins.api.jsondata.JData;
-import com.xiongbeer.webveins.exception.VeinsException;
 import com.xiongbeer.webveins.saver.HDFSManager;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;

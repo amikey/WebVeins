@@ -1,6 +1,5 @@
 package com.xiongbeer.webveins.service.balance;
 
-import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.WebVeinsServer;
 import com.xiongbeer.webveins.saver.HDFSManager;
 import com.xiongbeer.webveins.service.api.APIServer;
@@ -15,7 +14,6 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 public class BalanceClient {
     private static Channel channel;
     private EventLoopGroup group;
-    private HDFSManager hdfsManager;
     public void connect(ManagerData managerData, WebVeinsServer wvServer
             , APIServer apiServer, HDFSManager hdfsManager) {
         String host = managerData.getIp();

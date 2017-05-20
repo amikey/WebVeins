@@ -1,7 +1,6 @@
 package com.xiongbeer.webveins;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.*;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -13,6 +12,7 @@ import com.xiongbeer.webveins.utils.Color;
 import com.xiongbeer.webveins.utils.IdProvider;
 import com.xiongbeer.webveins.utils.InitLogger;
 import com.xiongbeer.webveins.zk.manager.ManagerData;
+
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -20,12 +20,14 @@ import org.apache.zookeeper.ZooKeeper;
 
 import com.xiongbeer.webveins.service.local.Server;
 import com.xiongbeer.webveins.zk.worker.Worker;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.dc.pr.PRError;
+
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
+@SuppressWarnings("restriction")
 public class WebVeinsServer implements Watcher {
 	private Server server;
 	private Worker worker;
