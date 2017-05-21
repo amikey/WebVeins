@@ -10,6 +10,7 @@
 WebVeins是一个将单机爬虫快速整合为分布式爬虫的框架，它并不关心爬虫具体的业务逻辑，与爬虫是松耦合的  
 
 ### Manual
+更新中...   
 [文档](https://xiongbeer.gitbooks.io/webveinsguide/content/)
 
 ### Shell
@@ -34,6 +35,16 @@ WebVeins是一个将单机爬虫快速整合为分布式爬虫的框架，它并
 提前试用
 [WebVeins-visualization
 ](https://github.com/xiongbeer/WebVeins-visualization)
+
+### TODOLIST
+* [ ] 完整的监控与控制API
+* [ ] 支持多个active manager，能在任务分类的情况下进行工作
+* [ ] 支持多个filter，新增部分filter类型
+* [ ] python API支持
+* [ ] Go API支持
+* [ ] 完善可视化项目
+* [ ] 加强负载均衡与性能优化
+
 
 ### 依赖
 - ZooKeeper >= 3.4.9
