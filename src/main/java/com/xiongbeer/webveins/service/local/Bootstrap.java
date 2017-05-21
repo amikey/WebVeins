@@ -79,7 +79,7 @@ public class Bootstrap {
      * @return 返回本地保存文件的路径
      */
     public static String upLoadNewUrls(Set<String> newUrls) throws IOException {
-        /* 临时文件名：本机ip+生成时间 */
+        /* 临时文件名：本机ip+生成时间，最后会被重命名为根据它内容生成的md5值 */
         String path = savePath + File.separator;
         String tempName = idProvider.getIp() +
                 '@' + System.currentTimeMillis();
@@ -89,7 +89,7 @@ public class Bootstrap {
         FileChannel channel = fos.getChannel();
         ByteBuffer outBuffer = ByteBuffer.allocate(WIRTE_LENGTH);
         for(String url:newUrls){
-            String line = url+'\n';
+            String line = url + System.getProperty("line.separator");
             md5Maker.update(line);
             byte[] data = line.getBytes();
             int len = data.length;

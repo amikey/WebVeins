@@ -1,7 +1,6 @@
 package com.xiongbeer.webveins.example.webmagic;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -9,22 +8,27 @@ import java.util.regex.Pattern;
 import com.xiongbeer.webveins.service.local.Bootstrap;
 import com.xiongbeer.webveins.utils.InitLogger;
 
+import io.netty.util.internal.ConcurrentSet;
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.Spider;
 import us.codecraft.webmagic.processor.PageProcessor;
 
 /**
+ * 整个系统最开始是没有任务列表的，需要一个预热来导入一部分url数据
+ * 这个类就是用来做预热的
+ *
  * Created by shaoxiong on 17-5-9.
  */
 public class WarmUp implements PageProcessor {
     private Site site = Site.me().setRetryTimes(3)
             .setSleepTime(1000).setUseGzip(true)
             .setUserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36");
-    private static Set<String> newUrls = new HashSet<String>();
+    private static Set<String> newUrls = new ConcurrentSet<String>();
     
     @Override
     public void process(Page page) {
+        /* 只要获取的url数量大于100就终止爬虫任务 */
     	if(newUrls.size() > 100){
     		try {
 				Bootstrap.upLoadNewUrls(newUrls);
