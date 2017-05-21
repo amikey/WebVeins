@@ -7,7 +7,7 @@
 ## 分布式爬虫调度器
 
 ### 简介
-WebVeins是一个将单机爬虫快速整合为分布式爬虫的框架  
+WebVeins是一个将单机爬虫快速整合为分布式爬虫的框架，它并不关心爬虫具体的业务逻辑，与爬虫是松耦合的  
 
 ### Manual
 [文档](https://xiongbeer.gitbooks.io/webveinsguide/content/)
@@ -72,6 +72,7 @@ $ $WEBVEINS_HOME/bin/webveins -r worker
 ### Quick Start
 
 爬虫继承 *com.xiongbeer.webveins.service.Action* 这个抽象类
+
 ```
 public class Crawler extends Action{
         /* 在爬取过程中需要把新的Url保存下来，结束后上传 */
@@ -120,5 +121,6 @@ public class Crawler extends Action{
             }
         }
     }
-    ```
+```
+
 具体的实例可以参考源代码中example包下的结合webmagic的例子
