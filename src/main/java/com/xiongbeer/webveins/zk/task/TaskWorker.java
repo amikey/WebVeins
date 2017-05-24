@@ -23,6 +23,11 @@ public class TaskWorker extends Task{
 
     /**
      * 接管任务
+     *
+     * 这里可能会有一个疑问，那就是为何不使用sync
+     * 就目前而言，还找不到使用它的理由，因为强实时性的意义并不大，
+     * 即使本地zookeeper的视图稍有落后，也并不会发生多个worker持有一个任务的情况发生（会验证Task的版本信息）
+     * 只是会多一些抢夺次数，而频繁的sync可能会给服务器带来更大的负担
      */
     public String takeTask(){
         String task = null;

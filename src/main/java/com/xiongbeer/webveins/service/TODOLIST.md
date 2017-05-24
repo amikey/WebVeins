@@ -1,1 +1,3 @@
 - 限制的balanceserver有点问题，要么去掉 要么重写
+- BootStrap里面应该提供一个optional的方法让task可以追踪进度
+- 设计私有协议栈，简化现在的一些设计，也是为多平台的API接口做铺垫

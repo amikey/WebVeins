@@ -37,8 +37,8 @@ public class Crawler extends Action implements PageProcessor {
     public boolean run(String urlFilePath) {
     	try {
     	    /* worker领取到的url存放在一个本地文件夹中，这里提供了一个UrlFileLoader来把其中的url读到内存中 */
-			List<String> urlsList = new UrlFileLoader().readFileByLine(urlFilePath);
-			/* 读取的url存在list中，读取出来放入爬虫的爬取队列中 */
+    	    List<String> urlsList = new UrlFileLoader().readFileByLine(urlFilePath);
+    	    /* 读取的url存在list中，读取出来放入爬虫的爬取队列中 */
 			for(String url:urlsList){
 				spider.addUrl(url);
 			}
