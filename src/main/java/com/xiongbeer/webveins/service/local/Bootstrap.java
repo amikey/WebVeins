@@ -107,6 +107,8 @@ public class Bootstrap {
         file.renameTo(new File(path+newName));
         /* 上传至HDFS */
         hdfsManager.upLoad(path+newName, Configuration.NEW_TASKS_URLS);
+        /* 上传成功后删除临时文件 */
+        file.delete();
         return path;
     }
 
