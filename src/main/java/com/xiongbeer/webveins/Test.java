@@ -10,6 +10,7 @@ import com.xiongbeer.webveins.api.info.TaskInfo;
 import com.xiongbeer.webveins.api.jsondata.JData;
 import com.xiongbeer.webveins.api.jsondata.TaskJson;
 import com.xiongbeer.webveins.utils.InitLogger;
+import com.xiongbeer.webveins.utils.UrlFileLoader;
 import io.bretty.console.table.Alignment;
 import io.bretty.console.table.ColumnFormatter;
 import io.bretty.console.table.Precision;
@@ -33,11 +34,8 @@ import static org.fusesource.jansi.Ansi.ansi;
  * Created by shaoxiong on 17-4-9.
  */
 public class Test {
-    public static void fun(String... args){
-        System.out.println(args.length);
-    }
 
     public static void main(String[] args) throws IOException {
-
+        System.out.println(Files.getFileExtension("/home/shaoxiong/zookeeper.out.bak"));
     }
 }

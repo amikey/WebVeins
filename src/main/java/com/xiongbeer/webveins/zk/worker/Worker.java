@@ -47,6 +47,14 @@ public class Worker {
         }
     }
 
+    public static void addToBlackList(String taskName){
+        TaskWorker.addToBlackList(taskName);
+    }
+
+    public static void clearBlackList(){
+        TaskWorker.clearTaskBlackList();
+    }
+
     public TaskWorker getTaskWorker(){
         return taskWorker;
     }

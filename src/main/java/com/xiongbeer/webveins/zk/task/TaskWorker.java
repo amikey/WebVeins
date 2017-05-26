@@ -12,9 +12,6 @@ import java.util.Map.Entry;
  */
 public class TaskWorker extends Task{
 
-    //TODO 构建优先级队列时候可以用到
-    //private static List<String> waitingList = new LinkedList<String>();
-	
     /* 任务黑名单 */
     private static List<String> blackList = new LinkedList<String>();
     public TaskWorker(ZooKeeper zk) {
@@ -70,18 +67,16 @@ public class TaskWorker extends Task{
         }
     }
 
-    /**
-     * 清空任务黑名单
-     */
-    public void clearTaskBlackList(){
+    public static void clearTaskBlackList(){
         blackList.clear();
     }
 
-    /**
-     * 从任务黑名单中移除某个任务
-     */
-    public void removeTaskBlakListElement(String taskName){
+    public static void removeTaskBlackListElement(String taskName){
         blackList.remove(taskName);
+    }
+
+    public static void addToBlackList(String taskName){
+        blackList.add(taskName);
     }
 
     /**

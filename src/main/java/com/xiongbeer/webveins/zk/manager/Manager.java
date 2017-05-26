@@ -564,7 +564,7 @@ public class Manager {
             TODO：
             当文件很大时会占用大量IO
             需要另外一种方式来备份
-            目前想参照fsimage的模式
+            目前想参照fsimage-edits的模式
             这个需要阅读其实现源码
         */
         /* 备份 */

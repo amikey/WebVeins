@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * 提供给用户的使用接口，引导入口
@@ -28,7 +29,7 @@ public class Bootstrap {
     static{
     	Configuration.getInstance();
 
-    	/* 持久化至本地的TEMP_DIR */
+    	/* 暂存至本地的TEMP_DIR */
     	savePath = Configuration.TEMP_DIR;
     	idProvider = new IdProvider();
     	hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_CONF
@@ -73,16 +74,15 @@ public class Bootstrap {
     }
 
     /**
-     * 将新的Urls持久化到本地然后上传至HDFS
+     * 将新的Urls上传至HDFS
      *
      * @param newUrls
      * @return 返回本地保存文件的路径
      */
     public static String upLoadNewUrls(Set<String> newUrls) throws IOException {
-        /* 临时文件名：本机ip+生成时间，最后会被重命名为根据它内容生成的md5值 */
+        /* 临时文件名：版本4的UUID，最后会被重命名为根据它内容生成的md5值 */
         String path = savePath + File.separator;
-        String tempName = idProvider.getIp() +
-                '@' + System.currentTimeMillis();
+        String tempName = UUID.randomUUID().toString();
         MD5Maker md5Maker = new MD5Maker();
         File file = new File(path+tempName);
         FileOutputStream fos = new FileOutputStream(file);

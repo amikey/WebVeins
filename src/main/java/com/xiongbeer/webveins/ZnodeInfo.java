@@ -4,7 +4,7 @@ package com.xiongbeer.webveins;
  * Created by shaoxiong on 17-4-6.
  */
 public class ZnodeInfo {
-    public static final String ROOT_PATH            = "/";
+    public static final String ROOT_PATH            = "/webveins/";
     public static final String WORKERS_PATH         = ROOT_PATH + "wvWorkers";
     public static final String TASKS_PATH           = ROOT_PATH + "wvTasks";
     public static final String MANAGERS_PATH        = ROOT_PATH + "wvManagers";
