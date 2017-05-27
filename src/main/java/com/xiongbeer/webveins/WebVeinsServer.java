@@ -41,12 +41,12 @@ public class WebVeinsServer implements Watcher {
 
 	private WebVeinsServer() throws IOException {
     	Configuration.getInstance();
-        zk = SelfTest.checkZK(this);
+        zk = SelfTest.checkAndGetZK(this);
         if(zk == null){
             logger.error("[init] Connect to zookeeper server failed.");
             System.exit(1);
         }
-        hdfsManager = SelfTest.checkHDFS();
+        hdfsManager = SelfTest.checkAndGetHDFS();
         if(hdfsManager == null){
             logger.error("[init] Connect to hdfs failed.");
             System.exit(1);

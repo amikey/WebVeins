@@ -11,13 +11,14 @@ import java.util.ArrayList;
  */
 public class TaskWatcher{
     private ZooKeeper zk;
+    public static int WAITING_TIME = 2 * 1000;
     public TaskWatcher(ZooKeeper zk){
         this.zk = zk;
     }
 
     /**
      * 在没有可领取任务时阻塞
-     * 刷新频率为2秒一次
+     * 刷新频率为WAITING_TIME/次
      */
     public void waitForTask(){
         try {
@@ -31,7 +32,7 @@ public class TaskWatcher{
                         return;
                     }
                 }
-                Thread.sleep(2 * 1000);
+                Thread.sleep(WAITING_TIME);
             }
         } catch (InterruptedException e) {
             e.printStackTrace();

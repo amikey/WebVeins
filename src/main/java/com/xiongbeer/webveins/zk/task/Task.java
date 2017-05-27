@@ -10,9 +10,12 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by shaoxiong on 17-4-7.
@@ -23,7 +26,7 @@ public class Task {
     public static final String FINISHED  = "2";
 
     protected ZooKeeper client;
-    protected HashMap<String, Epoch> tasksInfo = new HashMap<String, Epoch>();
+    protected Map<String, Epoch> tasksInfo = new ConcurrentHashMap<>();
     protected Logger logger = LoggerFactory.getLogger(Task.class);
 
     public Task(ZooKeeper zk){
@@ -113,7 +116,7 @@ public class Task {
             String status =
                     new String(client.getData(path, false, stat));
             Epoch taskInfo = new Epoch(stat.getMtime(), status, stat.getVersion());
-            tasksInfo.put(getDataName(path), taskInfo);
+            tasksInfo.put(new File(path).getName(), taskInfo);
         } catch (KeeperException.ConnectionLossException e) {
             checkTask(path);
         } catch (InterruptedException e) {
@@ -133,21 +136,7 @@ public class Task {
      * 信息新鲜度取决于上一次checkTasks的时间
      * @return
      */
-    public HashMap<String, Epoch> getTasksInfo(){
-        return tasksInfo;
-    }
-
-    /**
-     * 提取path中的Data的Name
-     *
-     * @param path
-     * @return
-     */
-    protected String getDataName(String path){
-        String[] items = path.split("/");
-        if(items == null){
-            return null;
-        }
-        return items[items.length-1];
+    public Map<String, Epoch> getTasksInfo(){
+        return new HashMap<>(tasksInfo);
     }
 }

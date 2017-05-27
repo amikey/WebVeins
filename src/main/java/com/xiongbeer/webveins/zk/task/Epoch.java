@@ -6,10 +6,10 @@ import java.util.Date;
  * Created by shaoxiong on 17-4-10.
  */
 public class Epoch {
-    private Date previousChangeTime;
-    private Date checkTime;
-    private String status;
-    private int dataVersion;
+    private final Date previousChangeTime;
+    private final Date checkTime;
+    private final String status;
+    private final int dataVersion;
 
     public long getDifference(){
         return (checkTime.getTime() - previousChangeTime.getTime())/1000;
@@ -26,32 +26,16 @@ public class Epoch {
         return dataVersion;
     }
 
-    public void setDataVersion(int dataVersion){
-        this.dataVersion = dataVersion;
-    }
-
     public String getStatus(){
         return status;
-    }
-
-    public void setStatus(String status){
-        this.status = status;
     }
 
     public Date getPreviousChangeTime() {
         return previousChangeTime;
     }
 
-    public void setPreviousChangeTime(Date previousChangeTime) {
-        this.previousChangeTime = previousChangeTime;
-    }
-
     public Date getCheckTime() {
         return checkTime;
-    }
-
-    public void setCheckTime(Date checkTime) {
-        this.checkTime = checkTime;
     }
 
     public String toString(){

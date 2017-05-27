@@ -100,7 +100,7 @@ public class ClusterFormatter implements Watcher{
     private ClusterFormatter(){
         Configuration.getInstance();
         try {
-            client = new ZooKeeper(Configuration.INIT_SERVER
+            client = new ZooKeeper(Configuration.ZK_CONNECT_STRING
                     , Configuration.ZK_SESSION_TIMEOUT, this);
             hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_CONF
                     , Configuration.HDFS_SYSTEM_PATH);

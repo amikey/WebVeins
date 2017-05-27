@@ -7,11 +7,12 @@ import org.apache.zookeeper.AsyncCallback.*;
 import org.apache.zookeeper.KeeperException.Code;
 import org.apache.zookeeper.data.Stat;
 
+import java.io.File;
+
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
 /**
  * Created by shaoxiong on 17-4-10.
- * TODO:添加各个Callback函数default的logger info
  */
 public class TaskManager extends Task{
     public TaskManager(ZooKeeper zk) {
@@ -37,7 +38,9 @@ public class TaskManager extends Task{
                     logger.info("Task: " + path + " has already exist.");
                     break;
                 default:
-
+                    logger.error("Something went wrong when submit task.",
+                            KeeperException.create(Code.get(rc), path));
+                    break;
             }
         }
     };
@@ -55,7 +58,9 @@ public class TaskManager extends Task{
                     logger.warn("Task: " + path + " doesn't exist.");
                     break;
                 default:
-
+                    logger.error("Something went wrong when reset task.",
+                            KeeperException.create(Code.get(rc), path));
+                    break;
             }
         }
     };
@@ -68,13 +73,16 @@ public class TaskManager extends Task{
                     releaseTask(path);
                     break;
                 case OK:
-                    String dataUrl = getDataName(path);
+                    String dataUrl = new File(path).getName();
                     if(tasksInfo.containsKey(dataUrl)){
                         tasksInfo.remove(dataUrl);
                     }
                     logger.info("Release task: " + dataUrl + " success.");
                     break;
                 default:
+                    logger.error("Something went wrong when release task.",
+                            KeeperException.create(Code.get(rc), path));
+                    break;
             }
         }
     };

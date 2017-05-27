@@ -42,9 +42,10 @@ import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 public class Manager {
     /**
      * Manager的状态
-     * Initializing: 刚初始化，还未进行选举
-     * ELECTED:      主节点
+     * Initializing:  刚初始化，还未进行选举
+     * ELECTED:       主节点
      * NOT_ELECTED:   从节点
+     * RECOVERING:    检测到主节点死亡，尝试恢复中
      */
     public enum Status{
         Initializing, ELECTED, NOT_ELECTED, RECOVERING
@@ -60,30 +61,17 @@ public class Manager {
     private TaskManager taskManager;
     private HDFSManager hdfsManager;
 
-    private HashMap<String, String> workerList = new HashMap<String, String>();
+    private Map<String, String> workerList = new HashMap<String, String>();
 
     /* 未完成的任务指RUNNING状态的任务 */
-    private HashMap<String, Epoch> unfinishedTaskList = new HashMap<String, Epoch>();
+    private Map<String, Epoch> unfinishedTaskList = new HashMap<String, Epoch>();
 
     private UrlFilter filter;
 
     private Logger logger = LoggerFactory.getLogger(Manager.class);
 
-    private BalanceDataProto.BalanceData balanceData;
-    private BalanceDataProto.BalanceData.Builder builder;
-
     public Manager(ZooKeeper zk, String serverId,
                    HDFSManager hdfsManager, UrlFilter filter){
-        /* 初始化负载数据 */
-        builder = BalanceDataProto.BalanceData.newBuilder();
-        String ip = new IdProvider().getIp();
-        builder.setIp(ip);
-        builder.setPort(Configuration.BALANCE_SERVER_PORT);
-        builder.setZkIp(ip);
-        int port = Configuration.ZOOKEEPER_MANAGER_ADDRESS.get(ip);
-        builder.setZkPort(port);
-        builder.setLoad(0);
-        balanceData = builder.build();
 
         status = Status.Initializing;
         this.zk = zk;
@@ -109,10 +97,6 @@ public class Manager {
 
     public void setServerId(String serverId){
         this.serverId = serverId;
-    }
-
-    public BalanceDataProto.BalanceData getBalanceData(){
-        return balanceData;
     }
 
     public void manage() throws InterruptedException
@@ -173,45 +157,6 @@ public class Manager {
     };
 
     /**
-     * 增加负载值，同时将信息上传到Znode中
-     */
-    public void addLoad(){
-        BalanceDataProto.BalanceData data;
-        builder.setLoad(balanceData.getLoad() + 1);
-        data = builder.build();
-        try {
-            zk.setData(managerPath, balanceData.toByteArray(),-1);
-            balanceData = data;
-        } catch (KeeperException.ConnectionLossException e) {
-            addLoad();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (KeeperException e) {
-            logger.warn(e.getMessage());
-        }
-
-    }
-    
-    /**
-     * 减少负载值，同时将信息上传到Znode中
-     */
-    public void reduceLoad(){
-        BalanceDataProto.BalanceData data;
-        builder.setLoad(balanceData.getLoad() - 1);
-        data = builder.build();
-        try {
-            zk.setData(managerPath, balanceData.toByteArray(), -1);
-            balanceData = data;
-        } catch (KeeperException.ConnectionLossException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (KeeperException e) {
-            logger.warn(e.getMessage());
-        }
-    }
-
-    /**
      * 集合操作的Callback，尝试恢复activeManager
      *
      * 需要先删除之前自身创建的
@@ -265,7 +210,7 @@ public class Manager {
         process.add(Op.delete(managerPath, -1));
         process.add(Op.create(
                 ZnodeInfo.ACTIVE_MANAGER_PATH,
-                balanceData.toByteArray(),
+                "".getBytes(),
                 OPEN_ACL_UNSAFE,
                 CreateMode.EPHEMERAL
                 )
@@ -393,7 +338,7 @@ public class Manager {
     private void toBeActive(){
         zk.create(
                 ZnodeInfo.ACTIVE_MANAGER_PATH,
-                balanceData.toByteArray(),
+                "".getBytes(),
                 OPEN_ACL_UNSAFE,
                 CreateMode.EPHEMERAL,
                 actManagerCreateCallback,
@@ -432,7 +377,7 @@ public class Manager {
     private void toBeStandBy(){
         zk.create(
                 ZnodeInfo.STANDBY_MANAGER_PATH + serverId,
-                balanceData.toByteArray(),
+                "".getBytes(),
                 OPEN_ACL_UNSAFE,
                 CreateMode.EPHEMERAL,
                 stdManagerCreateCallback,
@@ -480,7 +425,7 @@ public class Manager {
         taskManager.checkTasks();
         /* 用浅克隆的map进行迭代，直接用原map操作会导致fail-fast */
         @SuppressWarnings("unchecked")
-		Map<String, Epoch> tasks = (Map<String, Epoch>) taskManager.getTasksInfo().clone();
+		Map<String, Epoch> tasks = taskManager.getTasksInfo();
         Iterator<Entry<String, Epoch>> iterator = tasks.entrySet().iterator();
         while(iterator.hasNext()){
             @SuppressWarnings("rawtypes")

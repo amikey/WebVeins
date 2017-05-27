@@ -51,10 +51,10 @@ public class SelfTest {
      * @param
      * @return
      */
-    public static ZooKeeper checkZK(Watcher watcher) {
+    public static ZooKeeper checkAndGetZK(Watcher watcher) {
         ZooKeeper zk;
         try {
-            zk = new ZooKeeper(Configuration.INIT_SERVER, Configuration.ZK_SESSION_TIMEOUT, watcher);
+            zk = new ZooKeeper(Configuration.ZK_CONNECT_STRING, Configuration.ZK_SESSION_TIMEOUT, watcher);
             zk.exists(ZnodeInfo.TASKS_PATH, false);
             zk.exists(ZnodeInfo.MANAGERS_PATH, false);
             zk.exists(ZnodeInfo.WORKERS_PATH, false);
@@ -70,7 +70,7 @@ public class SelfTest {
      *
      * @return
      */
-    public static HDFSManager checkHDFS(){
+    public static HDFSManager checkAndGetHDFS(){
         HDFSManager hdfsManager;
         try{
             hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_CONF, Configuration.HDFS_SYSTEM_PATH);

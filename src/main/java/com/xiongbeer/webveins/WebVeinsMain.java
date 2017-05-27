@@ -34,27 +34,22 @@ public class WebVeinsMain implements Watcher{
     private Configuration configuration;
     private Timer managerTimer;
     private Logger logger = LoggerFactory.getLogger(WebVeinsMain.class);
-    private String ip = new IdProvider().getIp();
     private BalanceServer balanceServer;
     private Manager manager;
     private HDFSManager hdfsManager;
-    private static int ZK_RETRY_TIME = 3;
     private WebVeinsMain() throws IOException {
     	configuration = Configuration.getInstance();
-        String connectString = ip + ':'
-                + Configuration.ZOOKEEPER_MANAGER_ADDRESS.get(ip);
-        zk = SelfTest.checkZK(this);
+        zk = SelfTest.checkAndGetZK(this);
         if(zk == null){
             logger.error("[init] Connect to zookeeper server failed.");
             System.exit(1);
         }
-        hdfsManager = SelfTest.checkHDFS();
+        hdfsManager = SelfTest.checkAndGetHDFS();
         if(hdfsManager == null){
             logger.error("[init] Connect to hdfs failed.");
             System.exit(1);
         }
 
-        serverId = ip;
         /* 监听kill信号 */
         SignalHandler handler = new StopSignalHandler();
         Signal termSignal = new Signal("TERM");
@@ -101,21 +96,6 @@ public class WebVeinsMain implements Watcher{
         long delay = 0;
         long intevalPeriod = Configuration.CHECK_TIME * 1000;
         managerTimer.scheduleAtFixedRate(task, delay, intevalPeriod);
-
-        /* 均衡负载服务 */
-        new Thread("BalanceServer"){
-            @Override
-            public void run(){
-                try {
-                    balanceServer = new BalanceServer(
-                            Configuration.BALANCE_SERVER_PORT, manager);
-                    balanceServer.bind();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    System.exit(1);
-                }
-            }
-        }.start();
     }
 
 
@@ -128,8 +108,6 @@ public class WebVeinsMain implements Watcher{
                 /* 必须先purge，否则可能会在main线程退出后还运行一次 */
                 managerTimer.purge();
                 managerTimer.cancel();
-                logger.info("stoping balance server...");
-                balanceServer.stop();
                 hdfsManager.close();
             } catch (Throwable e) {
                 System.out.println("handle|Signal handler" + "failed, reason "

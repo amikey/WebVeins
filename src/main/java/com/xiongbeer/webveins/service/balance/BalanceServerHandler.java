@@ -20,14 +20,12 @@ public class BalanceServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        manager.addLoad();
-        logger.info("load: " + manager.getBalanceData().getLoad());
+
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        manager.reduceLoad();
-        logger.info("load: " + manager.getBalanceData().getLoad());
+
     }
 
 
