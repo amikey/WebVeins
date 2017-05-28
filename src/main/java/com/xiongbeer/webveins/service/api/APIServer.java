@@ -11,19 +11,20 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.ZooKeeper;
 
 /**
  * Created by shaoxiong on 17-5-13.
  */
 public class APIServer {
-    private ZooKeeper zk;
+    private CuratorFramework client;
     private HDFSManager hdfsManager;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
 
-    public APIServer(ZooKeeper zk, HDFSManager hdfsManager){
-        this.zk = zk;
+    public APIServer(CuratorFramework client, HDFSManager hdfsManager){
+        this.client = client;
         this.hdfsManager = hdfsManager;
     }
 
@@ -39,7 +40,7 @@ public class APIServer {
                             throws Exception {
                         channel.pipeline().addLast(new LineBasedFrameDecoder(1024));
                         channel.pipeline().addLast(new StringDecoder());
-                        channel.pipeline().addLast(new APIServerHandler(zk, hdfsManager));
+                        channel.pipeline().addLast(new APIServerHandler(client, hdfsManager));
                     }
                 });
         try {

@@ -1,17 +1,12 @@
 package com.xiongbeer.webveins.zk.task;
 
-import com.xiongbeer.webveins.utils.Async;
-import com.xiongbeer.webveins.utils.Tracker;
 import com.xiongbeer.webveins.ZnodeInfo;
-import org.apache.zookeeper.*;
-import org.apache.zookeeper.AsyncCallback.*;
-import org.apache.zookeeper.KeeperException.Code;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,54 +20,12 @@ public class Task {
     public static final String RUNNING   = "1";
     public static final String FINISHED  = "2";
 
-    protected ZooKeeper client;
+    protected CuratorFramework client;
     protected Map<String, Epoch> tasksInfo = new ConcurrentHashMap<>();
     protected Logger logger = LoggerFactory.getLogger(Task.class);
 
-    public Task(ZooKeeper zk){
-        client = zk;
-    }
-
-    @Deprecated
-    private ChildrenCallback checkTasksChildrenCallback = new ChildrenCallback() {
-        public void processResult(int rc, String path, Object ctx, List<String> list) {
-            Tracker tracker = (Tracker)ctx;
-            switch (Code.get(rc)){
-                case CONNECTIONLOSS:
-                    checkTasks(tracker);
-                    break;
-                case OK:
-                    /* list中存储的是children节点的name，而不是path */
-                    ArrayList<String> tasks = (ArrayList<String>) list;
-                    for(String task:tasks){
-                        try {
-                            checkTask(path + "/" + task);
-                        } catch (Exception e) {
-                            logger.warn("Check task: " + task + " failed.");
-                            e.printStackTrace();
-                        }
-                    }
-                    if(ctx != null) {
-                        tracker.setStatus(Tracker.SUCCESS);
-                    }
-                    break;
-                default:
-                    if(ctx != null) {
-                        tracker.setStatus(Tracker.FAILED);
-                    }
-            }
-        }
-    };
-
-    @Async
-    @Deprecated
-    public void checkTasks(Tracker tracker){
-        client.getChildren(
-                ZnodeInfo.TASKS_PATH,
-                false,
-                checkTasksChildrenCallback,
-                tracker
-        );
+    public Task(CuratorFramework client){
+        this.client = client;
     }
 
     /**
@@ -84,21 +37,12 @@ public class Task {
         String path = ZnodeInfo.TASKS_PATH;
         try {
             List<String> tasks =
-                    client.getChildren(path, false);
+                    client.getChildren().forPath(path);
             for(String task:tasks){
-                try {
-                    checkTask(path + "/" + task);
-                } catch (Exception e) {
-                    logger.warn("Check task: " + task + " failed.");
-                    e.printStackTrace();
-                }
+                checkTask(path + "/" + task);
             }
-        } catch (KeeperException.ConnectionLossException e) {
-            checkTasks();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (KeeperException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            logger.warn("failed to update tasks' information", e);
         }
     }
 
@@ -114,15 +58,13 @@ public class Task {
         try {
             Stat stat = new Stat();
             String status =
-                    new String(client.getData(path, false, stat));
+                    new String(client.getData()
+                            .storingStatIn(stat)
+                            .forPath(path));
             Epoch taskInfo = new Epoch(stat.getMtime(), status, stat.getVersion());
             tasksInfo.put(new File(path).getName(), taskInfo);
-        } catch (KeeperException.ConnectionLossException e) {
-            checkTask(path);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (KeeperException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            logger.warn("Check task: " + path + " failed.", e);
         }
     }
 

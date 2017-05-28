@@ -1,19 +1,23 @@
 package com.xiongbeer.webveins.zk.task;
 
 import com.xiongbeer.webveins.ZnodeInfo;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.ZooKeeper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by shaoxiong on 17-5-6.
  */
 public class TaskWatcher{
-    private ZooKeeper zk;
+    private CuratorFramework client;
+    private Logger logger = LoggerFactory.getLogger(TaskWatcher.class);
     public static int WAITING_TIME = 2 * 1000;
-    public TaskWatcher(ZooKeeper zk){
-        this.zk = zk;
+    public TaskWatcher(CuratorFramework client){
+        this.client = client;
     }
 
     /**
@@ -23,21 +27,19 @@ public class TaskWatcher{
     public void waitForTask(){
         try {
             while(true) {
-                ArrayList<String> children =
-                        (ArrayList<String>) zk.getChildren(ZnodeInfo.TASKS_PATH, false);
+                List<String> children =
+                        (ArrayList<String>) client.getChildren().forPath(ZnodeInfo.TASKS_PATH);
                 for (String child : children) {
-                    byte[] data = zk.getData(ZnodeInfo.NEW_TASK_PATH+child,
-                            false, null);
+                    byte[] data =
+                            client.getData().forPath(ZnodeInfo.NEW_TASK_PATH + child);
                     if (new String(data).equals(Task.WAITING)) {
                         return;
                     }
                 }
                 Thread.sleep(WAITING_TIME);
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (KeeperException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            logger.warn("some thing get wrong when waiting for task.", e);
         }
     }
 

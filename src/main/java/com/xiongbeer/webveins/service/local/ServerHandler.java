@@ -84,6 +84,10 @@ public class ServerHandler extends ChannelInboundHandlerAdapter{
                 break;
             case WAITING:
                 break;
+            /*
+                TODO 任务文件有问题，放弃任务并且移除这个任务
+                case ERROR
+             */
             default:
                 break;
         }

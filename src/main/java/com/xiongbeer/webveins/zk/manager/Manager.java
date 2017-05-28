@@ -6,15 +6,17 @@ import com.xiongbeer.webveins.*;
 import com.xiongbeer.webveins.exception.VeinsException;
 import com.xiongbeer.webveins.filter.UrlFilter;
 import com.xiongbeer.webveins.saver.HDFSManager;
-import com.xiongbeer.webveins.service.balance.BalanceDataProto;
 import com.xiongbeer.webveins.utils.Async;
-import com.xiongbeer.webveins.utils.IdProvider;
 import com.xiongbeer.webveins.utils.MD5Maker;
+import com.xiongbeer.webveins.zk.AsyncOpThreadPool;
 import com.xiongbeer.webveins.zk.task.Epoch;
 import com.xiongbeer.webveins.zk.task.Task;
 import com.xiongbeer.webveins.zk.task.TaskManager;
 import com.xiongbeer.webveins.zk.worker.WorkersWatcher;
 
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.AsyncCallback.*;
 import org.apache.zookeeper.KeeperException.Code;
@@ -26,6 +28,7 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -50,12 +53,14 @@ public class Manager {
     public enum Status{
         Initializing, ELECTED, NOT_ELECTED, RECOVERING
     }
-    private ZooKeeper zk;
+    public static Manager manager;
+    private CuratorFramework client;
     private String serverId;
 
     private String managerPath;
     private Status status;
     private ScheduledExecutorService delayExector = Executors.newScheduledThreadPool(1);
+    private ExecutorService asyncOpThreadPool = AsyncOpThreadPool.getInstance().getThreadPool();
 
     private WorkersWatcher workersWatcher;
     private TaskManager taskManager;
@@ -70,17 +75,24 @@ public class Manager {
 
     private Logger logger = LoggerFactory.getLogger(Manager.class);
 
-    public Manager(ZooKeeper zk, String serverId,
+    private Manager(CuratorFramework client, String serverId,
                    HDFSManager hdfsManager, UrlFilter filter){
-
         status = Status.Initializing;
-        this.zk = zk;
+        this.client = client;
         this.serverId = serverId;
-        taskManager = new TaskManager(zk);
+        taskManager = new TaskManager(client);
         this.hdfsManager = hdfsManager;
-        workersWatcher = new WorkersWatcher(zk);
+        workersWatcher = new WorkersWatcher(client);
         this.filter = filter;
         toBeActive();
+    }
+
+    public static synchronized Manager getInstance(CuratorFramework client, String serverId,
+                                      HDFSManager hdfsManager, UrlFilter filter){
+        if(manager == null){
+            manager = new Manager(client, serverId, hdfsManager, filter);
+        }
+        return manager;
     }
 
     public Status getStatus(){
@@ -99,9 +111,20 @@ public class Manager {
         this.serverId = serverId;
     }
 
+    /**
+     * 核心方法，manager定期进行manage：
+     *      1.刷新任务列表
+     *      2.检查Worker
+     *      3.发布新的任务
+     *
+     * @throws InterruptedException
+     * @throws IOException
+     * @throws VeinsException.FilterOverflowException bloomFilter的容量已满
+     */
     public void manage() throws InterruptedException
             , IOException, VeinsException.FilterOverflowException {
         if(status == Status.ELECTED) {
+            logger.info("start manage process...");
             checkTasks();
             checkWorkers();
             publishNewTasks();
@@ -219,12 +242,18 @@ public class Manager {
         if(status == Status.NOT_ELECTED) {
             status = Status.RECOVERING;
             delayExector.schedule(new Runnable(){
+                @Override
                 public void run(){
-                    zk.multi(
-                            process,
-                            recoverMultiCallback,
-                            null
-                    );
+                    try {
+                        client.getZookeeperClient().getZooKeeper().multi(
+                                process,
+                                recoverMultiCallback,
+                                null
+                        );
+                    } catch (Exception e) {
+                        logger.warn("Unknow error.", e);
+                    }
+
                 }
             }, ZnodeInfo.JITTER_DELAY, TimeUnit.SECONDS);
         }
@@ -233,8 +262,11 @@ public class Manager {
         }
     }
     
-    private StatCallback actManagerExistsCallback = new StatCallback() {
-        public void processResult(int rc, String path, Object ctx, Stat stat) {
+    private BackgroundCallback actManagerExistsCallback = new BackgroundCallback() {
+        @Override
+        public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
+            int rc = curatorEvent.getResultCode();
+            Stat stat = curatorEvent.getStat();
             switch (Code.get(rc)){
                 case CONNECTIONLOSS:
                     activeManagerExists();
@@ -260,16 +292,21 @@ public class Manager {
     private void activeManagerExists(){
         Watcher watcher = status==Status.NOT_ELECTED?
                 actManagerExistsWatcher:null;
-        zk.exists(
-                ZnodeInfo.ACTIVE_MANAGER_PATH,
-                watcher,
-                actManagerExistsCallback,
-                null
-        );
+        try {
+            client.checkExists()
+                    .usingWatcher(watcher)
+                    .inBackground(actManagerExistsCallback, asyncOpThreadPool)
+                    .forPath(ZnodeInfo.ACTIVE_MANAGER_PATH);
+        } catch (Exception e) {
+            logger.warn("Unknow error.", e);
+        }
     }
     
-    private StatCallback stdManagerExistsCallback = new StatCallback() {
-        public void processResult(int rc, String path, Object ctx, Stat stat) {
+    private BackgroundCallback stdManagerExistsCallback = new BackgroundCallback() {
+        @Override
+        public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
+            int rc = curatorEvent.getResultCode();
+            String path = curatorEvent.getPath();
             switch (Code.get(rc)){
                 case CONNECTIONLOSS:
                     standbyManagerExists();
@@ -299,16 +336,21 @@ public class Manager {
      */
     @Async
     private void standbyManagerExists(){
-        zk.exists(
-                managerPath,
-                stdManagerExistsWatcher,
-                stdManagerExistsCallback,
-                null
-        );
+        try {
+            client.checkExists()
+                    .usingWatcher(stdManagerExistsWatcher)
+                    .inBackground(stdManagerExistsCallback, asyncOpThreadPool)
+                    .forPath(managerPath);
+        } catch (Exception e) {
+            logger.warn("Unknow error.", e);
+        }
     }
     
-    private StringCallback actManagerCreateCallback = new StringCallback() {
-        public void processResult(int rc, String path, Object ctx, String name) {
+    private BackgroundCallback actManagerCreateCallback = new BackgroundCallback() {
+        @Override
+        public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
+            int rc = curatorEvent.getResultCode();
+            String path = curatorEvent.getPath();
             switch (Code.get(rc)){
                 case CONNECTIONLOSS:
                     checkActiveManager();
@@ -336,18 +378,22 @@ public class Manager {
      */
     @Async
     private void toBeActive(){
-        zk.create(
-                ZnodeInfo.ACTIVE_MANAGER_PATH,
-                "".getBytes(),
-                OPEN_ACL_UNSAFE,
-                CreateMode.EPHEMERAL,
-                actManagerCreateCallback,
-                null
-        );
+        try {
+            client.create()
+                    .creatingParentsIfNeeded()
+                    .withMode(CreateMode.EPHEMERAL)
+                    .inBackground(actManagerCreateCallback, asyncOpThreadPool)
+                    .forPath(ZnodeInfo.ACTIVE_MANAGER_PATH);
+        } catch (Exception e) {
+            logger.warn("unknow error.", e);
+        }
     }
     
-    private StringCallback stdManagerCreateCallback = new StringCallback() {
-        public void processResult(int rc, String path, Object ctx, String name) {
+    private BackgroundCallback stdManagerCreateCallback = new BackgroundCallback() {
+        @Override
+        public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
+            int rc = curatorEvent.getResultCode();
+            String path = curatorEvent.getPath();
             switch (Code.get(rc)){
                 case CONNECTIONLOSS:
                     toBeStandBy();
@@ -360,7 +406,7 @@ public class Manager {
                     standbyManagerExists();
                     break;
                 case NODEEXISTS:
-
+                    //TODO
                     break;
                 default:
                     logger.error("Something went wrong when running for stand manager.",
@@ -375,18 +421,22 @@ public class Manager {
      */
     @Async
     private void toBeStandBy(){
-        zk.create(
-                ZnodeInfo.STANDBY_MANAGER_PATH + serverId,
-                "".getBytes(),
-                OPEN_ACL_UNSAFE,
-                CreateMode.EPHEMERAL,
-                stdManagerCreateCallback,
-                null
-        );
+        try {
+            client.create()
+                    .creatingParentsIfNeeded()
+                    .withMode(CreateMode.EPHEMERAL)
+                    .inBackground(stdManagerCreateCallback, asyncOpThreadPool)
+                    .forPath(ZnodeInfo.STANDBY_MANAGER_PATH + serverId);
+        } catch (Exception e) {
+            logger.warn("unknow error.", e);
+        }
     }
     
-    private DataCallback actCheckCallback = new DataCallback() {
-        public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat) {
+    private BackgroundCallback actCheckCallback = new BackgroundCallback() {
+        @Override
+        public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
+            int rc = curatorEvent.getResultCode();
+            String path = curatorEvent.getPath();
             switch (Code.get(rc)){
                 case CONNECTIONLOSS:
                     checkActiveManager();
@@ -394,10 +444,10 @@ public class Manager {
                 case NONODE:
                     recoverActiveManager();
                     break;
-			default:
-                logger.error("Something went wrong when check active manager.",
-                        KeeperException.create(Code.get(rc), path));
-				break;
+                default:
+                    logger.error("Something went wrong when check active manager.",
+                            KeeperException.create(Code.get(rc), path));
+                    break;
             }
         }
     };
@@ -407,12 +457,13 @@ public class Manager {
      */
     @Async
     private void checkActiveManager(){
-        zk.getData(
-                ZnodeInfo.ACTIVE_MANAGER_PATH,
-                false,
-                actCheckCallback,
-                null
-        );
+        try {
+            client.getData()
+                    .inBackground(actCheckCallback, asyncOpThreadPool)
+                    .forPath(ZnodeInfo.ACTIVE_MANAGER_PATH);
+        } catch (Exception e) {
+            logger.warn("unknow error.", e);
+        }
     }
     
     
@@ -421,9 +472,10 @@ public class Manager {
      * 存放url的文件移出等待队列
      */
     private void checkTasks() throws InterruptedException, IOException {
+        syncWaitingTasks();
         /* 更新tasksInfo状态表 */
         taskManager.checkTasks();
-        /* 用浅克隆的map进行迭代，直接用原map操作会导致fail-fast */
+        /* TODO 用克隆的map进行迭代，fail-fast会影响直接用原map操作 */
         @SuppressWarnings("unchecked")
 		Map<String, Epoch> tasks = taskManager.getTasksInfo();
         Iterator<Entry<String, Epoch>> iterator = tasks.entrySet().iterator();
@@ -445,6 +497,20 @@ public class Manager {
             } else{
                 unfinishedTaskList.remove(key);
             }
+        }
+    }
+
+    /**
+     * 用于防止用户误将znode下task删除导致任务永久失效的情况
+     *
+     * 保证hdfs中waitingtasks与znode中wvTasks一致
+     * 但是无法保证znode中wvTasks与hdfs中waitingtasks中一致
+     */
+    private void syncWaitingTasks() throws IOException {
+        List<String> files = hdfsManager.listFiles(Configuration.WAITING_TASKS_URLS, false);
+        for(String filePath:files){
+            String fileName = Files.getNameWithoutExtension(filePath);
+            taskManager.submit(fileName);
         }
     }
 
@@ -488,7 +554,9 @@ public class Manager {
             return;
         }
 
-        List<String> urlFiles = downloadTaskFile(hdfsUrlFiles, tempSavePath);
+
+        List<String> urlFiles = downloadTaskFiles(hdfsUrlFiles, tempSavePath);
+
         /*
             后续整体工作流程：
             对每个文件进行逐个按行读取，在开始读的同时也会
@@ -592,7 +660,7 @@ public class Manager {
      * @return
      * @throws IOException
      */
-    private List<String> downloadTaskFile(List<String> urlFiles
+    private List<String> downloadTaskFiles(List<String> urlFiles
             , String savePath) throws IOException {
         List<String> localUrlFiles = new LinkedList<String>();
         for(String filePath:urlFiles){

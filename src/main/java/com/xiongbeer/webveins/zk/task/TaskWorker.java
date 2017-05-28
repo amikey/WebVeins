@@ -2,7 +2,8 @@ package com.xiongbeer.webveins.zk.task;
 
 import com.xiongbeer.webveins.ZnodeInfo;
 
-import org.apache.zookeeper.*;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.zookeeper.KeeperException;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -14,8 +15,8 @@ public class TaskWorker extends Task{
 
     /* 任务黑名单 */
     private static List<String> blackList = new LinkedList<String>();
-    public TaskWorker(ZooKeeper zk) {
-        super(zk);
+    public TaskWorker(CuratorFramework client) {
+        super(client);
     }
 
     /**
@@ -49,24 +50,6 @@ public class TaskWorker extends Task{
         return task;
     }
 
-    /**
-     * 执行失败，放弃任务
-     *
-     * @param taskPath
-     *
-     */
-    public void discardTask(String taskPath){
-        try {
-            client.setData(taskPath, WAITING.getBytes(), -1);
-        } catch (KeeperException.ConnectionLossException e) {
-            discardTask(taskPath);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (KeeperException e) {
-            e.printStackTrace();
-        }
-    }
-
     public static void clearTaskBlackList(){
         blackList.clear();
     }
@@ -80,19 +63,33 @@ public class TaskWorker extends Task{
     }
 
     /**
+     * 执行失败，放弃任务
+     *
+     * @param taskPath
+     *
+     */
+    public void discardTask(String taskPath){
+        try {
+            client.setData().forPath(taskPath, WAITING.getBytes());
+        } catch (KeeperException.ConnectionLossException e){
+            discardTask(taskPath);
+        } catch (Exception e) {
+            logger.warn("discard task" + taskPath + " failed", e);
+        }
+    }
+
+    /**
      * 完成任务
      *
      * @param taskPath
      */
     public void finishTask(String taskPath){
         try {
-            client.setData(taskPath, FINISHED.getBytes(), -1);
+            client.setData().forPath(taskPath, FINISHED.getBytes());
         } catch (KeeperException.ConnectionLossException e) {
-            discardTask(taskPath);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (KeeperException e) {
-            e.printStackTrace();
+            finishTask(taskPath);
+        } catch (Exception e) {
+            logger.error("set task" + taskPath + " finished failed", e);
         }
     }
 
@@ -109,16 +106,14 @@ public class TaskWorker extends Task{
     public boolean setRunningTask(String path, int version){
         boolean result = false;
         try {
-            client.setData(path, RUNNING.getBytes(), version);
+            client.setData().withVersion(version).forPath(path, RUNNING.getBytes());
             result = true;
+        } catch (KeeperException.NoNodeException e) {
+            super.tasksInfo.remove(path);
         } catch (KeeperException.ConnectionLossException e) {
             setRunningTask(path, version);
-        } catch (KeeperException.NoNodeException e){
-            super.tasksInfo.remove(path);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (KeeperException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            logger.warn("set running task failed.", e);
         }
         return result;
     }

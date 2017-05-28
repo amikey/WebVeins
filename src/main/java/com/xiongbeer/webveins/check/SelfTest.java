@@ -3,13 +3,14 @@ package com.xiongbeer.webveins.check;
 import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.ZnodeInfo;
 import com.xiongbeer.webveins.saver.HDFSManager;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
+import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.HashMap;
 
 /**
  * Created by shaoxiong on 17-5-6.
@@ -51,18 +52,23 @@ public class SelfTest {
      * @param
      * @return
      */
-    public static ZooKeeper checkAndGetZK(Watcher watcher) {
-        ZooKeeper zk;
+    public static CuratorFramework checkAndGetZK() {
+        CuratorFramework client;
         try {
-            zk = new ZooKeeper(Configuration.ZK_CONNECT_STRING, Configuration.ZK_SESSION_TIMEOUT, watcher);
-            zk.exists(ZnodeInfo.TASKS_PATH, false);
-            zk.exists(ZnodeInfo.MANAGERS_PATH, false);
-            zk.exists(ZnodeInfo.WORKERS_PATH, false);
+            RetryPolicy retryPolicy =
+                    new ExponentialBackoffRetry(Configuration.ZK_RETRY_INTERVAL, Configuration.ZK_RETRY_TIMES);
+            client = CuratorFrameworkFactory
+                    .newClient(Configuration.ZK_CONNECT_STRING
+                            , Configuration.ZK_SESSION_TIMEOUT, Configuration.ZK_INIT_TIMEOUT, retryPolicy);
+            client.start();
+            client.checkExists().forPath(ZnodeInfo.TASKS_PATH);
+            client.checkExists().forPath(ZnodeInfo.MANAGERS_PATH);
+            client.checkExists().forPath(ZnodeInfo.WORKERS_PATH);
         } catch (Throwable e) {
             e.printStackTrace();
             return null;
         }
-        return zk;
+        return client;
     }
 
     /**

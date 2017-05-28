@@ -62,9 +62,13 @@ public class Configuration {
     public static int BALANCE_SERVER_PORT;
     public static int TASK_URLS_NUM;
     public static int ZK_SESSION_TIMEOUT;
+    public static int ZK_INIT_TIMEOUT;
+    public static int ZK_RETRY_TIMES;
+    public static int ZK_RETRY_INTERVAL;
     public static String HOME_PATH;
     public static int WORKER_HEART_BEAT;
     public static int TOMCAT_HEART_BEAT;
+    public static int LOCAL_ASYNC_THREAD_NUM;
     private static UrlFilter URL_FILTER;
 
     private Configuration()
@@ -109,8 +113,12 @@ public class Configuration {
         WORKER_DEAD_TIME = Integer.parseInt(map.get("worker_dead_time"));
         CHECK_TIME = Integer.parseInt(map.get("check_time"));
         ZK_SESSION_TIMEOUT = Integer.parseInt(map.get("zk_session_timeout"));
+        ZK_INIT_TIMEOUT = Integer.parseInt(map.get("zk_init_timeout"));
+        ZK_RETRY_TIMES = Integer.parseInt(map.get("zk_retry_times"));
+        ZK_RETRY_INTERVAL = Integer.parseInt(map.get("zk_retry_interval"));
         WORKER_HEART_BEAT = Integer.parseInt(map.get("worker_heart_beat"));
         TOMCAT_HEART_BEAT = Integer.parseInt(map.get("tomcat_heart_beat"));
+        LOCAL_ASYNC_THREAD_NUM = Integer.parseInt(map.get("local_async_thread_num"));
         HDFS_SYSTEM_PATH = map.get("hdfs_system_path");
 
         /* 读取HDFS信息 */
@@ -234,16 +242,24 @@ public class Configuration {
         map.put("bloom_temp_dir", HOME_PATH + "/data/bloom/temp");
         /* 均衡负载server端默认端口 */
         map.put("balance_server_port", "8081");
-        /* 每个任务包含的URL的数量 */
+        /* 每个任务包含的URL的最大数量 */
         map.put("task_urls_num", "200");
         /* zookeeper的session过期时间 */
         map.put("zk_session_timeout", "40000");
+        /* zookeeper客户端初始化连接等待的最长时间 */
+        map.put("zk_init_timeout", "10000");
+        /* zookeeper客户端断开后的重试次数 */
+        map.put("zk_retry_times", "3");
+        /* zookeeper客户端重试时的时间间隔 */
+        map.put("zk_retry_interval", "2000");
         /* HDFS文件系统的nameservice路径 */
         map.put("hdfs_system_path", "");
         /* worker接取任务后的心跳频率 */
         map.put("worker_heart_beat", "15");
         /* tomcat服务器刷新数据的间隔 */
         map.put("tomcat_heart_beat", "5");
+        /* 异步执行的线程数量 */
+        map.put("local_async_thread_num", "40");
     }
 
 

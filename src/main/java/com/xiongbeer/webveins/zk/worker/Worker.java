@@ -1,8 +1,10 @@
 package com.xiongbeer.webveins.zk.worker;
 
 import com.xiongbeer.webveins.ZnodeInfo;
+import com.xiongbeer.webveins.exception.VeinsException;
 import com.xiongbeer.webveins.zk.task.TaskWatcher;
 import com.xiongbeer.webveins.zk.task.TaskWorker;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.AsyncCallback.*;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -17,34 +19,19 @@ import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
  * Created by shaoxiong on 17-4-9.
  */
 public class Worker {
-    private ZooKeeper client;
+    private CuratorFramework client;
     private String serverId;
     private String workerPath;
     private Logger logger = LoggerFactory.getLogger(Worker.class);
     private TaskWorker taskWorker;
     private TaskWatcher taskWatcher;
 
-    public Worker(ZooKeeper zk, String serverId){
-        client = zk;
-        taskWorker = new TaskWorker(zk);
-        taskWatcher = new TaskWatcher(zk);
+    public Worker(CuratorFramework client, String serverId){
+        this.client = client;
+        taskWorker = new TaskWorker(client);
+        taskWatcher = new TaskWatcher(client);
         this.serverId = serverId;
         signUpWorker();
-    }
-
-    public void stop(){
-        logger.info("Trying to stop worker." + serverId + " ...");
-        try {
-            client.delete(workerPath, -1);
-            logger.info("Stop " + serverId + " success.");
-        } catch (KeeperException.ConnectionLossException e){
-          logger.warn("Connection loss, retry ...");
-          stop();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (KeeperException e) {
-            e.printStackTrace();
-        }
     }
 
     public static void addToBlackList(String taskName){
@@ -61,8 +48,8 @@ public class Worker {
 
     public TaskWatcher getTaskWatcher(){return taskWatcher;}
 
-    public void resetZK(ZooKeeper client){
-        this.client = client;
+    public String getWorkerPath(){
+        return workerPath;
     }
 
     public void waitForTask(){
@@ -71,13 +58,9 @@ public class Worker {
 
     public void setStatus(String taskName){
         try {
-            client.setData(workerPath, taskName.getBytes(), -1);
-        } catch (KeeperException.ConnectionLossException e) {
-            setStatus(taskName);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (KeeperException e) {
-            e.printStackTrace();
+            client.setData().forPath(workerPath, taskName.getBytes());
+        } catch (Exception e) {
+            logger.warn("failed to set task.", e);
         }
     }
 
@@ -104,30 +87,16 @@ public class Worker {
         setStatus("");
     }
 
-    private StringCallback workerCreateCallback = new StringCallback() {
-        public void processResult(int rc, String path, Object ctx, String name) {
-            switch (Code.get(rc)){
-                case CONNECTIONLOSS:
-                    signUpWorker();
-                    break;
-                case OK:
-                    logger.info("Worker sign up success by server." + serverId);
-                    workerPath = path;
-                    break;
-                default:
-                    logger.error("Something went wrong when sign up worker.",
-                            KeeperException.create(Code.get(rc), path));
-                    System.exit(1);
-            }
-        }
-    };
-
     private void signUpWorker(){
-        client.create(ZnodeInfo.NEW_WORKER_PATH + serverId,
-                        serverId.getBytes(),
-                        OPEN_ACL_UNSAFE,
-                        CreateMode.EPHEMERAL,
-                        workerCreateCallback,
-                        null);
+        try {
+            workerPath = client.create()
+                    .creatingParentsIfNeeded()
+                    .withMode(CreateMode.EPHEMERAL)
+                    .forPath(ZnodeInfo.NEW_WORKER_PATH + serverId, serverId.getBytes());
+        } catch (KeeperException.ConnectionLossException e) {
+            signUpWorker();
+        } catch (Exception e) {
+            throw new VeinsException.OperationFailedException("\nfailed to sign up worker. " + e.getMessage());
+        }
     }
 }

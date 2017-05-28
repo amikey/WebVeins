@@ -1,17 +1,13 @@
 package com.xiongbeer.webveins;
 
 import com.xiongbeer.webveins.check.SelfTest;
-import com.xiongbeer.webveins.exception.VeinsException;
 import com.xiongbeer.webveins.filter.UrlFilter;
 import com.xiongbeer.webveins.saver.HDFSManager;
-import com.xiongbeer.webveins.service.balance.BalanceServer;
 import com.xiongbeer.webveins.utils.IdProvider;
 import com.xiongbeer.webveins.utils.InitLogger;
 import com.xiongbeer.webveins.zk.manager.Manager;
 
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
+import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,28 +15,28 @@ import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
 import java.io.IOException;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 启动入口
  * Created by shaoxiong on 17-4-20.
  */
 @SuppressWarnings("restriction")
-public class WebVeinsMain implements Watcher{
+public class WebVeinsMain {
     private static WebVeinsMain wvMain;
-    private ZooKeeper zk;
+    private CuratorFramework client;
     private String serverId;
     private Configuration configuration;
-    private Timer managerTimer;
     private Logger logger = LoggerFactory.getLogger(WebVeinsMain.class);
-    private BalanceServer balanceServer;
     private Manager manager;
     private HDFSManager hdfsManager;
+    private ScheduledExecutorService manageExector = Executors.newScheduledThreadPool(1);
     private WebVeinsMain() throws IOException {
     	configuration = Configuration.getInstance();
-        zk = SelfTest.checkAndGetZK(this);
-        if(zk == null){
+        client = SelfTest.checkAndGetZK();
+        if(client == null){
             logger.error("[init] Connect to zookeeper server failed.");
             System.exit(1);
         }
@@ -49,7 +45,7 @@ public class WebVeinsMain implements Watcher{
             logger.error("[init] Connect to hdfs failed.");
             System.exit(1);
         }
-
+        serverId = new IdProvider().getIp();
         /* 监听kill信号 */
         SignalHandler handler = new StopSignalHandler();
         Signal termSignal = new Signal("TERM");
@@ -64,38 +60,27 @@ public class WebVeinsMain implements Watcher{
         return wvMain;
     }
 
-    public void stopManager(){
-        managerTimer.cancel();
-    }
-
     /**
      * 定时执行manage
      */
     private void run(){
         UrlFilter filter = configuration.getUrlFilter();
-        manager = new Manager(zk, serverId,
+        manager = Manager.getInstance(client, serverId,
                 hdfsManager, filter);
 
-        TimerTask task = new TimerTask() {
+        manageExector.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
                 try {
                     manager.manage();
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (VeinsException.FilterOverflowException e) {
-                    e.printStackTrace();
+                    logger.warn("shut down.");
+                    return;
                 } catch (Throwable e){
-                    e.printStackTrace();
+                    logger.warn("something wrong when managing: ", e);
                 }
             }
-        };
-        managerTimer = new Timer();
-        long delay = 0;
-        long intevalPeriod = Configuration.CHECK_TIME * 1000;
-        managerTimer.scheduleAtFixedRate(task, delay, intevalPeriod);
+        }, 0, Configuration.CHECK_TIME, TimeUnit.SECONDS);
     }
 
 
@@ -105,9 +90,8 @@ public class WebVeinsMain implements Watcher{
         public void handle(Signal signal) {
             try {
                 logger.info("stoping manager...");
-                /* 必须先purge，否则可能会在main线程退出后还运行一次 */
-                managerTimer.purge();
-                managerTimer.cancel();
+                manageExector.shutdownNow();
+                client.close();
                 hdfsManager.close();
             } catch (Throwable e) {
                 System.out.println("handle|Signal handler" + "failed, reason "
@@ -116,9 +100,6 @@ public class WebVeinsMain implements Watcher{
             }
         }
     }
-
-    @Override
-    public void process(WatchedEvent watchedEvent) {}
 
     public static void main(String[] args) throws IOException {
         if(SelfTest.checkRunning(WebVeinsMain.class.getSimpleName())){
