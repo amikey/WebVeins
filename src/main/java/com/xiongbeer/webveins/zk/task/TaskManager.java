@@ -2,21 +2,24 @@ package com.xiongbeer.webveins.zk.task;
 
 import com.xiongbeer.webveins.utils.Async;
 import com.xiongbeer.webveins.ZnodeInfo;
+import com.xiongbeer.webveins.zk.AsyncOpThreadPool;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.zookeeper.*;
-import org.apache.zookeeper.AsyncCallback.*;
 import org.apache.zookeeper.KeeperException.Code;
-import org.apache.zookeeper.data.Stat;
 
-import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
+import java.io.File;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Created by shaoxiong on 17-4-10.
- * TODO:添加各个Callback函数default的logger info
  */
 public class TaskManager extends Task{
-    public TaskManager(ZooKeeper zk) {
-        super(zk);
+    public TaskManager(CuratorFramework client) {
+        super(client);
     }
+    private ExecutorService asyncOpThreadPool = AsyncOpThreadPool.getInstance().getThreadPool();
 
     /**
      * submit的Callback函数
@@ -24,8 +27,12 @@ public class TaskManager extends Task{
      * 提交任务成功后不立即刷新Tasks列表
      * 是为了减轻Manager服务器的压力
      */
-    private StringCallback submitTaskCallback = new StringCallback() {
-        public void processResult(int rc, String path, Object ctx, String name) {
+    private BackgroundCallback submitTaskCallback = new BackgroundCallback() {
+        @Override
+        public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
+            int rc = curatorEvent.getResultCode();
+            String name = curatorEvent.getName();
+            String path = curatorEvent.getPath();
             switch (Code.get(rc)){
                 case CONNECTIONLOSS:
                     submit(name);
@@ -34,16 +41,22 @@ public class TaskManager extends Task{
                     logger.info("Submit task: " + path + " success.");
                     break;
                 case NODEEXISTS:
-                    logger.info("Task: " + path + " has already exist.");
+                    // pass
                     break;
                 default:
-
+                    logger.error("Something went wrong when submit task.",
+                            KeeperException.create(Code.get(rc), path));
+                    break;
             }
         }
     };
 
-    private StatCallback resetStatCallback = new StatCallback() {
-        public void processResult(int rc, String path, Object ctx, Stat stat) {
+
+    private BackgroundCallback resetTaskCallback = new BackgroundCallback() {
+        @Override
+        public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
+            int rc = curatorEvent.getResultCode();
+            String path = curatorEvent.getPath();
             switch (Code.get(rc)){
                 case CONNECTIONLOSS:
                     resetTask(path);
@@ -55,45 +68,54 @@ public class TaskManager extends Task{
                     logger.warn("Task: " + path + " doesn't exist.");
                     break;
                 default:
-
+                    logger.error("Something went wrong when reset task.",
+                            KeeperException.create(Code.get(rc), path));
+                    break;
             }
         }
     };
 
 
-    private VoidCallback releaseVoidCallback = new VoidCallback() {
-        public void processResult(int rc, String path, Object ctx) {
+    private BackgroundCallback releaseTaskCallback = new BackgroundCallback() {
+        @Override
+        public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
+            int rc = curatorEvent.getResultCode();
+            String path = curatorEvent.getPath();
             switch (Code.get(rc)){
                 case CONNECTIONLOSS:
                     releaseTask(path);
                     break;
                 case OK:
-                    String dataUrl = getDataName(path);
+                    String dataUrl = new File(path).getName();
                     if(tasksInfo.containsKey(dataUrl)){
                         tasksInfo.remove(dataUrl);
                     }
                     logger.info("Release task: " + dataUrl + " success.");
                     break;
                 default:
+                    logger.error("Something went wrong when release task.",
+                            KeeperException.create(Code.get(rc), path));
+                    break;
             }
         }
     };
 
     /**
-     * 提交任务
+     * 提交一个新的任务
      *
      * 节点包含数据指当前状态
      * @param name
      */
     public void submit(String name){
-        client.create(
-                ZnodeInfo.NEW_TASK_PATH+name,
-                WAITING.getBytes(),
-                OPEN_ACL_UNSAFE,
-                CreateMode.PERSISTENT,
-                submitTaskCallback,
-                null
-        );
+        try {
+            client.create()
+                    .creatingParentsIfNeeded()
+                    .withMode(CreateMode.PERSISTENT)
+                    .inBackground(submitTaskCallback, asyncOpThreadPool)
+                    .forPath(ZnodeInfo.NEW_TASK_PATH + name, WAITING.getBytes());
+        } catch (Exception e) {
+            logger.error("unknow error", e);
+        }
     }
 
     /**
@@ -105,13 +127,13 @@ public class TaskManager extends Task{
      */
     @Async
     public void resetTask(String path){
-        client.setData(
-                path,
-                WAITING.getBytes(),
-                -1,
-                resetStatCallback,
-                null
-        );
+        try {
+            client.setData()
+                    .inBackground(resetTaskCallback, asyncOpThreadPool)
+                    .forPath(path, WAITING.getBytes());
+        } catch (Exception e) {
+            logger.error("unknow error", e);
+        }
     }
 
     /**
@@ -122,11 +144,12 @@ public class TaskManager extends Task{
      */
     @Async
     public void releaseTask(String path){
-        client.delete(
-                path,
-                -1,
-                releaseVoidCallback,
-                null
-        );
+        try {
+            client.delete()
+                    .inBackground(releaseTaskCallback, asyncOpThreadPool)
+                    .forPath(path);
+        } catch (Exception e) {
+            logger.error("unknow error", e);
+        }
     }
 }

@@ -10,6 +10,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -57,6 +58,10 @@ public class ServerHandler extends ChannelInboundHandlerAdapter{
             case NULL:
                 currentTask = null;
                 logger.warn("Give up the task: " + taskPath);
+                /*
+                    TODO 目前暂时将放弃的任务放入黑名单，后面会设置定时器将其移除
+                 */
+                worker.addToBlackList(new File(taskPath).getName());
                 worker.discardTask(taskPath);
                 break;
             case READY:
@@ -79,6 +84,10 @@ public class ServerHandler extends ChannelInboundHandlerAdapter{
                 break;
             case WAITING:
                 break;
+            /*
+                TODO 任务文件有问题，放弃任务并且移除这个任务
+                case ERROR
+             */
             default:
                 break;
         }

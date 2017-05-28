@@ -9,31 +9,6 @@
         <name>check_time</name>
         <value>45</value>
     </property>
-    <!-- 提供均衡负载之前必须首先读取信息，需要一个入口zookeeper的connect-stirng -->
-    <property>
-        <name>init_server</name>
-        <value>127.0.0.1:2181</value>
-    </property>
-    <!-- manager运行那台机器上zookeeper的connect-string 单机模式也请填写实际ip地址，不要使用127.xxx.xxx.xxx的形式-->
-    <property>
-        <name>zookeeper_manager_address</name>
-        <value>192.168.0.115:2181</value>
-    </property>
-	<!-- 
-		如果有其他standby manager 也可添加进来
-		<property>
-		    <name>zookeeper_manager_address</name>
-		    <value>xxx.xxx.xxx.xxx:xxx</value>
-		</property>
-
-		.......
-
-		<property>
-		    <name>zookeeper_manager_address</name>
-		    <value>xxx.xxx.xxx.xxx:xxx</value>
-		</property>
-	-->
-
     <!-- 任务切片包含url数量的最大值，这个值整个集群的配置文件都应该是一致的（不一致不会导致集群运行出现问题，但是很可能会对性能造成影响） -->
     <property>
         <name>task_urls_num</name>

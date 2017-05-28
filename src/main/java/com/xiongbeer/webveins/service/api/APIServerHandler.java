@@ -15,6 +15,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.ZooKeeper;
 
 import java.io.IOException;
@@ -28,11 +29,11 @@ import java.util.regex.Pattern;
  * Created by shaoxiong on 17-5-13.
  */
 public class APIServerHandler extends ChannelInboundHandlerAdapter {
-    private ZooKeeper zk;
+    private CuratorFramework client;
     private HDFSManager hdfsManager;
 
-    public APIServerHandler(ZooKeeper zk, HDFSManager hdfsManager){
-        this.zk = zk;
+    public APIServerHandler(CuratorFramework zk, HDFSManager hdfsManager){
+        this.client = zk;
         this.hdfsManager = hdfsManager;
     }
 
@@ -73,12 +74,12 @@ public class APIServerHandler extends ChannelInboundHandlerAdapter {
         }
         switch (command){
             case LISTTASKS:
-                TaskInfo taskInfo  = new TaskInfo(zk);
+                TaskInfo taskInfo  = new TaskInfo(client);
                 dataSet = taskInfo.getCurrentTasks().getInfo();
                 result = JDecoder(dataSet);
                 break;
             case LISTFILTERS:
-                FilterInfo filterInfo = new FilterInfo(zk, hdfsManager);
+                FilterInfo filterInfo = new FilterInfo(hdfsManager);
                 try {
                     dataSet = filterInfo
                             .getBloomCacheInfo(Configuration.BLOOM_BACKUP_PATH)
@@ -89,12 +90,12 @@ public class APIServerHandler extends ChannelInboundHandlerAdapter {
                 result = JDecoder(dataSet);
                 break;
             case LISTWORKERS:
-                WorkerInfo workerInfo = new WorkerInfo(zk);
+                WorkerInfo workerInfo = new WorkerInfo(client);
                 dataSet = workerInfo.getCurrentWoker().getInfo();
                 result = JDecoder(dataSet);
                 break;
             case REMOVETASKS:
-                TaskJob taskJob = new TaskJob(zk, hdfsManager);
+                TaskJob taskJob = new TaskJob(client, hdfsManager);
                 if(args.length >= 2) {
                     result += taskJob.removeTasks(args[1]);
                 }

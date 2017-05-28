@@ -10,6 +10,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 
@@ -56,8 +57,11 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
             true 标识run成功，返回READY状态，领取下一个任务
             false 标识run失败，返回NULL状态，放弃该任务，让其他爬虫去领取该任务
          */
-        boolean flag = action.run(Configuration.TEMP_DIR + '/'
-                + data.getUrlFileName());
+        String localSavePath = Configuration.TEMP_DIR + '/'
+                + data.getUrlFileName();
+        boolean flag = action.run(localSavePath);
+        /* 任务结束后删除url文件 */
+        new File(localSavePath).delete();
         ProcessDataProto.ProcessData.Builder builder =
                 ProcessDataProto.ProcessData.newBuilder();
         builder.setUrlFilePath("");

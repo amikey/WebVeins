@@ -1,5 +1,7 @@
 package com.xiongbeer.webveins;
 
+import com.google.common.base.Joiner;
+import com.google.common.io.Files;
 import com.xiongbeer.webveins.filter.UrlFilter;
 import com.xiongbeer.webveins.saver.HDFSManager;
 import org.apache.hadoop.fs.Path;
@@ -18,6 +20,8 @@ import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,15 +38,6 @@ public class Configuration {
 
     private static String confPath;
 
-    /*
-        manager端必须指定ZK使用的ip地址和端口号，
-       就目前而言，manager也必须运行在提供zk服务的机器上
-
-       map<ip地址, 端口号>
-    */
-    public static Map<String, Integer> ZOOKEEPER_MANAGER_ADDRESS
-            = new HashMap<String, Integer>();;
-
     /* 常量的具体解释见后面的init() */
     public static String BLOOM_SAVE_PATH;
     public static String HDFS_ROOT;
@@ -56,23 +51,28 @@ public class Configuration {
     public static String BLOOM_TEMP_DIR;
     public static int WORKER_DEAD_TIME;
     public static int CHECK_TIME;
+    public static String ZK_SERVER_FILE_NAME = "zkserver";
     public static String TEMP_SUFFIX = ".bak";
     public static String BLOOM_CACHE_FILE_PREFIX = "bloomcache";
     public static String BLOOM_CACHE_FILE_SUFFIX = ".dat";
     public static String LOCAL_HOST;
     public static int LOCAL_PORT;
     public static int LOCAL_SHELL_PORT;
-    public static String INIT_SERVER;
+    public static String ZK_CONNECT_STRING;
     public static int BALANCE_SERVER_PORT;
-    public static String LOCAL_NEW_URLS_SAVE_PATH;
     public static int TASK_URLS_NUM;
     public static int ZK_SESSION_TIMEOUT;
+    public static int ZK_INIT_TIMEOUT;
+    public static int ZK_RETRY_TIMES;
+    public static int ZK_RETRY_INTERVAL;
     public static String HOME_PATH;
     public static int WORKER_HEART_BEAT;
     public static int TOMCAT_HEART_BEAT;
+    public static int LOCAL_ASYNC_THREAD_NUM;
     private static UrlFilter URL_FILTER;
 
-    private Configuration() throws SAXException, IOException, ParserConfigurationException {
+    private Configuration()
+            throws SAXException, IOException, ParserConfigurationException {
         /* 获取环境变量 */
         String HADOOP_HOME_PATH = System.getenv("HADOOP_HOME");
     	HOME_PATH = System.getenv("WEBVEINS_HOME");
@@ -106,15 +106,19 @@ public class Configuration {
         LOCAL_HOST = map.get("local_host");
         LOCAL_PORT = Integer.parseInt(map.get("local_port"));
         LOCAL_SHELL_PORT = Integer.parseInt(map.get("local_shell_port"));
-        INIT_SERVER = map.get("init_server");
-
+        ZK_CONNECT_STRING = loadZKConnectString(
+                confPath + File.separator + ZK_SERVER_FILE_NAME);
         BALANCE_SERVER_PORT = Integer.parseInt(map.get("balance_server_port"));
         TASK_URLS_NUM = Integer.parseInt(map.get("task_urls_num"));
         WORKER_DEAD_TIME = Integer.parseInt(map.get("worker_dead_time"));
         CHECK_TIME = Integer.parseInt(map.get("check_time"));
         ZK_SESSION_TIMEOUT = Integer.parseInt(map.get("zk_session_timeout"));
+        ZK_INIT_TIMEOUT = Integer.parseInt(map.get("zk_init_timeout"));
+        ZK_RETRY_TIMES = Integer.parseInt(map.get("zk_retry_times"));
+        ZK_RETRY_INTERVAL = Integer.parseInt(map.get("zk_retry_interval"));
         WORKER_HEART_BEAT = Integer.parseInt(map.get("worker_heart_beat"));
         TOMCAT_HEART_BEAT = Integer.parseInt(map.get("tomcat_heart_beat"));
+        LOCAL_ASYNC_THREAD_NUM = Integer.parseInt(map.get("local_async_thread_num"));
         HDFS_SYSTEM_PATH = map.get("hdfs_system_path");
 
         /* 读取HDFS信息 */
@@ -236,20 +240,26 @@ public class Configuration {
         map.put("bloom_filter_enums", "1000000");
         /* bloom过滤器过滤url文件的暂存位置 */
         map.put("bloom_temp_dir", HOME_PATH + "/data/bloom/temp");
-        /* 提供均衡负载之前必须首先读取信息，需要一个用于初始化的BalanceServer的ip和端口号 */
-        map.put("init_server", "127.0.0.1:2181");
         /* 均衡负载server端默认端口 */
         map.put("balance_server_port", "8081");
-        /* 每个任务包含的URL的数量 */
+        /* 每个任务包含的URL的最大数量 */
         map.put("task_urls_num", "200");
         /* zookeeper的session过期时间 */
         map.put("zk_session_timeout", "40000");
+        /* zookeeper客户端初始化连接等待的最长时间 */
+        map.put("zk_init_timeout", "10000");
+        /* zookeeper客户端断开后的重试次数 */
+        map.put("zk_retry_times", "3");
+        /* zookeeper客户端重试时的时间间隔 */
+        map.put("zk_retry_interval", "2000");
         /* HDFS文件系统的nameservice路径 */
         map.put("hdfs_system_path", "");
         /* worker接取任务后的心跳频率 */
         map.put("worker_heart_beat", "15");
         /* tomcat服务器刷新数据的间隔 */
         map.put("tomcat_heart_beat", "5");
+        /* 异步执行的线程数量 */
+        map.put("local_async_thread_num", "40");
     }
 
 
@@ -284,21 +294,19 @@ public class Configuration {
                             if(node.getNodeName().equals("name")){
                                 name = text;
                             } else {
-                                if(!name.equals("zookeeper_manager_address")) {
-                                    map.put(name, text);
-                                }
-                                else{
-                                    String[] items = text.split(":");
-                                    String ip = items[0];
-                                    Integer port = new Integer(Integer.parseInt(items[1]));
-                                    ZOOKEEPER_MANAGER_ADDRESS.put(ip, port);
-                                }
+                                map.put(name, text);
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    public  String loadZKConnectString(String filePath) throws IOException {
+        List<String> content =
+                Files.readLines(new File(filePath), Charset.defaultCharset());
+        return Joiner.on(',').skipNulls().join(content) + ZnodeInfo.ROOT_PATH;
     }
 
     public boolean check(String url) throws SAXException {

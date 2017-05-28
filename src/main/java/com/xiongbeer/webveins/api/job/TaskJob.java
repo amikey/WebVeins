@@ -5,6 +5,7 @@ import com.xiongbeer.webveins.ZnodeInfo;
 import com.xiongbeer.webveins.api.SimpleJob;
 import com.xiongbeer.webveins.exception.VeinsException;
 import com.xiongbeer.webveins.saver.HDFSManager;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 
@@ -17,12 +18,12 @@ import java.util.regex.Pattern;
  * Created by shaoxiong on 17-5-12.
  */
 public class TaskJob implements SimpleJob {
-    private ZooKeeper zk;
+    private CuratorFramework client;
     private HDFSManager hdfsManager;
     private static int MAX_OUTPUT_INFO = 10;
 
-    public TaskJob(ZooKeeper zk, HDFSManager hdfsManager){
-        this.zk = zk;
+    public TaskJob(CuratorFramework client, HDFSManager hdfsManager){
+        this.client = client;
         this.hdfsManager = hdfsManager;
     }
 
@@ -56,19 +57,14 @@ public class TaskJob implements SimpleJob {
             throw new VeinsException.OperationFailedException("[Error] Authentication failed.");
         } catch (KeeperException.NoAuthException e) {
             throw new VeinsException.OperationFailedException("[Error] Permission denied.");
-        } catch (KeeperException e) {
-            throw new VeinsException.OperationFailedException("[Error] Unknow reason.");
-        } catch (InterruptedException e) {
-            throw new VeinsException.OperationFailedException("[Error] Interrupted.");
-        } catch (IOException e) {
-            throw new VeinsException.OperationFailedException(e.getMessage());
+        }  catch (Exception e) {
+            throw new VeinsException.OperationFailedException("Unknow error. " + e.getMessage());
         }
         return builder.toString();
     }
 
-    public void removeFromZnode(String taskName)
-            throws KeeperException, InterruptedException {
-        zk.delete(ZnodeInfo.TASKS_PATH + '/' + taskName, -1);
+    public void removeFromZnode(String taskName) throws Exception {
+        client.delete().forPath(ZnodeInfo.TASKS_PATH + '/' + taskName);
     }
 
     public void removeFromHDFS(String taskName)
@@ -76,9 +72,8 @@ public class TaskJob implements SimpleJob {
         hdfsManager.delete(Configuration.WAITING_TASKS_URLS + '/' + taskName, false);
     }
 
-    public List<String> getTasksName()
-            throws KeeperException, InterruptedException {
-        return zk.getChildren(ZnodeInfo.TASKS_PATH, false);
+    public List<String> getTasksName() throws Exception {
+        return client.getChildren().forPath(ZnodeInfo.TASKS_PATH);
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.xiongbeer.webveins.ZnodeInfo;
 import com.xiongbeer.webveins.api.SimpleInfo;
 import com.xiongbeer.webveins.api.jsondata.JData;
 import com.xiongbeer.webveins.api.jsondata.WorkerJson;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
@@ -17,23 +18,25 @@ import java.util.List;
  */
 public class WorkerInfo implements SimpleInfo {
     private List<JData> info;
-    private ZooKeeper zk;
+    private CuratorFramework client;
 
-    public WorkerInfo(ZooKeeper zk){
+    public WorkerInfo(CuratorFramework client){
         this.info = new LinkedList<JData>();
-        this.zk = zk;
+        this.client = client;
     }
 
     public WorkerInfo getCurrentWoker(){
         List<String> children;
         try {
-            children = zk.getChildren(ZnodeInfo.WORKERS_PATH, false);
+            children = client.getChildren().forPath(ZnodeInfo.WORKERS_PATH);
             for(String child:children){
                 WorkerJson data = new WorkerJson();
                 Stat stat = new Stat();
                 byte[] content;
-                content = zk.getData(ZnodeInfo.WORKERS_PATH + '/' + child
-                        , false, stat);
+                content =
+                        client.getData()
+                                .storingStatIn(stat)
+                                .forPath(ZnodeInfo.WORKERS_PATH + '/' + child);
                 data.setName(child);
                 /* 32为md5码长度 */
                 if(content.length == 32){
@@ -47,6 +50,8 @@ public class WorkerInfo implements SimpleInfo {
         } catch (KeeperException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return this;

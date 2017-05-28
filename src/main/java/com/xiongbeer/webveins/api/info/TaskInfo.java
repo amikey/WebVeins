@@ -7,6 +7,7 @@ import com.xiongbeer.webveins.api.jsondata.TaskJson;
 import com.xiongbeer.webveins.exception.VeinsException.OperationFailedException;
 import com.xiongbeer.webveins.zk.task.Task;
 
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
@@ -19,22 +20,23 @@ import java.util.List;
  */
 public class TaskInfo implements SimpleInfo {
     private List<JData> info;
-    private ZooKeeper zk;
+    private CuratorFramework client;
 
-    public TaskInfo(ZooKeeper zk){
-        this.zk = zk;
+    public TaskInfo(CuratorFramework client){
+        this.client = client;
         info = new LinkedList<JData>();
     }
 
     public TaskInfo getCurrentTasks(){
         try {
-            List<String> children
-                    = zk.getChildren(ZnodeInfo.TASKS_PATH, false);
+            List<String> children =
+                    client.getChildren().forPath(ZnodeInfo.TASKS_PATH);
             byte[] data;
             for(String child:children){
                 Stat stat = new Stat();
-                data = zk.getData(ZnodeInfo.NEW_TASK_PATH + child,
-                        false, stat);
+                data = client.getData()
+                        .storingStatIn(stat)
+                        .forPath(ZnodeInfo.NEW_TASK_PATH + child);
                 info.add(taskInfo(stat, child, data));
             }
             return this;
@@ -45,10 +47,8 @@ public class TaskInfo implements SimpleInfo {
             throw new OperationFailedException("[Error] Authentication failed.");
         } catch (KeeperException.NoAuthException e) {
             throw new OperationFailedException("[Error] Permission denied.");
-        } catch (KeeperException e) {
-            throw new OperationFailedException("[Error] Unknow reason.");
-        } catch (InterruptedException e) {
-            throw new OperationFailedException("[Error] Interrupted.");
+        } catch (Exception e) {
+            throw new OperationFailedException("[Error] Unknow reason." + e.getMessage());
         }
     }
 
