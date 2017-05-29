@@ -16,9 +16,28 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created by shaoxiong on 17-4-7.
  */
 public class Task {
-    public static final String WAITING   = "0";
-    public static final String RUNNING   = "1";
-    public static final String FINISHED  = "2";
+    public enum Status{
+        WAITING("0"), RUNNING("1"), FINISHED("2");
+        private final String value;
+        Status(String value){
+            this.value = value;
+        }
+        public String getValue(){
+            return value;
+        }
+        public static Status get(String type){
+            switch (type){
+                case "0":
+                    return WAITING;
+                case "1":
+                    return RUNNING;
+                case "2":
+                    return FINISHED;
+                default:
+                    return null;
+            }
+        }
+    }
 
     protected CuratorFramework client;
     protected Map<String, Epoch> tasksInfo = new ConcurrentHashMap<>();
@@ -57,10 +76,10 @@ public class Task {
     public void checkTask(String path) {
         try {
             Stat stat = new Stat();
-            String status =
-                    new String(client.getData()
-                            .storingStatIn(stat)
-                            .forPath(path));
+            Status status = Status.get(new String(
+                    client.getData()
+                    .storingStatIn(stat)
+                    .forPath(path)));
             Epoch taskInfo = new Epoch(stat.getMtime(), status, stat.getVersion());
             tasksInfo.put(new File(path).getName(), taskInfo);
         } catch (Exception e) {

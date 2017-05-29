@@ -30,19 +30,19 @@ public class WebVeinsServer {
 	private CuratorFramework client;
 	private APIServer apiServer;
 	private HDFSManager hdfsManager;
-    private Logger logger = LoggerFactory.getLogger(WebVeinsServer.class);
+    private static Logger logger = LoggerFactory.getLogger(WebVeinsServer.class);
     private ExecutorService serviceThreadPool = Executors.newFixedThreadPool(2);
 
 	private WebVeinsServer() throws IOException {
     	Configuration.getInstance();
         client = SelfTest.checkAndGetZK();
         if(client == null){
-            logger.error("[init] Connect to zookeeper server failed.");
+            logger.error("Connect to zookeeper server failed.");
             System.exit(1);
         }
         hdfsManager = SelfTest.checkAndGetHDFS();
         if(hdfsManager == null){
-            logger.error("[init] Connect to hdfs failed.");
+            logger.error("Connect to hdfs failed.");
             System.exit(1);
         }
         apiServer = new APIServer(client, hdfsManager);
@@ -103,9 +103,8 @@ public class WebVeinsServer {
                 apiServer.stop();
                 hdfsManager.close();
             } catch (Throwable e) {
-                System.out.println("handle|Signal handler" + "failed, reason "
+               logger.error("handle|Signal handler" + "failed, reason "
                         + e.getMessage());
-                e.printStackTrace();
             }
         }
     }
@@ -113,7 +112,7 @@ public class WebVeinsServer {
     public static void main(String[] args)
             throws IOException, InterruptedException {
         if(SelfTest.checkRunning(WebVeinsServer.class.getSimpleName())){
-            System.out.println("[Error] Service has already running");
+            logger.error("Service has already running");
             System.exit(1);
         }
         InitLogger.init();

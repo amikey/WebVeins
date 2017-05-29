@@ -484,7 +484,8 @@ public class Manager {
 			Map.Entry entry = (Map.Entry)iterator.next();
             String key = (String) entry.getKey();
             Epoch value = (Epoch) entry.getValue();
-            if(value.getStatus().equals(Task.FINISHED)){
+
+            if(value.getStatus() == Task.Status.FINISHED){
                 if(unfinishedTaskList.containsKey(key)){
                     unfinishedTaskList.remove(key);
                 }
@@ -492,7 +493,7 @@ public class Manager {
                         Configuration.FINISHED_TASKS_URLS + "/" + key);
                 taskManager.releaseTask(ZnodeInfo.TASKS_PATH + '/' + key);
             }
-            else if(value.getStatus().equals(Task.RUNNING)){
+            else if(value.getStatus() == Task.Status.RUNNING){
                 unfinishedTaskList.put(key, value);
             } else{
                 unfinishedTaskList.remove(key);

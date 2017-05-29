@@ -8,14 +8,14 @@ import java.util.Date;
 public class Epoch {
     private final Date previousChangeTime;
     private final Date checkTime;
-    private final String status;
+    private final Task.Status status;
     private final int dataVersion;
 
     public long getDifference(){
         return (checkTime.getTime() - previousChangeTime.getTime())/1000;
     }
 
-    public Epoch(long previousChangeTime, String status, int dataVersion){
+    public Epoch(long previousChangeTime, Task.Status status, int dataVersion){
         checkTime = new Date();
         this.previousChangeTime = new Date(previousChangeTime);
         this.status = status;
@@ -26,7 +26,7 @@ public class Epoch {
         return dataVersion;
     }
 
-    public String getStatus(){
+    public Task.Status getStatus(){
         return status;
     }
 
@@ -38,6 +38,7 @@ public class Epoch {
         return checkTime;
     }
 
+    @Override
     public String toString(){
         return "[previousChangeTime: " + previousChangeTime.toString()
                 + "," + "checkTime: " + checkTime.toString()

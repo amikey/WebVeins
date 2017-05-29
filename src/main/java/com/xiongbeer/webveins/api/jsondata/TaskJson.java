@@ -4,6 +4,7 @@ import com.xiongbeer.webveins.zk.task.Task;
 
 import java.util.Date;
 
+
 /**
  * Created by shaoxiong on 17-5-12.
  */
@@ -15,7 +16,7 @@ public class TaskJson implements JData {
     /* 路径 */
     private String name;
     /* 状态 */
-    private String status;
+    private Task.Status status;
 
     public String getCtime() {
         return new Date(cTime).toString();
@@ -44,13 +45,13 @@ public class TaskJson implements JData {
     public String getStatus() {
         String result = "Unknow";
         switch (status) {
-            case Task.WAITING:
+            case WAITING:
                 result = "WAITING";
                 break;
-            case Task.RUNNING:
+            case RUNNING:
                 result = "RUNNING";
                 break;
-            case Task.FINISHED:
+            case FINISHED:
                 result = "FINISHED";
                 break;
             default:
@@ -59,7 +60,7 @@ public class TaskJson implements JData {
         return result;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(Task.Status status) {
         this.status = status;
     }
 }

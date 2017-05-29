@@ -32,7 +32,7 @@ public class TaskWatcher{
                 for (String child : children) {
                     byte[] data =
                             client.getData().forPath(ZnodeInfo.NEW_TASK_PATH + child);
-                    if (new String(data).equals(Task.WAITING)) {
+                    if (new String(data).equals(Task.Status.WAITING.getValue())) {
                         return;
                     }
                 }
