@@ -1,5 +1,7 @@
-package com.xiongbeer.webveins.service.protocol;
+package com.xiongbeer.webveins.service.protocol.handler;
 
+import com.xiongbeer.webveins.service.protocol.message.Header;
+import com.xiongbeer.webveins.service.protocol.message.Message;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
@@ -7,7 +9,8 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.xiongbeer.webveins.service.protocol.Message.Coderc;
+import com.xiongbeer.webveins.service.protocol.message.Message.Coderc;
+import com.xiongbeer.webveins.service.ProcessDataProto.ProcessData;
 
 /**
  * Created by shaoxiong on 17-5-28.
@@ -20,11 +23,13 @@ public class LoginAuthRespHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg)
             throws Exception {
         Message message = (Message)msg;
-        if (message.getHeader() != null && message.getHeader().getType() == Coderc.LOGIN_REQ.getValue()) {
+        Coderc rc = Coderc.get(message.getHeader().getType());
+        if (message.getHeader() != null && rc == Coderc.CRAWLER_REQ) {
             String nodeIndex = ctx.channel().remoteAddress().toString();
             Message loginResult = null;
             if (nodeCheck.containsKey(nodeIndex)) {
-                loginResult = buildRespon(Coderc.DUPLICATE_LOGIN.getValue());
+                loginResult = buildResp(Coderc.DUPLICATE_LOGIN.getValue());
+                ctx.close();
             } else {
                 InetSocketAddress address = (InetSocketAddress)ctx.channel().remoteAddress();
                 String ip = address.getAddress().getHostAddress();
@@ -35,26 +40,45 @@ public class LoginAuthRespHandler extends ChannelInboundHandlerAdapter {
                         break;
                     }
                 }
-                loginResult = isOK ? buildRespon(Coderc.LOGIN_ACCEPTED.getValue())
-                        : buildRespon(Coderc.LOGIN_REFUSED.getValue());
+                loginResult = isOK ? buildResp((byte) message.getBody().getType())
+                        : buildResp(Coderc.LOGIN_REFUSED.getValue());
                 if (isOK) {
                     nodeCheck.put(nodeIndex, true);
+                } else{
+                    ctx.close();
                 }
             }
             System.out.println("the login response is : " + loginResult);
             ctx.writeAndFlush(loginResult);
         } else {
+            switch (rc){
+                case CRAWLER_REQ:
+                    break;
+                case SHELL_REQ:
+                    break;
+                case HEART_BEAT_REQ:
+                    break;
+                default:
+                    System.out.println("Closed.");
+                    ctx.close();
+                    return;
+            }
             ctx.fireChannelRead(msg);
         }
     }
 
-    private Message buildRespon(byte result) {
+    private Message buildResp(byte result) {
         Message message = new Message();
         Header header = new Header();
         header.setType(Coderc.LOGIN_RESP.getValue());
         message.setHeader(header);
-        message.setBody(result);
+        message.setBody(buildResult(result));
         return message;
+    }
+
+    private ProcessData buildResult(byte result){
+        ProcessData.Builder builder = ProcessData.newBuilder();
+        return builder.setType(result).build();
     }
 
     @Override

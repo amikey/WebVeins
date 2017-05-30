@@ -1,4 +1,4 @@
-package com.xiongbeer.webveins.service.protocol;
+package com.xiongbeer.webveins.service.protocol.message;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -20,7 +20,6 @@ public class MessageEncoder extends MessageToMessageEncoder<Message>{
 
     @Override
     protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> list) throws Exception {
-        System.out.println("hei!");
         Header header = msg.getHeader();
         if(msg == null || header == null)
             throw new Exception("The encode message is null");

@@ -1,5 +1,4 @@
-package com.xiongbeer.webveins.service.protocol;
-
+package com.xiongbeer.webveins.service.protocol.message;
 
 import org.jboss.marshalling.MarshallerFactory;
 import org.jboss.marshalling.Marshalling;

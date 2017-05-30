@@ -1,9 +1,11 @@
-package com.xiongbeer.webveins.service.protocol;
+package com.xiongbeer.webveins.service.protocol.handler;
 
+import com.xiongbeer.webveins.service.protocol.message.Header;
+import com.xiongbeer.webveins.service.protocol.message.Message;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
-import com.xiongbeer.webveins.service.protocol.Message.Coderc;
+import com.xiongbeer.webveins.service.protocol.message.Message.Coderc;
 
 /**
  * Created by shaoxiong on 17-5-28.

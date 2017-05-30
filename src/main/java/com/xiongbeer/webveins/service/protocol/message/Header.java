@@ -1,4 +1,4 @@
-package com.xiongbeer.webveins.service.protocol;
+package com.xiongbeer.webveins.service.protocol.message;
 
 import java.util.HashMap;
 import java.util.Map;

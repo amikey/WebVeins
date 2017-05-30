@@ -1,5 +1,6 @@
-package com.xiongbeer.webveins.service.protocol;
+package com.xiongbeer.webveins.service.protocol.message;
 
+import com.xiongbeer.webveins.service.ProcessDataProto;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
@@ -52,7 +53,7 @@ public class MessageDecoder extends LengthFieldBasedFrameDecoder {
             header.setAttachment(attach);
         }
         if(frame.readableBytes() > 0){
-            message.setBody(marshallingDecoder.decode(ctx, frame));
+            message.setBody((ProcessDataProto.ProcessData) marshallingDecoder.decode(ctx, frame));
         }
         message.setHeader(header);
         return message;

@@ -33,6 +33,7 @@ public class WebVeinsMain {
     private Manager manager;
     private HDFSManager hdfsManager;
     private ScheduledExecutorService manageExector = Executors.newScheduledThreadPool(1);
+
     private WebVeinsMain() throws IOException {
     	configuration = Configuration.getInstance();
         client = SelfTest.checkAndGetZK();

@@ -46,7 +46,6 @@ public class Server {
             throws IOException {
         this.port = port;
         this.worker = worker;
-
     }
 
     public void bind(){

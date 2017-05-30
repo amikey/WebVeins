@@ -5,8 +5,12 @@ from sys import stdout
 
 
 class Echo(Protocol):
+    def connectionMade(self):
+        self.transport.write("hei")
+
     def dataReceived(self, data):
         stdout.writable(data)
+
 
 
 class BootStrap(ClientFactory):
@@ -33,4 +37,5 @@ class BootStrap(ClientFactory):
         reactor.run()
 
 if __name__ == "__main__":
-    BootStrap("1").connect("localhost", 8081);
+
+    BootStrap("1").connect("localhost", 8080);
