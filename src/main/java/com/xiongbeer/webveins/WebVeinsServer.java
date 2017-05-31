@@ -6,13 +6,12 @@ import java.util.concurrent.Executors;
 
 import com.xiongbeer.webveins.check.SelfTest;
 import com.xiongbeer.webveins.saver.HDFSManager;
-import com.xiongbeer.webveins.service.api.APIServer;
+import com.xiongbeer.webveins.service.protocol.Server;
 import com.xiongbeer.webveins.utils.IdProvider;
 import com.xiongbeer.webveins.utils.InitLogger;
 
 import org.apache.curator.framework.CuratorFramework;
 
-import com.xiongbeer.webveins.service.local.Server;
 import com.xiongbeer.webveins.zk.worker.Worker;
 
 import org.slf4j.Logger;
@@ -28,7 +27,6 @@ public class WebVeinsServer {
 	private Worker worker;
 	private String serverId;
 	private CuratorFramework client;
-	private APIServer apiServer;
 	private HDFSManager hdfsManager;
     private static Logger logger = LoggerFactory.getLogger(WebVeinsServer.class);
     private ExecutorService serviceThreadPool = Executors.newFixedThreadPool(2);
@@ -45,7 +43,6 @@ public class WebVeinsServer {
             logger.error("Connect to hdfs failed.");
             System.exit(1);
         }
-        apiServer = new APIServer(client, hdfsManager);
         serverId = new IdProvider().getIp();
         /* 监听kill信号 */
         SignalHandler handler = new StopSignalHandler();
@@ -63,7 +60,7 @@ public class WebVeinsServer {
 
     public void runServer() throws IOException {
         worker = new Worker(client, serverId);
-        server = new Server(Configuration.LOCAL_PORT, worker);
+        server = new Server(Configuration.LOCAL_PORT, client, hdfsManager, worker);
         server.bind();
     }
 
@@ -81,14 +78,6 @@ public class WebVeinsServer {
                 }
             }
         });
-
-        /* 本地命令行服务 */
-        serviceThreadPool.execute(new Runnable() {
-            @Override
-            public void run() {
-                apiServer.run(Configuration.LOCAL_SHELL_PORT);
-            }
-        });
     }
 
     @SuppressWarnings("restriction")
@@ -100,7 +89,6 @@ public class WebVeinsServer {
                 server.stop();
                 logger.info("stoping api service...");
                 client.close();
-                apiServer.stop();
                 hdfsManager.close();
             } catch (Throwable e) {
                logger.error("handle|Signal handler" + "failed, reason "

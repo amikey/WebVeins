@@ -1,9 +1,7 @@
 package com.xiongbeer.webveins.service.protocol.handler;
 
-import com.xiongbeer.webveins.service.protocol.message.Header;
-import com.xiongbeer.webveins.service.protocol.message.Message;
-import com.xiongbeer.webveins.service.protocol.message.Message.Coderc;
-import com.xiongbeer.webveins.service.ProcessDataProto.ProcessData;
+import com.xiongbeer.webveins.service.protocol.message.MessageType;
+import com.xiongbeer.webveins.service.protocol.message.ProcessDataProto.ProcessData;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -16,12 +14,11 @@ public class ShellReqHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg)
             throws Exception {
-        Header header = ((Message)msg).getHeader();
-        ProcessData resp = ((Message)msg).getBody();
-        if(header.getType() == Coderc.SHELL_RESP.getValue()) {
+        ProcessData resp = (ProcessData) msg;
+        if(resp.getType() == MessageType.SHELL_RESP.getValue()) {
             if (resp.getCommandReasult() == null) {
-                Message message = buildShellReq(resp.getCommand());
-                ctx.writeAndFlush(message);
+                ProcessData req = buildShellReq(resp.getCommand());
+                ctx.writeAndFlush(req);
             } else {
                 System.out.println(resp.getCommandReasult());
                 ctx.close();
@@ -37,17 +34,11 @@ public class ShellReqHandler extends ChannelInboundHandlerAdapter {
         cause.printStackTrace();
     }
 
-    private Message buildShellReq(String command){
-        Message message = new Message();
-        Header header = new Header();
-        header.setType(Message.Coderc.SHELL_REQ.getValue());
-        message.setBody(buildResult(command));
-        message.setHeader(header);
-        return message;
+    private ProcessData buildShellReq(String command){
+        ProcessData.Builder builder = ProcessData.newBuilder();
+        builder.setType(MessageType.SHELL_REQ.getValue());
+        builder.setCommand(command);
+        return builder.build();
     }
 
-    private ProcessData buildResult(String command){
-        ProcessData.Builder builder = ProcessData.newBuilder();
-        return builder.setCommand(command).build();
-    }
 }

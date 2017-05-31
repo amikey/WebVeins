@@ -124,7 +124,7 @@ public class Manager {
     public void manage() throws InterruptedException
             , IOException, VeinsException.FilterOverflowException {
         if(status == Status.ELECTED) {
-            logger.info("start manage process...");
+            logger.debug("start manage process...");
             checkTasks();
             checkWorkers();
             publishNewTasks();

@@ -2,8 +2,8 @@ package com.xiongbeer.webveins.service.protocol.handler;
 
 import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.ZnodeInfo;
-import com.xiongbeer.webveins.service.ProcessDataProto.ProcessData;
-import com.xiongbeer.webveins.service.protocol.message.Message;
+import com.xiongbeer.webveins.service.protocol.message.MessageType;
+import com.xiongbeer.webveins.service.protocol.message.ProcessDataProto.ProcessData;
 import com.xiongbeer.webveins.zk.worker.Worker;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -42,6 +42,10 @@ public class WorkerProxyHandler extends ChannelInboundHandlerAdapter {
      */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        ProcessData message = (ProcessData) msg;
+        if(message.getType() == MessageType.CRAWLER_REQ.getValue()) {
+            workerLoop.execute(new CrawlerTask(ctx, message));
+        }
         ctx.fireChannelRead(msg);
     }
 
@@ -52,7 +56,7 @@ public class WorkerProxyHandler extends ChannelInboundHandlerAdapter {
 
     private void process(ChannelHandlerContext ctx, ProcessData data){
         String taskPath = ZnodeInfo.NEW_TASK_PATH + data.getUrlFileName();
-        ProcessData.Status status = data.getStatus();
+        ProcessData.CrawlerStatus status = data.getStatus();
         builder = ProcessData.newBuilder();
         switch (status){
             case NULL:
@@ -66,7 +70,7 @@ public class WorkerProxyHandler extends ChannelInboundHandlerAdapter {
                 break;
             case READY:
                 if(currentTask != null){
-                    builder.setStatus(ProcessData.Status.RUNNING);
+                    builder.setStatus(ProcessData.CrawlerStatus.RUNNING);
                     builder.setUrlFilePath(Configuration.WAITING_TASKS_URLS +
                             "/" + currentTask);
                     builder.setUrlFileName(currentTask);
@@ -105,7 +109,7 @@ public class WorkerProxyHandler extends ChannelInboundHandlerAdapter {
                 break;
             }
         }
-        builder.setStatus(ProcessData.Status.RUNNING);
+        builder.setStatus(ProcessData.CrawlerStatus.RUNNING);
         builder.setUrlFilePath(Configuration.WAITING_TASKS_URLS + "/" + taskName);
         builder.setUrlFileName(taskName);
         ctx.writeAndFlush(builder.build());
@@ -114,7 +118,7 @@ public class WorkerProxyHandler extends ChannelInboundHandlerAdapter {
         heartBeat.scheduleAtFixedRate(new HeartBeat(taskName), 0, Configuration.CHECK_TIME, TimeUnit.SECONDS);
     }
 
-    class HeartBeat implements Runnable{
+    class HeartBeat implements Runnable {
         String taskName;
 
         public HeartBeat(String taskName){
@@ -124,6 +128,21 @@ public class WorkerProxyHandler extends ChannelInboundHandlerAdapter {
         @Override
         public void run() {
             worker.beat(taskName);
+        }
+    }
+
+    class CrawlerTask implements Runnable {
+        ChannelHandlerContext ctx;
+        ProcessData data;
+
+        public CrawlerTask(ChannelHandlerContext ctx, ProcessData data){
+            this.ctx = ctx;
+            this.data = data;
+        }
+
+        @Override
+        public void run() {
+            process(ctx, data);
         }
     }
 }

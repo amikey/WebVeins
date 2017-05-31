@@ -1,13 +1,13 @@
 package com.xiongbeer.webveins.service.protocol.handler;
 
 
-import com.xiongbeer.webveins.service.protocol.message.Header;
-import com.xiongbeer.webveins.service.protocol.message.Message;
+
+import com.xiongbeer.webveins.service.protocol.message.MessageType;
+import com.xiongbeer.webveins.service.protocol.message.ProcessDataProto.ProcessData;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
-import com.xiongbeer.webveins.service.protocol.message.Message.Coderc;
-import com.xiongbeer.webveins.service.ProcessDataProto.ProcessData;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -16,30 +16,46 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class LoginAuthReqHandler extends ChannelInboundHandlerAdapter {
     private AtomicBoolean isLongConnection;
-    private Message initMessage;
+    private ProcessData initMessage;
+    private Channel channel;
 
-    public LoginAuthReqHandler(AtomicBoolean isLongConnection, Message initMessage){
+    public LoginAuthReqHandler(AtomicBoolean isLongConnection, ProcessData initMessage, Channel channel){
         this.isLongConnection = isLongConnection;
         this.initMessage = initMessage;
+        this.channel = channel;
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         System.out.println("trying to login...");
+        channel = ctx.channel();
+        MessageType rc = MessageType.get((byte) initMessage.getType());
+        switch (rc){
+            case CRAWLER_REQ:
+                isLongConnection.set(true);
+                ctx.fireChannelRead(buildFirstHeartBeat());
+                break;
+            case SHELL_REQ:
+                isLongConnection.set(false);
+                break;
+            default:
+                break;
+        }
         ctx.writeAndFlush(initMessage);
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg)
             throws Exception {
-        Message message = (Message)msg;
-        Coderc rc = Coderc.get(message.getHeader().getType());
+        ProcessData message = (ProcessData) msg;
+        MessageType rc = MessageType.get((byte) message.getType());
         switch (rc) {
             case CRAWLER_RESP:
-                isLongConnection.set(true);
                 break;
             case SHELL_RESP:
-                isLongConnection.set(false);
+                break;
+            case HEART_BEAT_RESP:
+                System.out.println("get");
                 break;
             default:
                 System.out.println("login refused");
@@ -47,6 +63,17 @@ public class LoginAuthReqHandler extends ChannelInboundHandlerAdapter {
                 return;
         }
         ctx.fireChannelRead(msg);
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        channel = null;
+    }
+
+    private ProcessData buildFirstHeartBeat(){
+        ProcessData.Builder builder = ProcessData.newBuilder();
+        builder.setType(MessageType.HEART_BEAT_REQ.getValue());
+        return builder.build();
     }
 
     @Override

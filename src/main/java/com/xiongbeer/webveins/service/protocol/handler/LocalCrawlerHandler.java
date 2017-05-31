@@ -2,9 +2,9 @@ package com.xiongbeer.webveins.service.protocol.handler;
 
 import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.saver.HDFSManager;
-import com.xiongbeer.webveins.service.ProcessDataProto.ProcessData;
+import com.xiongbeer.webveins.service.protocol.message.MessageType;
+import com.xiongbeer.webveins.service.protocol.message.ProcessDataProto.ProcessData;
 import com.xiongbeer.webveins.service.local.Action;
-import com.xiongbeer.webveins.service.protocol.message.Message;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
@@ -25,6 +25,7 @@ public class LocalCrawlerHandler extends ChannelInboundHandlerAdapter {
             , Configuration.HDFS_SYSTEM_PATH);
     private static ExecutorService crawlerLoop = Executors.newSingleThreadExecutor();
     private Action action;
+
     public LocalCrawlerHandler(Action action){
         this.action = action;
     }
@@ -40,15 +41,22 @@ public class LocalCrawlerHandler extends ChannelInboundHandlerAdapter {
      */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws IOException {
+        ProcessData message = (ProcessData) msg;
+        if(message.getType() == MessageType.CRAWLER_RESP.getValue()) {
+            crawlerLoop.execute(new CrawlerTask(ctx, message));
+        }
         ctx.fireChannelRead(msg);
-        ProcessData data = ((Message) msg).getBody();
     }
 
-    private void process(ChannelHandlerContext ctx, ProcessData data) throws IOException {
+    private void process(ChannelHandlerContext ctx, ProcessData data) {
         String urlFilePath = data.getUrlFilePath();
         logger.info("Crawler get the task:" + urlFilePath
                 + "success at {}", new Date().toString());
-        hdfsManager.downLoad(urlFilePath, Configuration.TEMP_DIR);
+        try {
+            hdfsManager.downLoad(urlFilePath, Configuration.TEMP_DIR);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         /*
             true 标识run成功，返回READY状态，领取下一个任务
@@ -62,7 +70,7 @@ public class LocalCrawlerHandler extends ChannelInboundHandlerAdapter {
         ProcessData.Builder builder = ProcessData.newBuilder();
         builder.setUrlFilePath("");
         builder.setUrlFileName(data.getUrlFileName());
-        builder.setStatus(flag?ProcessData.Status.FINNISHED : ProcessData.Status.NULL);
+        builder.setStatus(flag?ProcessData.CrawlerStatus.FINNISHED : ProcessData.CrawlerStatus.NULL);
         String result = flag?"successed":"failed";
         logger.info("Run task " + result);
         ctx.writeAndFlush(builder.build());
@@ -73,5 +81,20 @@ public class LocalCrawlerHandler extends ChannelInboundHandlerAdapter {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         cause.printStackTrace();
         ctx.close();
+    }
+
+    class CrawlerTask implements Runnable {
+        ChannelHandlerContext ctx;
+        ProcessData data;
+
+        public CrawlerTask(ChannelHandlerContext ctx, ProcessData data){
+            this.ctx = ctx;
+            this.data = data;
+        }
+
+        @Override
+        public void run() {
+            process(ctx, data);
+        }
     }
 }

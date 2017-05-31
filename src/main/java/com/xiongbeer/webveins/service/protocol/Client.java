@@ -6,12 +6,8 @@ import com.xiongbeer.webveins.service.protocol.handler.HeartBeatReqHandler;
 import com.xiongbeer.webveins.service.protocol.handler.LocalCrawlerHandler;
 import com.xiongbeer.webveins.service.protocol.handler.LoginAuthReqHandler;
 import com.xiongbeer.webveins.service.protocol.handler.ShellReqHandler;
-import com.xiongbeer.webveins.service.protocol.message.Header;
-import com.xiongbeer.webveins.service.protocol.message.Message;
-import com.xiongbeer.webveins.service.protocol.message.MessageDecoder;
-import com.xiongbeer.webveins.service.protocol.message.MessageEncoder;
-import com.xiongbeer.webveins.service.protocol.message.Message.Coderc;
-import com.xiongbeer.webveins.service.ProcessDataProto.ProcessData;
+import com.xiongbeer.webveins.service.protocol.message.MessageType;
+import com.xiongbeer.webveins.service.protocol.message.ProcessDataProto.ProcessData;
 import com.xiongbeer.webveins.utils.InitLogger;
 
 import io.netty.bootstrap.Bootstrap;
@@ -19,6 +15,10 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.protobuf.ProtobufDecoder;
+import io.netty.handler.codec.protobuf.ProtobufEncoder;
+import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
+import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Created by shaoxiong on 17-5-28.
  */
 public class Client {
-    private static Channel channel;
+    private Channel channel;
     private static Logger logger = LoggerFactory.getLogger(Client.class);
     private ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
     private AtomicBoolean isLongConnection = new AtomicBoolean(false);
@@ -47,7 +47,7 @@ public class Client {
         channel.close();
     }
 
-    public void connect(final int port, final String host, final Message initMessage) {
+    public void connect(final int port, final String host, final ProcessData initMessage) throws InterruptedException {
         /*
         if(action == null){
             logger.error("Connect failed, action is null");
@@ -63,13 +63,15 @@ public class Client {
                         @Override
                         protected void initChannel(SocketChannel ch)
                                 throws Exception {
-                            ch.pipeline().addLast(new MessageDecoder(1024*1024,  4, 4, -8, 0));
-                            ch.pipeline().addLast("MessageEncoder", new MessageEncoder());
-                            ch.pipeline().addLast("ReadTimeoutHandler", new ReadTimeoutHandler(50));
-                            ch.pipeline().addLast("LoginAuthHandler", new LoginAuthReqHandler(isLongConnection, initMessage));
-                            ch.pipeline().addLast("ShellReqHandler", new ShellReqHandler());
-                            ch.pipeline().addLast("LocalCrawlerHandler", new LocalCrawlerHandler(action));
-                            ch.pipeline().addLast("HeartBeatHandler", new HeartBeatReqHandler(isLongConnection));
+                            ch.pipeline().addLast(new ProtobufVarint32FrameDecoder());
+                            ch.pipeline().addLast(new ProtobufDecoder(ProcessData.getDefaultInstance()));
+                            ch.pipeline().addLast(new ProtobufVarint32LengthFieldPrepender());
+                            ch.pipeline().addLast(new ProtobufEncoder());
+                            ch.pipeline().addLast(new ReadTimeoutHandler(60));
+                            ch.pipeline().addLast(new LoginAuthReqHandler(isLongConnection, initMessage, channel));
+                            ch.pipeline().addLast(new ShellReqHandler());
+                            ch.pipeline().addLast(new LocalCrawlerHandler(action));
+                            ch.pipeline().addLast(new HeartBeatReqHandler(isLongConnection));
                         }
                     });
             ChannelFuture f = b.connect(host,port).sync();
@@ -92,7 +94,7 @@ public class Client {
                     }
                 });
             }
-            group.shutdownGracefully();
+            group.shutdownGracefully().sync();
         }
     }
 
@@ -100,12 +102,13 @@ public class Client {
         Configuration.getInstance();
         InitLogger.init();
         int port = 8080;
-        Message message = new Message();
-        Header header = new Header();
-        header.setType(Coderc.SHELL_REQ.getValue());
-        ProcessData data = ProcessData.newBuilder().setCommand("listfilters").build();
-        message.setHeader(header);
-        message.setBody(data);
-        new Client().connect(port, "127.0.0.1", message);
+        ProcessData.Builder builder = ProcessData.newBuilder();
+        builder.setType(MessageType.SHELL_REQ.getValue());
+        builder.setCommand("listtasks");
+        try {
+            new Client().connect(port, "localhost", builder.build());
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }

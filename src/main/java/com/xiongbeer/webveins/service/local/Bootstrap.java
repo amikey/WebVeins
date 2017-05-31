@@ -2,7 +2,8 @@ package com.xiongbeer.webveins.service.local;
 
 import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.saver.HDFSManager;
-import com.xiongbeer.webveins.service.ProcessDataProto;
+import com.xiongbeer.webveins.service.protocol.Client;
+import com.xiongbeer.webveins.service.protocol.message.ProcessDataProto;
 import com.xiongbeer.webveins.utils.IdProvider;
 import com.xiongbeer.webveins.utils.MD5Maker;
 
@@ -57,7 +58,11 @@ public class Bootstrap {
         new Thread("wvLocalClient") {
             @Override
             public void run() {
-                client.connect(Configuration.LOCAL_HOST, Configuration.LOCAL_PORT);
+                try {
+                    client.connect(Configuration.LOCAL_PORT, Configuration.LOCAL_HOST, ProcessDataProto.ProcessData.newBuilder().build());
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }.start();
         return this;
@@ -67,9 +72,9 @@ public class Bootstrap {
             throws IOException {
         ProcessDataProto.ProcessData.Builder builder =
                 ProcessDataProto.ProcessData.newBuilder();
-        builder.setStatus(ProcessDataProto.ProcessData.Status.READY);
+        builder.setStatus(ProcessDataProto.ProcessData.CrawlerStatus.READY);
         builder.setUrlFilePath("");
-        client.sentData(builder.build());
+        //client.sentData(builder.build());
         return this;
     }
 

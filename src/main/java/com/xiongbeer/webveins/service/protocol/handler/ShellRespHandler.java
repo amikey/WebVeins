@@ -10,11 +10,8 @@ import com.xiongbeer.webveins.api.job.HDFSJob;
 import com.xiongbeer.webveins.api.job.TaskJob;
 import com.xiongbeer.webveins.api.jsondata.JData;
 import com.xiongbeer.webveins.saver.HDFSManager;
-import com.xiongbeer.webveins.service.ProcessDataProto.ProcessData;
-import com.xiongbeer.webveins.service.protocol.message.Header;
-import com.xiongbeer.webveins.service.protocol.message.Message;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import com.xiongbeer.webveins.service.protocol.message.MessageType;
+import com.xiongbeer.webveins.service.protocol.message.ProcessDataProto.ProcessData;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.apache.curator.framework.CuratorFramework;
@@ -39,13 +36,12 @@ public class ShellRespHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        Header header = ((Message)msg).getHeader();
-        ProcessData req = ((Message)msg).getBody();
-        if(header.getType() == Message.Coderc.SHELL_REQ.getValue()) {
+        ProcessData req = (ProcessData) msg;
+        if(req.getType() == MessageType.SHELL_REQ.getValue()) {
             Command result = analysis(req.getCommand());
             //TODO add args
-            Message message = buildShellResp(operation(result));
-            ctx.writeAndFlush(message);
+            ProcessData resp = buildShellResp(operation(result));
+            ctx.writeAndFlush(resp);
         } else {
             ctx.fireChannelRead(msg);
         }
@@ -56,18 +52,11 @@ public class ShellRespHandler extends ChannelInboundHandlerAdapter {
         cause.printStackTrace();
     }
 
-    private Message buildShellResp(String content){
-        Message message = new Message();
-        Header header = new Header();
-        header.setType(Message.Coderc.SHELL_RESP.getValue());
-        message.setBody(buildResult(content));
-        message.setHeader(header);
-        return message;
-    }
-
-    private ProcessData buildResult(String content){
+    private ProcessData buildShellResp(String content){
         ProcessData.Builder builder = ProcessData.newBuilder();
-        return builder.setCommandReasult(content).build();
+        builder.setType(MessageType.SHELL_RESP.getValue());
+        builder.setCommandReasult(content);
+        return builder.build();
     }
 
     private Command analysis(String req){

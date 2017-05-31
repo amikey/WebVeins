@@ -1,15 +1,13 @@
 package com.xiongbeer.webveins.service.protocol.handler;
 
-import com.xiongbeer.webveins.service.protocol.message.Header;
-import com.xiongbeer.webveins.service.protocol.message.Message;
+import com.xiongbeer.webveins.service.protocol.message.MessageType;
+import com.xiongbeer.webveins.service.protocol.message.ProcessDataProto.ProcessData;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.xiongbeer.webveins.service.protocol.message.Message.Coderc;
 
 /**
  * Created by shaoxiong on 17-5-28.
@@ -25,13 +23,12 @@ public class HeartBeatReqHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg)
             throws Exception {
-        Message message = (Message)msg;
-        if (isLongConnection.get() && message.getHeader() != null && message.getHeader().getType() == Coderc.LOGIN_RESP.getValue()) {
-            heartBeat = ctx.executor().scheduleAtFixedRate(new HeartBeatReqHandler.HeartBeatTask(ctx), 0, 10, TimeUnit.SECONDS);
-        } else if (message.getHeader() != null && message.getHeader().getType() == Coderc.HEART_BEAT_RESP.getValue()) {
+        ProcessData message = (ProcessData)msg;
+        int rc = message.getType();
+        if (isLongConnection.get() && rc == MessageType.HEART_BEAT_REQ.getValue()) {
+            heartBeat = ctx.executor().scheduleAtFixedRate(new HeartBeatReqHandler.HeartBeatTask(ctx), 10, 10, TimeUnit.SECONDS);
+        } else if(rc == MessageType.HEART_BEAT_RESP.getValue()){
             System.out.println("client receive server heart message : " + message);
-        } else {
-            ctx.fireChannelRead(msg);
         }
     }
 
@@ -45,17 +42,15 @@ public class HeartBeatReqHandler extends ChannelInboundHandlerAdapter {
 
         @Override
         public void run() {
-            Message message = buildHeatBeat();
+            ProcessData message = buildHeatBeat();
             System.out.println("client send heart message :　" + message);
             ctx.writeAndFlush(message);
         }
 
-        private Message buildHeatBeat() {
-            Message message = new Message();
-            Header header = new Header();
-            header.setType(Coderc.HEART_BEAT_REQ.getValue());
-            message.setHeader(header);
-            return message;
+        private ProcessData buildHeatBeat() {
+            ProcessData.Builder builder = ProcessData.newBuilder();
+            builder.setType(MessageType.HEART_BEAT_REQ.getValue());
+            return builder.build();
         }
     }
 
