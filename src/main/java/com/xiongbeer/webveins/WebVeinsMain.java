@@ -75,7 +75,7 @@ public class WebVeinsMain {
                 try {
                     manager.manage();
                 } catch (InterruptedException e) {
-                    logger.warn("shut down.");
+                    logger.info("shut down.");
                     return;
                 } catch (Throwable e){
                     logger.warn("something wrong when managing: ", e);

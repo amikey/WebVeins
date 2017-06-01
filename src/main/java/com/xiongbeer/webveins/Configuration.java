@@ -259,7 +259,7 @@ public class Configuration {
         /* tomcat服务器刷新数据的间隔 */
         map.put("tomcat_heart_beat", "5");
         /* 异步执行的线程数量 */
-        map.put("local_async_thread_num", "40");
+        map.put("local_async_thread_num", "10");
     }
 
 

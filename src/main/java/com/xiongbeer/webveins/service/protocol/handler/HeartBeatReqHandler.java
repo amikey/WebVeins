@@ -14,19 +14,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class HeartBeatReqHandler extends ChannelInboundHandlerAdapter {
     private volatile ScheduledFuture<?> heartBeat;
-    private AtomicBoolean isLongConnection;
-
-    public HeartBeatReqHandler(AtomicBoolean isLongConnection){
-        this.isLongConnection = isLongConnection;
-    }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg)
             throws Exception {
         ProcessData message = (ProcessData)msg;
         int rc = message.getType();
-        if (isLongConnection.get() && rc == MessageType.HEART_BEAT_REQ.getValue()) {
-            heartBeat = ctx.executor().scheduleAtFixedRate(new HeartBeatReqHandler.HeartBeatTask(ctx), 10, 10, TimeUnit.SECONDS);
+        if (rc == MessageType.HEART_BEAT_REQ.getValue()) {
+            heartBeat = ctx
+                    .channel()
+                    .eventLoop()
+                    .scheduleAtFixedRate(new HeartBeatReqHandler.HeartBeatTask(ctx), 10, 10, TimeUnit.SECONDS);
         } else if(rc == MessageType.HEART_BEAT_RESP.getValue()){
             System.out.println("client receive server heart message : " + message);
         }

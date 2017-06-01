@@ -32,60 +32,82 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Created by shaoxiong on 17-5-28.
  */
 public class Client {
+    private Logger logger = LoggerFactory.getLogger(Client.class);
     private Channel channel;
-    private static Logger logger = LoggerFactory.getLogger(Client.class);
     private ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-    private AtomicBoolean isLongConnection = new AtomicBoolean(false);
+    private boolean isLongConnection = false;
     private Action action;
     private EventLoopGroup group = new NioEventLoopGroup();
+    private ChannelInitializer channelInitializer;
 
-    public void setAction(Action action){
-        this.action = action;
+    /**
+     * Shell查询服务，短连接
+     *
+     * @param command
+     */
+    public Client(final ProcessData command){
+        channelInitializer = new ChannelInitializer<SocketChannel>() {
+            @Override
+            protected void initChannel(SocketChannel ch) throws Exception {
+                ch.pipeline().addLast(new ProtobufVarint32FrameDecoder());
+                ch.pipeline().addLast(new ProtobufDecoder(ProcessData.getDefaultInstance()));
+                ch.pipeline().addLast(new ProtobufVarint32LengthFieldPrepender());
+                ch.pipeline().addLast(new ProtobufEncoder());
+                ch.pipeline().addLast(new LoginAuthReqHandler(command));
+                ch.pipeline().addLast(new ShellReqHandler());
+            }
+        };
+    }
+
+
+    /**
+     * 本地爬虫服务，长连接
+     *
+     * @param action
+     */
+    public Client(final Action action){
+        if(action == null){
+            logger.error("init client failed, action is null");
+            System.exit(1);
+        }
+        channelInitializer = new ChannelInitializer<SocketChannel>() {
+            @Override
+            protected void initChannel(SocketChannel ch) throws Exception {
+                ch.pipeline().addLast(new ProtobufVarint32FrameDecoder());
+                ch.pipeline().addLast(new ProtobufDecoder(ProcessData.getDefaultInstance()));
+                ch.pipeline().addLast(new ProtobufVarint32LengthFieldPrepender());
+                ch.pipeline().addLast(new ProtobufEncoder());
+                ch.pipeline().addLast(new ReadTimeoutHandler(60));
+                ch.pipeline().addLast(new LoginAuthReqHandler(channel));
+                ch.pipeline().addLast(new LocalCrawlerHandler(action));
+                ch.pipeline().addLast(new HeartBeatReqHandler());
+            }
+        };
     }
 
     public void disconnect(){
-        channel.close();
+        if(channel != null) {
+            channel.close();
+        }
     }
 
-    public void connect(final int port, final String host, final ProcessData initMessage) throws InterruptedException {
-        /*
-        if(action == null){
-            logger.error("Connect failed, action is null");
-            return;
-        }
-        */
+    public void connect(final int port, final String host) throws InterruptedException {
         try {
             Bootstrap b = new Bootstrap();
             b.group(group)
                     .channel(NioSocketChannel.class)
                     .option(ChannelOption.TCP_NODELAY, true)
-                    .handler(new ChannelInitializer<SocketChannel>() {
-                        @Override
-                        protected void initChannel(SocketChannel ch)
-                                throws Exception {
-                            ch.pipeline().addLast(new ProtobufVarint32FrameDecoder());
-                            ch.pipeline().addLast(new ProtobufDecoder(ProcessData.getDefaultInstance()));
-                            ch.pipeline().addLast(new ProtobufVarint32LengthFieldPrepender());
-                            ch.pipeline().addLast(new ProtobufEncoder());
-                            ch.pipeline().addLast(new ReadTimeoutHandler(60));
-                            ch.pipeline().addLast(new LoginAuthReqHandler(isLongConnection, initMessage, channel));
-                            ch.pipeline().addLast(new ShellReqHandler());
-                            ch.pipeline().addLast(new LocalCrawlerHandler(action));
-                            ch.pipeline().addLast(new HeartBeatReqHandler(isLongConnection));
-                        }
-                    });
+                    .handler(channelInitializer);
             ChannelFuture f = b.connect(host,port).sync();
             f.channel().closeFuture().sync();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         } finally {
-            if(isLongConnection.get()) {
+            if(isLongConnection) {
                 executor.execute(new Runnable() {
                     @Override
                     public void run() {
                         try {
                             TimeUnit.SECONDS.sleep(5);
-                            connect(port, host, initMessage);
+                            connect(port, host);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         } catch (Exception e) {
@@ -98,17 +120,7 @@ public class Client {
         }
     }
 
-    public static void main(String[] args) {
-        Configuration.getInstance();
-        InitLogger.init();
-        int port = 8080;
-        ProcessData.Builder builder = ProcessData.newBuilder();
-        builder.setType(MessageType.SHELL_REQ.getValue());
-        builder.setCommand("listtasks");
-        try {
-            new Client().connect(port, "localhost", builder.build());
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+    public void sendData(ProcessData data){
+        channel.writeAndFlush(data);
     }
 }

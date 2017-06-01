@@ -15,13 +15,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Created by shaoxiong on 17-5-28.
  */
 public class LoginAuthReqHandler extends ChannelInboundHandlerAdapter {
-    private AtomicBoolean isLongConnection;
     private ProcessData initMessage;
     private Channel channel;
 
-    public LoginAuthReqHandler(AtomicBoolean isLongConnection, ProcessData initMessage, Channel channel){
-        this.isLongConnection = isLongConnection;
+    public LoginAuthReqHandler(ProcessData initMessage){
         this.initMessage = initMessage;
+        this.channel = channel;
+    }
+
+    public LoginAuthReqHandler(Channel channel){
         this.channel = channel;
     }
 
@@ -32,11 +34,9 @@ public class LoginAuthReqHandler extends ChannelInboundHandlerAdapter {
         MessageType rc = MessageType.get((byte) initMessage.getType());
         switch (rc){
             case CRAWLER_REQ:
-                isLongConnection.set(true);
                 ctx.fireChannelRead(buildFirstHeartBeat());
                 break;
             case SHELL_REQ:
-                isLongConnection.set(false);
                 break;
             default:
                 break;

@@ -3,7 +3,8 @@ package com.xiongbeer.webveins.service.local;
 import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.saver.HDFSManager;
 import com.xiongbeer.webveins.service.protocol.Client;
-import com.xiongbeer.webveins.service.protocol.message.ProcessDataProto;
+import com.xiongbeer.webveins.service.protocol.message.MessageType;
+import com.xiongbeer.webveins.service.protocol.message.ProcessDataProto.ProcessData;
 import com.xiongbeer.webveins.utils.IdProvider;
 import com.xiongbeer.webveins.utils.MD5Maker;
 
@@ -21,7 +22,6 @@ import java.util.UUID;
  * Created by shaoxiong on 17-4-26.
  */
 public class Bootstrap {
-    private Action action;
     private Client client;
     private static int WIRTE_LENGTH = 1024;
     private static HDFSManager hdfsManager;
@@ -38,43 +38,24 @@ public class Bootstrap {
     }
     
     public Bootstrap(Action action){
-        this.action = action;
+        this.client = new Client(action);
+
     }
     
     public String getSavePath(){
     	return savePath;
     }
-    
-    public Bootstrap setAction(Action action){
-        this.action = action;
-        return this;
-    }
 
-    public Bootstrap runClient(){
-        if(client == null) {
-            client = new Client();
-        }
-        client.setAction(action);
-        new Thread("wvLocalClient") {
-            @Override
-            public void run() {
-                try {
-                    client.connect(Configuration.LOCAL_PORT, Configuration.LOCAL_HOST, ProcessDataProto.ProcessData.newBuilder().build());
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }.start();
-        return this;
-    }
-
-    public Bootstrap ready()
+    public Bootstrap run()
             throws IOException {
-        ProcessDataProto.ProcessData.Builder builder =
-                ProcessDataProto.ProcessData.newBuilder();
-        builder.setStatus(ProcessDataProto.ProcessData.CrawlerStatus.READY);
-        builder.setUrlFilePath("");
-        //client.sentData(builder.build());
+        ProcessData.Builder builder = ProcessData.newBuilder();
+        builder.setType(MessageType.CRAWLER_REQ.getValue());
+        builder.setStatus(ProcessData.CrawlerStatus.READY);
+        try {
+            client.connect(Configuration.LOCAL_PORT, Configuration.LOCAL_HOST, builder.build());
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         return this;
     }
 

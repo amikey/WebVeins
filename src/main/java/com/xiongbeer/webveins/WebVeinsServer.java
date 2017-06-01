@@ -29,7 +29,7 @@ public class WebVeinsServer {
 	private CuratorFramework client;
 	private HDFSManager hdfsManager;
     private static Logger logger = LoggerFactory.getLogger(WebVeinsServer.class);
-    private ExecutorService serviceThreadPool = Executors.newFixedThreadPool(2);
+    private ExecutorService serviceThreadPool = Executors.newFixedThreadPool(1);
 
 	private WebVeinsServer() throws IOException {
     	Configuration.getInstance();
@@ -71,7 +71,7 @@ public class WebVeinsServer {
             public void run() {
                 try {
                     logger.info("run local server");
-                    wvServer.runServer();
+                    runServer();
                 } catch (IOException e) {
                     e.printStackTrace();
                     System.exit(1);

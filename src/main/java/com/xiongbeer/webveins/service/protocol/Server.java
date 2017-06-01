@@ -35,8 +35,8 @@ import java.util.Set;
  * Created by shaoxiong on 17-5-28.
  */
 public class Server {
-    private static Logger logger = LoggerFactory.getLogger(Server.class);
     private static Set<Channel> channels = new ConcurrentSet<>();
+    private Logger logger = LoggerFactory.getLogger(Server.class);
     private final int port;
     private Worker worker;
     private CuratorFramework client;
@@ -79,16 +79,21 @@ public class Server {
             ChannelFuture f = b.bind(port).sync();
             f.channel().closeFuture().sync();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            logger.error(e.getMessage());
         } finally {
             stop();
         }
     }
 
-    public void stop(){
+    public void stop() {
         if(workerGroup != null && bossGroup != null) {
-            workerGroup.shutdownGracefully();
-            bossGroup.shutdownGracefully();
+            try {
+                workerGroup.shutdownGracefully().sync();
+                bossGroup.shutdownGracefully().sync();
+            } catch (InterruptedException e) {
+                logger.error(e.getMessage());
+            }
+
         }
     }
 
@@ -102,6 +107,5 @@ public class Server {
 
         int port = 8080;
         new Server(port, client, new HDFSManager(Configuration.HDFS_SYSTEM_CONF, Configuration.HDFS_SYSTEM_PATH), worker).bind();
-
     }
 }
