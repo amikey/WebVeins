@@ -22,13 +22,13 @@ import sun.misc.SignalHandler;
 
 @SuppressWarnings("restriction")
 public class WebVeinsServer {
+    private static final Logger logger = LoggerFactory.getLogger(WebVeinsServer.class);
     private static WebVeinsServer wvServer;
 	private Server server;
 	private Worker worker;
 	private String serverId;
 	private CuratorFramework client;
 	private HDFSManager hdfsManager;
-    private static Logger logger = LoggerFactory.getLogger(WebVeinsServer.class);
     private ExecutorService serviceThreadPool = Executors.newFixedThreadPool(1);
 
 	private WebVeinsServer() throws IOException {
@@ -80,16 +80,17 @@ public class WebVeinsServer {
         });
     }
 
-    @SuppressWarnings("restriction")
     private class StopSignalHandler implements SignalHandler {
         @Override
         public void handle(Signal signal) {
             try {
                 logger.info("stoping server...");
                 server.stop();
-                logger.info("stoping api service...");
+                logger.info("stoping zk client...");
                 client.close();
+                logger.info("stoping other service...");
                 hdfsManager.close();
+                serviceThreadPool.shutdown();
             } catch (Throwable e) {
                logger.error("handle|Signal handler" + "failed, reason "
                         + e.getMessage());

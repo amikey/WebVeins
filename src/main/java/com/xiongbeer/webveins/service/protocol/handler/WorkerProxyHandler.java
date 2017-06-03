@@ -11,21 +11,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Created by shaoxiong on 17-5-30.
  */
 public class WorkerProxyHandler extends ChannelInboundHandlerAdapter {
     private static Logger logger = LoggerFactory.getLogger(WorkerProxyHandler.class);
-    private static String currentTask;
-    private static ExecutorService workerLoop = Executors.newSingleThreadExecutor();
     private static ProcessData.Builder builder;
-    private ScheduledExecutorService heartBeat = Executors.newScheduledThreadPool(1);
+    private volatile ScheduledFuture<?> heartBeat;
+    private static String currentTask;
     private Worker worker;
+    public static ExecutorService workerLoop = Executors.newSingleThreadExecutor();
 
     public WorkerProxyHandler(Worker worker){
         this.worker = worker;
@@ -65,11 +62,12 @@ public class WorkerProxyHandler extends ChannelInboundHandlerAdapter {
                 /*
                     TODO 目前暂时将放弃的任务放入黑名单，后面会设置定时器将其移除
                  */
-                worker.addToBlackList(new File(taskPath).getName());
+                Worker.addToBlackList(new File(taskPath).getName());
                 worker.discardTask(taskPath);
                 break;
             case READY:
                 if(currentTask != null){
+                    builder.setType(MessageType.CRAWLER_RESP.getValue());
                     builder.setStatus(ProcessData.CrawlerStatus.RUNNING);
                     builder.setUrlFilePath(Configuration.WAITING_TASKS_URLS +
                             "/" + currentTask);
@@ -80,8 +78,8 @@ public class WorkerProxyHandler extends ChannelInboundHandlerAdapter {
                 takeNewTask(ctx);
                 break;
             case FINNISHED:
-                heartBeat.shutdownNow();
                 currentTask = null;
+                heartBeat.cancel(true);
                 worker.finishTask(taskPath);
                 takeNewTask(ctx);
                 break;
@@ -109,13 +107,17 @@ public class WorkerProxyHandler extends ChannelInboundHandlerAdapter {
                 break;
             }
         }
+        builder.setType(MessageType.CRAWLER_RESP.getValue());
         builder.setStatus(ProcessData.CrawlerStatus.RUNNING);
         builder.setUrlFilePath(Configuration.WAITING_TASKS_URLS + "/" + taskName);
         builder.setUrlFileName(taskName);
         ctx.writeAndFlush(builder.build());
 
         /* 拿到任务后会定时改变任务的mtime，防止被manager错误的重置 */
-        heartBeat.scheduleAtFixedRate(new HeartBeat(taskName), 0, Configuration.CHECK_TIME, TimeUnit.SECONDS);
+        heartBeat = ctx
+                .channel()
+                .eventLoop()
+                .scheduleAtFixedRate(new HeartBeat(taskName), 0, Configuration.CHECK_TIME, TimeUnit.SECONDS);
     }
 
     class HeartBeat implements Runnable {

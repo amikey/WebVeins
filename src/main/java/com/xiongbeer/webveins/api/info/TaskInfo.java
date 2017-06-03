@@ -9,7 +9,6 @@ import com.xiongbeer.webveins.zk.task.Task;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 
 import java.util.LinkedList;

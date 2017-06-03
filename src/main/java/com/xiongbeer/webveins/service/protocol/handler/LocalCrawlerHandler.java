@@ -23,11 +23,16 @@ public class LocalCrawlerHandler extends ChannelInboundHandlerAdapter {
     private static Logger logger = LoggerFactory.getLogger(LocalCrawlerHandler.class);
     private static HDFSManager hdfsManager = new HDFSManager(Configuration.HDFS_SYSTEM_CONF
             , Configuration.HDFS_SYSTEM_PATH);
-    private static ExecutorService crawlerLoop = Executors.newSingleThreadExecutor();
+    private static ExecutorService crawlerLoop = Executors.newFixedThreadPool(2);
     private Action action;
 
     public LocalCrawlerHandler(Action action){
         this.action = action;
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        ctx.fireChannelInactive();
     }
 
     /**
@@ -68,7 +73,7 @@ public class LocalCrawlerHandler extends ChannelInboundHandlerAdapter {
         /* 任务结束后删除url文件 */
         new File(localSavePath).delete();
         ProcessData.Builder builder = ProcessData.newBuilder();
-        builder.setUrlFilePath("");
+        builder.setType(MessageType.CRAWLER_REQ.getValue());
         builder.setUrlFileName(data.getUrlFileName());
         builder.setStatus(flag?ProcessData.CrawlerStatus.FINNISHED : ProcessData.CrawlerStatus.NULL);
         String result = flag?"successed":"failed";

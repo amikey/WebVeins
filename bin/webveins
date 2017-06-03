@@ -1,7 +1,7 @@
 #!/bin/bash
 version=0.1-alpha
 
-max_stop_time=5
+max_stop_time=10
 
 WEBVEINS_PATH=""
 for i in "$WEBVEINS_HOME"/lib/*.jar
@@ -44,7 +44,7 @@ while getopts "vhfc:r:l:s:" optname
         list_para=$OPTARG
         case $OPTARG in
             workers|filters|tasks)
-                java -cp $WEBVEINS_PATH:webveins.jar com.xiongbeer.webveins.service.api.APIClient list$OPTARG
+                java -cp $WEBVEINS_PATH:webveins.jar com.xiongbeer.webveins.service.local.ShellBootstrap list$OPTARG
                 exit $?
             ;;
             *)

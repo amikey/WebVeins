@@ -16,7 +16,6 @@ public class HeartBeatRespHandler extends ChannelInboundHandlerAdapter {
             throws Exception {
         ProcessData resp = (ProcessData)msg;
         if (resp.getType() == MessageType.HEART_BEAT_REQ.getValue()) {
-            System.out.println("server receive client heart message " + resp);
             ProcessData heartBeat = buildHeartBeat();
             ctx.writeAndFlush(heartBeat);
         }

@@ -5,24 +5,20 @@ import com.xiongbeer.webveins.exception.VeinsException;
 import com.xiongbeer.webveins.zk.task.TaskWatcher;
 import com.xiongbeer.webveins.zk.task.TaskWorker;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.zookeeper.AsyncCallback.*;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.Code;
-import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
 /**
  * Created by shaoxiong on 17-4-9.
  */
 public class Worker {
+    private static final Logger logger = LoggerFactory.getLogger(Worker.class);
     private CuratorFramework client;
     private String serverId;
     private String workerPath;
-    private Logger logger = LoggerFactory.getLogger(Worker.class);
     private TaskWorker taskWorker;
     private TaskWatcher taskWatcher;
 

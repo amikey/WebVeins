@@ -2,7 +2,7 @@ package com.xiongbeer.webveins.example.webmagic;
 
 import com.xiongbeer.webveins.service.local.Action;
 import com.xiongbeer.webveins.service.local.Bootstrap;
-import com.xiongbeer.webveins.utils.InitLogger;
+import com.xiongbeer.webveins.service.local.CrawlerBootstrap;
 import com.xiongbeer.webveins.utils.UrlFileLoader;
 
 import io.netty.util.internal.ConcurrentSet;
@@ -24,13 +24,12 @@ import java.util.regex.Pattern;
  *
  * Created by shaoxiong on 17-5-9.
  */
-public class Crawler extends Action implements PageProcessor {
+public class Crawler implements PageProcessor, Action {
     private Site site = Site.me().setRetryTimes(3)
             .setSleepTime(1000).setUseGzip(true)
             .setUserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36");
     private static Set<String> newUrls = new ConcurrentSet<String>();
-    private static Spider spider = Spider.create(new Crawler()).thread(3);
-
+    private static Spider spider = Spider.create(new Crawler()).thread(3).clearPipeline();
 
     /* 每当worker领取到任务以后就会自动的运行这个函数，可以视为一个异步的callback */
     @Override
@@ -44,7 +43,7 @@ public class Crawler extends Action implements PageProcessor {
             }
             spider.run();
             /* 任务执行完毕，上传新的url，为了节省内存你可以选择清空newurls，但也可以选择不清空以此来减轻manager的去重负担，这里选择了保留 */
-            Bootstrap.upLoadNewUrls(newUrls);
+            CrawlerBootstrap.upLoadNewUrls(newUrls);
             return true;
         } catch (IOException e) {
             e.printStackTrace();
@@ -77,15 +76,14 @@ public class Crawler extends Action implements PageProcessor {
     }
 
     public static void main(String[] args) {
-        InitLogger.init();
         Crawler crawler = new Crawler();
         /* 将爬虫实例传给引导类 */
-        Bootstrap bootstrap = new Bootstrap(crawler);
-        try {
-            /* 开始执行任务！ */
-            bootstrap.run();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Bootstrap bootstrap = new CrawlerBootstrap(crawler);
+        /* 初始化，连接到本地Worker服务端 */
+        bootstrap.init();
+        /* 准备好啦，可以开始工作了 */
+        bootstrap.ready();
+        /* 任务执行完毕后记得关闭连接 */
+        bootstrap.close();
     }
 }

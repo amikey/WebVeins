@@ -1,13 +1,11 @@
 package com.xiongbeer.webveins.service.protocol;
 
-import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.saver.HDFSManager;
 import com.xiongbeer.webveins.service.protocol.handler.HeartBeatRespHandler;
 import com.xiongbeer.webveins.service.protocol.handler.LoginAuthRespHandler;
 import com.xiongbeer.webveins.service.protocol.handler.ShellRespHandler;
 import com.xiongbeer.webveins.service.protocol.handler.WorkerProxyHandler;
 import com.xiongbeer.webveins.service.protocol.message.ProcessDataProto.ProcessData;
-import com.xiongbeer.webveins.utils.InitLogger;
 import com.xiongbeer.webveins.zk.worker.Worker;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -22,10 +20,7 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.internal.ConcurrentSet;
-import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +30,8 @@ import java.util.Set;
  * Created by shaoxiong on 17-5-28.
  */
 public class Server {
-    private static Set<Channel> channels = new ConcurrentSet<>();
-    private Logger logger = LoggerFactory.getLogger(Server.class);
+    private static final Set<Channel> channels = new ConcurrentSet<>();
+    private static final Logger logger = LoggerFactory.getLogger(Server.class);
     private final int port;
     private Worker worker;
     private CuratorFramework client;
@@ -80,8 +75,6 @@ public class Server {
             f.channel().closeFuture().sync();
         } catch (InterruptedException e) {
             logger.error(e.getMessage());
-        } finally {
-            stop();
         }
     }
 
@@ -90,22 +83,11 @@ public class Server {
             try {
                 workerGroup.shutdownGracefully().sync();
                 bossGroup.shutdownGracefully().sync();
+                WorkerProxyHandler.workerLoop.shutdown();
             } catch (InterruptedException e) {
                 logger.error(e.getMessage());
             }
 
         }
-    }
-
-    public static void main(String[] args) {
-        Configuration.getInstance();
-        InitLogger.init();
-        RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
-        CuratorFramework client = CuratorFrameworkFactory.newClient("127.0.0.1:2181/webveins", retryPolicy);
-        client.start();
-        Worker worker = new Worker(client, "123");
-
-        int port = 8080;
-        new Server(port, client, new HDFSManager(Configuration.HDFS_SYSTEM_CONF, Configuration.HDFS_SYSTEM_PATH), worker).bind();
     }
 }

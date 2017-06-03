@@ -6,9 +6,7 @@ import com.xiongbeer.webveins.service.protocol.handler.HeartBeatReqHandler;
 import com.xiongbeer.webveins.service.protocol.handler.LocalCrawlerHandler;
 import com.xiongbeer.webveins.service.protocol.handler.LoginAuthReqHandler;
 import com.xiongbeer.webveins.service.protocol.handler.ShellReqHandler;
-import com.xiongbeer.webveins.service.protocol.message.MessageType;
 import com.xiongbeer.webveins.service.protocol.message.ProcessDataProto.ProcessData;
-import com.xiongbeer.webveins.utils.InitLogger;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -23,22 +21,21 @@ import io.netty.handler.timeout.ReadTimeoutHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 
 /**
  * Created by shaoxiong on 17-5-28.
  */
 public class Client {
-    private Logger logger = LoggerFactory.getLogger(Client.class);
-    private Channel channel;
-    private ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-    private boolean isLongConnection = false;
-    private Action action;
+    private final static Logger logger = LoggerFactory.getLogger(Client.class);
+    private volatile boolean isLongConnection = false;
+    private AtomicBoolean closeLongConnection = new AtomicBoolean(false);
     private EventLoopGroup group = new NioEventLoopGroup();
-    private ChannelInitializer channelInitializer;
+    private Channel[] channel = new Channel[1];
+    private ChannelInitializer<SocketChannel> channelInitializer;
+    private final int port = Configuration.LOCAL_PORT;
+    private final String host = Configuration.LOCAL_HOST;
 
     /**
      * Shell查询服务，短连接
@@ -68,8 +65,11 @@ public class Client {
     public Client(final Action action){
         if(action == null){
             logger.error("init client failed, action is null");
+            isLongConnection = true;
             System.exit(1);
         }
+        isLongConnection = true;
+        final Client self = this;
         channelInitializer = new ChannelInitializer<SocketChannel>() {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
@@ -80,47 +80,68 @@ public class Client {
                 ch.pipeline().addLast(new ReadTimeoutHandler(60));
                 ch.pipeline().addLast(new LoginAuthReqHandler(channel));
                 ch.pipeline().addLast(new LocalCrawlerHandler(action));
-                ch.pipeline().addLast(new HeartBeatReqHandler());
+                ch.pipeline().addLast(new HeartBeatReqHandler(self, closeLongConnection));
             }
         };
     }
 
-    public void disconnect(){
-        if(channel != null) {
-            channel.close();
+    public void disconnect() {
+        closeLongConnection.set(true);
+        try {
+            group.shutdownGracefully().sync();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
-    public void connect(final int port, final String host) throws InterruptedException {
+    public void connect() {
+        if(isLongConnection){
+            longConnection();
+        } else {
+            shortConnection();
+        }
+    }
+
+    private void longConnection(){
+        try {
+            Bootstrap b = new Bootstrap();
+            b.group(group)
+                    .channel(NioSocketChannel.class)
+                    .option(ChannelOption.TCP_NODELAY, true)
+                    .handler(channelInitializer)
+                    .connect(host, port).sync();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (Exception e){
+            if(channel[0] == null){
+                e.printStackTrace();
+                disconnect();
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    private void shortConnection(){
         try {
             Bootstrap b = new Bootstrap();
             b.group(group)
                     .channel(NioSocketChannel.class)
                     .option(ChannelOption.TCP_NODELAY, true)
                     .handler(channelInitializer);
-            ChannelFuture f = b.connect(host,port).sync();
-            f.channel().closeFuture().sync();
+            ChannelFuture future = b.connect(host, port).sync();
+            future.channel().closeFuture().sync();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         } finally {
-            if(isLongConnection) {
-                executor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            TimeUnit.SECONDS.sleep(5);
-                            connect(port, host);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                });
-            }
-            group.shutdownGracefully().sync();
+            group.shutdownGracefully();
         }
     }
 
+
     public void sendData(ProcessData data){
-        channel.writeAndFlush(data);
+        if(channel[0] != null) {
+            channel[0].writeAndFlush(data);
+        }
     }
 }

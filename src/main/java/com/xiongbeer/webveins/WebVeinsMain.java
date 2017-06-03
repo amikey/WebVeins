@@ -25,11 +25,12 @@ import java.util.concurrent.TimeUnit;
  */
 @SuppressWarnings("restriction")
 public class WebVeinsMain {
+    private static final Logger logger = LoggerFactory.getLogger(WebVeinsMain.class);
     private static WebVeinsMain wvMain;
     private CuratorFramework client;
     private String serverId;
     private Configuration configuration;
-    private static Logger logger = LoggerFactory.getLogger(WebVeinsMain.class);
+
     private Manager manager;
     private HDFSManager hdfsManager;
     private ScheduledExecutorService manageExector = Executors.newScheduledThreadPool(1);
@@ -84,13 +85,12 @@ public class WebVeinsMain {
         }, 0, Configuration.CHECK_TIME, TimeUnit.SECONDS);
     }
 
-
-    @SuppressWarnings("restriction")
     private class StopSignalHandler implements SignalHandler {
         @Override
         public void handle(Signal signal) {
             try {
                 logger.info("stoping manager...");
+                manager.stop();
                 manageExector.shutdownNow();
                 client.close();
                 hdfsManager.close();

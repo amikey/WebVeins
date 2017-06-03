@@ -16,9 +16,9 @@ import java.util.Map.Entry;
  * Created by shaoxiong on 17-4-6.
  */
 public class WorkersWatcher implements Watcher{
+    private static final Logger logger = LoggerFactory.getLogger(WorkersWatcher.class);
     private CuratorFramework client;
     private HashMap<String, String> workersList = new HashMap<String, String>();
-    private Logger logger = LoggerFactory.getLogger(WorkersWatcher.class);
 
     public WorkersWatcher(CuratorFramework client){
         this.client = client;

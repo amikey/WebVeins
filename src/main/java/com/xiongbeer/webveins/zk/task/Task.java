@@ -38,10 +38,9 @@ public class Task {
             }
         }
     }
-
+    protected static final Logger logger = LoggerFactory.getLogger(Task.class);
     protected CuratorFramework client;
     protected Map<String, Epoch> tasksInfo = new ConcurrentHashMap<>();
-    protected Logger logger = LoggerFactory.getLogger(Task.class);
 
     public Task(CuratorFramework client){
         this.client = client;
