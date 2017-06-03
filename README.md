@@ -33,7 +33,7 @@ WebVeins的原理与上面都不相同，但是也有相通的地方，比如说
 提供了获取运行信息的脚本，源码中也提供了对应的API  
 
     Usage:
-        webveins [COMMAND] [OPTIONS]
+        webveins COMMAND [OPTIONS]
 
     COMMAND:
         -v                                  print the version
@@ -56,9 +56,9 @@ WebVeins的原理与上面都不相同，但是也有相通的地方，比如说
 * [ ] 完整的监控与控制API
 * [ ] 支持多个active manager，能在任务分类的情况下进行工作
 * [ ] 支持多个filter，新增部分filter类型
+* [ ] 异步调用支持
 * [ ] python API支持
 * [ ] Go API支持
-* [ ] 完善可视化项目
 * [ ] 加强负载均衡与性能优化
 
 
@@ -86,22 +86,22 @@ $ git clone https://github.com/xiongbeer/WebVeins.git
 $ $WEBVEINS_HOME/bin/wvformat -n
 ```
 
-5. 启动manager服务[如果有多个，第一台机器启动的manager为active状态，后续启动的为standby状态]
+5. 启动manager服务「如果有多个，第一台机器启动的manager为active状态，后续启动的为standby状态」
 ```
 $ $WEBVEINS_HOME/bin/webveins -r manager
 ```
 
-6. 启动worker服务[爬虫节点需要启动，需要shell功能也需要开启此服务]
+6. 启动worker服务「爬虫节点需要启动，需要shell功能也需要开启此服务」
 ```
 $ $WEBVEINS_HOME/bin/webveins -r worker
 ```
 
 ### Quick Start
 
-爬虫继承 *com.xiongbeer.webveins.service.Action* 这个抽象类
+爬虫实现 *com.xiongbeer.webveins.service.local.Action* 这个接口
 
 ```
-public class Crawler extends Action{
+public class Crawler implements Action{
         /* 在爬取过程中需要把新的Url保存下来，结束后上传 */
         private static Set<String> newUrls = new new ConcurrentSet<String>();
         /*
@@ -113,7 +113,10 @@ public class Crawler extends Action{
             try {
                 /* 读取任务Urls */
                 List<String> urlsList = new UrlFileLoader().readFileByLine(urlFilePath);
-                //do something
+
+                /*
+                 *    do something
+                 */
 
                 /* 上传新的urls */
                 Bootstrap.upLoadNewUrls(newUrls);
@@ -124,28 +127,19 @@ public class Crawler extends Action{
             }
             return false;
         }
+
         ...
+
         public static void main(String[] args){
             Crawler crawler = new Crawler();
-            /* Bootstrap为一个引导类，需要把要使用的爬虫实例对象传给它 */
-            Bootstrap bootstrap = new Bootstrap(crawler);
-            bootstrap.runClient();
-            try {
-                /* 短暂的等待，等待Client与Server建立长连接 */
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                /*
-                    连接建立，告诉Server爬虫已经准备好啦！
-                    当Server收到这个消息的时候就会开始领取任务了
-                 */
-                bootstrap.ready();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            /* 将爬虫实例传给引导类 */
+            Bootstrap bootstrap = new CrawlerBootstrap(crawler);
+            /* 初始化，连接到本地Worker服务端 */
+            bootstrap.init();
+            /* 准备好啦，可以开始工作了 */
+            bootstrap.ready();
+            /* 任务执行完毕后记得关闭连接 */
+            bootstrap.close();
         }
     }
 ```

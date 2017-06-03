@@ -1,42 +1,31 @@
-package com.xiongbeer.webveins.service.local;
+package com.xiongbeer.webveins.service.protocol.handler;
 
 import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.ZnodeInfo;
-import com.xiongbeer.webveins.service.ProcessDataProto;
+import com.xiongbeer.webveins.service.protocol.message.MessageType;
+import com.xiongbeer.webveins.service.protocol.message.ProcessDataProto.ProcessData;
 import com.xiongbeer.webveins.zk.worker.Worker;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.Date;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.*;
 
 /**
- * Created by shaoxiong on 17-4-23.
+ * Created by shaoxiong on 17-5-30.
  */
-@ChannelHandler.Sharable
-public class ServerHandler extends ChannelInboundHandlerAdapter{
-    private Logger logger = LoggerFactory.getLogger(ServerHandler.class);
+public class WorkerProxyHandler extends ChannelInboundHandlerAdapter {
+    private static Logger logger = LoggerFactory.getLogger(WorkerProxyHandler.class);
+    private static ProcessData.Builder builder;
+    private volatile ScheduledFuture<?> heartBeat;
     private static String currentTask;
-    private Timer heartBeat;
     private Worker worker;
+    public static ExecutorService workerLoop = Executors.newSingleThreadExecutor();
 
-    /* 新任务的Data info的builder */
-    private static ProcessDataProto.ProcessData.Builder builder;
-
-    public ServerHandler(Worker worker){
+    public WorkerProxyHandler(Worker worker){
         this.worker = worker;
-    }
-
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        Server.getChannels().add(ctx.channel());
-        logger.info(ctx.channel().remoteAddress().toString() + " log in "
-                + "at {}", new Date().toString());
     }
 
     /**
@@ -50,10 +39,22 @@ public class ServerHandler extends ChannelInboundHandlerAdapter{
      */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        ProcessDataProto.ProcessData data = (ProcessDataProto.ProcessData) msg;
+        ProcessData message = (ProcessData) msg;
+        if(message.getType() == MessageType.CRAWLER_REQ.getValue()) {
+            workerLoop.execute(new CrawlerTask(ctx, message));
+        }
+        ctx.fireChannelRead(msg);
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        cause.printStackTrace();
+    }
+
+    private void process(ChannelHandlerContext ctx, ProcessData data){
         String taskPath = ZnodeInfo.NEW_TASK_PATH + data.getUrlFileName();
-        ProcessDataProto.ProcessData.Status status = data.getStatus();
-        builder = ProcessDataProto.ProcessData.newBuilder();
+        ProcessData.CrawlerStatus status = data.getStatus();
+        builder = ProcessData.newBuilder();
         switch (status){
             case NULL:
                 currentTask = null;
@@ -61,12 +62,13 @@ public class ServerHandler extends ChannelInboundHandlerAdapter{
                 /*
                     TODO 目前暂时将放弃的任务放入黑名单，后面会设置定时器将其移除
                  */
-                worker.addToBlackList(new File(taskPath).getName());
+                Worker.addToBlackList(new File(taskPath).getName());
                 worker.discardTask(taskPath);
                 break;
             case READY:
                 if(currentTask != null){
-                    builder.setStatus(ProcessDataProto.ProcessData.Status.RUNNING);
+                    builder.setType(MessageType.CRAWLER_RESP.getValue());
+                    builder.setStatus(ProcessData.CrawlerStatus.RUNNING);
                     builder.setUrlFilePath(Configuration.WAITING_TASKS_URLS +
                             "/" + currentTask);
                     builder.setUrlFileName(currentTask);
@@ -76,9 +78,8 @@ public class ServerHandler extends ChannelInboundHandlerAdapter{
                 takeNewTask(ctx);
                 break;
             case FINNISHED:
-                heartBeat.purge();
-                heartBeat.cancel();
                 currentTask = null;
+                heartBeat.cancel(true);
                 worker.finishTask(taskPath);
                 takeNewTask(ctx);
                 break;
@@ -91,19 +92,6 @@ public class ServerHandler extends ChannelInboundHandlerAdapter{
             default:
                 break;
         }
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        Server.getChannels().remove(ctx.channel());
-        logger.info(ctx.channel().remoteAddress().toString() + " log out "
-                + "at {}", new Date().toString());
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        cause.printStackTrace();
-        ctx.close();
     }
 
     private void takeNewTask(ChannelHandlerContext ctx){
@@ -119,21 +107,22 @@ public class ServerHandler extends ChannelInboundHandlerAdapter{
                 break;
             }
         }
-        builder.setStatus(ProcessDataProto.ProcessData.Status.RUNNING);
+        builder.setType(MessageType.CRAWLER_RESP.getValue());
+        builder.setStatus(ProcessData.CrawlerStatus.RUNNING);
         builder.setUrlFilePath(Configuration.WAITING_TASKS_URLS + "/" + taskName);
         builder.setUrlFileName(taskName);
         ctx.writeAndFlush(builder.build());
 
         /* 拿到任务后会定时改变任务的mtime，防止被manager错误的重置 */
-        TimerTask heart = new HeartBeat(taskName);
-        heartBeat = new Timer();
-        long delay = Configuration.WORKER_HEART_BEAT;
-        long intevalPeriod = Configuration.WORKER_HEART_BEAT * 1000;
-        heartBeat.scheduleAtFixedRate(heart, delay, intevalPeriod);
+        heartBeat = ctx
+                .channel()
+                .eventLoop()
+                .scheduleAtFixedRate(new HeartBeat(taskName), 0, Configuration.CHECK_TIME, TimeUnit.SECONDS);
     }
 
-    class HeartBeat extends TimerTask{
+    class HeartBeat implements Runnable {
         String taskName;
+
         public HeartBeat(String taskName){
             this.taskName = taskName;
         }
@@ -141,6 +130,21 @@ public class ServerHandler extends ChannelInboundHandlerAdapter{
         @Override
         public void run() {
             worker.beat(taskName);
+        }
+    }
+
+    class CrawlerTask implements Runnable {
+        ChannelHandlerContext ctx;
+        ProcessData data;
+
+        public CrawlerTask(ChannelHandlerContext ctx, ProcessData data){
+            this.ctx = ctx;
+            this.data = data;
+        }
+
+        @Override
+        public void run() {
+            process(ctx, data);
         }
     }
 }

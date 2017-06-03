@@ -21,7 +21,6 @@ import javax.xml.validation.Validator;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -259,7 +258,7 @@ public class Configuration {
         /* tomcat服务器刷新数据的间隔 */
         map.put("tomcat_heart_beat", "5");
         /* 异步执行的线程数量 */
-        map.put("local_async_thread_num", "40");
+        map.put("local_async_thread_num", "10");
     }
 
 

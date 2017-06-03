@@ -112,7 +112,7 @@ public class TaskManager extends Task{
                     .creatingParentsIfNeeded()
                     .withMode(CreateMode.PERSISTENT)
                     .inBackground(submitTaskCallback, asyncOpThreadPool)
-                    .forPath(ZnodeInfo.NEW_TASK_PATH + name, WAITING.getBytes());
+                    .forPath(ZnodeInfo.NEW_TASK_PATH + name, Status.WAITING.getValue().getBytes());
         } catch (Exception e) {
             logger.error("unknow error", e);
         }
@@ -130,7 +130,7 @@ public class TaskManager extends Task{
         try {
             client.setData()
                     .inBackground(resetTaskCallback, asyncOpThreadPool)
-                    .forPath(path, WAITING.getBytes());
+                    .forPath(path, Status.WAITING.getValue().getBytes());
         } catch (Exception e) {
             logger.error("unknow error", e);
         }

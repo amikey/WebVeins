@@ -5,7 +5,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.xiongbeer.webveins.service.local.Bootstrap;
+import com.xiongbeer.webveins.service.local.CrawlerBootstrap;
 import com.xiongbeer.webveins.utils.InitLogger;
 
 import io.netty.util.internal.ConcurrentSet;
@@ -31,7 +31,7 @@ public class WarmUp implements PageProcessor {
         /* 只要获取的url数量大于100就终止爬虫任务 */
     	if(newUrls.size() > 100){
     		try {
-				Bootstrap.upLoadNewUrls(newUrls);
+				CrawlerBootstrap.upLoadNewUrls(newUrls);
 				System.exit(0);
 			} catch (IOException e) {
 				e.printStackTrace();

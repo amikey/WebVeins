@@ -1,16 +1,21 @@
+syntax = "proto3";
 option java_outer_classname = "ProcessDataProto";
-
 message ProcessData {
-    optional string urlFilePath = 1;
-    optional string urlFileName = 2;
-    enum Status {
+    int32 type = 1;
+    int32 crcCode = 2;
+    int32 length = 3;
+    int64 sessionId = 4;
+    enum CrawlerStatus {
         NULL = 0;
         WAITING = 1;
         RUNNING = 2;
         FINNISHED = 3;
         READY = 4;
     }
-    optional Status status = 3 [default=NULL];
-    optional string command = 4;
-    optional string commandReasult = 5;
+    CrawlerStatus status = 5;
+    string urlFilePath = 6;
+    string urlFileName = 7;
+    string command = 8;
+    string commandReasult = 9;
+    bytes attachment = 10;
 }

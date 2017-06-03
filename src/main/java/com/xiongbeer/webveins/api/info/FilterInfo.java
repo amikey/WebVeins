@@ -5,8 +5,6 @@ import com.xiongbeer.webveins.api.jsondata.FilterJson;
 import com.xiongbeer.webveins.api.jsondata.JData;
 import com.xiongbeer.webveins.filter.BloomFileInfo;
 import com.xiongbeer.webveins.saver.HDFSManager;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.zookeeper.ZooKeeper;
 
 import java.io.File;
 import java.io.IOException;

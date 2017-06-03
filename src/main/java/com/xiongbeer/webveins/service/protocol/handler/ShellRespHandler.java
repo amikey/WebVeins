@@ -1,5 +1,4 @@
-package com.xiongbeer.webveins.service.api;
-
+package com.xiongbeer.webveins.service.protocol.handler;
 
 import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.api.Command;
@@ -11,12 +10,11 @@ import com.xiongbeer.webveins.api.job.HDFSJob;
 import com.xiongbeer.webveins.api.job.TaskJob;
 import com.xiongbeer.webveins.api.jsondata.JData;
 import com.xiongbeer.webveins.saver.HDFSManager;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import com.xiongbeer.webveins.service.protocol.message.MessageType;
+import com.xiongbeer.webveins.service.protocol.message.ProcessDataProto.ProcessData;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.zookeeper.ZooKeeper;
 
 import java.io.IOException;
 import java.util.EnumSet;
@@ -24,34 +22,41 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
 /**
- * Created by shaoxiong on 17-5-13.
+ * Created by shaoxiong on 17-5-30.
  */
-public class APIServerHandler extends ChannelInboundHandlerAdapter {
+public class ShellRespHandler extends ChannelInboundHandlerAdapter {
     private CuratorFramework client;
     private HDFSManager hdfsManager;
 
-    public APIServerHandler(CuratorFramework zk, HDFSManager hdfsManager){
+    public ShellRespHandler(CuratorFramework zk, HDFSManager hdfsManager){
         this.client = zk;
         this.hdfsManager = hdfsManager;
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        String[] args = ((String)msg).split(" ");
-        Command result = analysis((String) msg);
-        byte[] content = (operation(result, args)
-                + System.getProperty("line.separator"))
-                .getBytes();
-        ByteBuf message = Unpooled.buffer(content.length);
-        message.writeBytes(content);
-        ctx.writeAndFlush(message);
+        ProcessData req = (ProcessData) msg;
+        if(req.getType() == MessageType.SHELL_REQ.getValue()) {
+            Command result = analysis(req.getCommand());
+            //TODO add args
+            ProcessData resp = buildShellResp(operation(result));
+            ctx.writeAndFlush(resp);
+        } else {
+            ctx.fireChannelRead(msg);
+        }
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         cause.printStackTrace();
+    }
+
+    private ProcessData buildShellResp(String content){
+        ProcessData.Builder builder = ProcessData.newBuilder();
+        builder.setType(MessageType.SHELL_RESP.getValue());
+        builder.setCommandReasult(content);
+        return builder.build();
     }
 
     private Command analysis(String req){
@@ -98,8 +103,7 @@ public class APIServerHandler extends ChannelInboundHandlerAdapter {
                 TaskJob taskJob = new TaskJob(client, hdfsManager);
                 if(args.length >= 2) {
                     result += taskJob.removeTasks(args[1]);
-                }
-                else{
+                } else {
                     return "[Error] lack of args";
                 }
                 result += "Done.";

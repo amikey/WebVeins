@@ -53,6 +53,7 @@ public class Manager {
     public enum Status{
         Initializing, ELECTED, NOT_ELECTED, RECOVERING
     }
+    private static final Logger logger = LoggerFactory.getLogger(Manager.class);
     public static Manager manager;
     private CuratorFramework client;
     private String serverId;
@@ -73,8 +74,6 @@ public class Manager {
 
     private UrlFilter filter;
 
-    private Logger logger = LoggerFactory.getLogger(Manager.class);
-
     private Manager(CuratorFramework client, String serverId,
                    HDFSManager hdfsManager, UrlFilter filter){
         status = Status.Initializing;
@@ -85,6 +84,10 @@ public class Manager {
         workersWatcher = new WorkersWatcher(client);
         this.filter = filter;
         toBeActive();
+    }
+
+    public void stop(){
+        asyncOpThreadPool.shutdownNow();
     }
 
     public static synchronized Manager getInstance(CuratorFramework client, String serverId,
@@ -124,7 +127,7 @@ public class Manager {
     public void manage() throws InterruptedException
             , IOException, VeinsException.FilterOverflowException {
         if(status == Status.ELECTED) {
-            logger.info("start manage process...");
+            logger.debug("start manage process...");
             checkTasks();
             checkWorkers();
             publishNewTasks();
@@ -475,8 +478,6 @@ public class Manager {
         syncWaitingTasks();
         /* 更新tasksInfo状态表 */
         taskManager.checkTasks();
-        /* TODO 用克隆的map进行迭代，fail-fast会影响直接用原map操作 */
-        @SuppressWarnings("unchecked")
 		Map<String, Epoch> tasks = taskManager.getTasksInfo();
         Iterator<Entry<String, Epoch>> iterator = tasks.entrySet().iterator();
         while(iterator.hasNext()){
@@ -484,7 +485,8 @@ public class Manager {
 			Map.Entry entry = (Map.Entry)iterator.next();
             String key = (String) entry.getKey();
             Epoch value = (Epoch) entry.getValue();
-            if(value.getStatus().equals(Task.FINISHED)){
+
+            if(value.getStatus() == Task.Status.FINISHED){
                 if(unfinishedTaskList.containsKey(key)){
                     unfinishedTaskList.remove(key);
                 }
@@ -492,7 +494,7 @@ public class Manager {
                         Configuration.FINISHED_TASKS_URLS + "/" + key);
                 taskManager.releaseTask(ZnodeInfo.TASKS_PATH + '/' + key);
             }
-            else if(value.getStatus().equals(Task.RUNNING)){
+            else if(value.getStatus() == Task.Status.RUNNING){
                 unfinishedTaskList.put(key, value);
             } else{
                 unfinishedTaskList.remove(key);
@@ -515,9 +517,7 @@ public class Manager {
     }
 
     /**
-     * 检查Workers的状态，
-     * 若它失效则需要重置
-     * 它之前领取的任务。
+     * 检查Workers的状态，若它失效则需要重置它之前领取的任务。
      */
     private void checkWorkers() throws InterruptedException {
         Iterator<Entry<String, Epoch>> iterator = unfinishedTaskList.entrySet().iterator();
@@ -555,12 +555,17 @@ public class Manager {
         }
 
 
+        /*
+            TODO
+            目前是先将所有要处理的文件下载下来再进行处理，为什么不开多个线程进行处理呢，这样不是能先下载的文件先进行处理，不被IO阻塞吗？
+            原因是需要对文件进行指定大小的切片，多线程的情况下切片比较难处理，还需要一些预处理，未来会将这里改为多线程
+         */
         List<String> urlFiles = downloadTaskFiles(hdfsUrlFiles, tempSavePath);
 
         /*
             后续整体工作流程：
             对每个文件进行逐个按行读取，在开始读的同时也会
-            在本地新建一个同名的.bak文件每读一行后会尝试将
+            在本地新建一个同名的.bak文件，每读一行后会尝试将
             其录入过滤器，若成功则说明此url是新的url，会将
             其写入.bak文件中。完毕后会删除其他非.bak的文件
             ，再去掉.bak文件的.bak后缀。

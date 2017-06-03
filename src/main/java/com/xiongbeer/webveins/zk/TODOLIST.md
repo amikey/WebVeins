@@ -7,3 +7,4 @@
 * [ ] filter cache file引入hdfs的HA思想
 * [x] 用curator替代原生API
 * [ ] 加入权限管理
+* [ ] manage有些步骤是独立的，可以拆分出来并行化

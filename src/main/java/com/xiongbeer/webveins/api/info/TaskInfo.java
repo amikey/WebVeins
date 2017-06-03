@@ -9,7 +9,6 @@ import com.xiongbeer.webveins.zk.task.Task;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 
 import java.util.LinkedList;
@@ -54,7 +53,7 @@ public class TaskInfo implements SimpleInfo {
 
     private TaskJson taskInfo(Stat taskStat, String name, byte[] data){
         TaskJson foo = new TaskJson();
-        String status = new String(data);
+        Task.Status status = Task.Status.get(new String(data));
         foo.setStatus(status);
         foo.setCtime(taskStat.getCtime());
         foo.setMtime(taskStat.getMtime());
@@ -71,17 +70,17 @@ public class TaskInfo implements SimpleInfo {
      */
     @SuppressWarnings("unused")
 	@Deprecated
-    private int getFailedTimes(int mTimes, String currentStatus){
+    private int getFailedTimes(int mTimes, Task.Status currentStatus){
         int ftimes = 0;
         if(mTimes > 0) {
             switch (currentStatus) {
-                case Task.WAITING:
+                case WAITING:
                     ftimes = mTimes/2;
                     break;
-                case Task.RUNNING:
+                case RUNNING:
                     ftimes = (mTimes-1)/2;
                     break;
-                case Task.FINISHED:
+                case FINISHED:
                     ftimes = (mTimes-2)/2;
                     break;
                 default:

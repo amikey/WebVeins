@@ -37,7 +37,7 @@ public class TaskWorker extends Task{
 			Map.Entry entry = (Map.Entry)iterator.next();
             String key = (String) entry.getKey();
             Epoch value = (Epoch) entry.getValue();
-            if(!blackList.contains(value) && value.getStatus().equals(WAITING)){
+            if(!blackList.contains(value) && value.getStatus() == Status.WAITING){
                 if(setRunningTask(ZnodeInfo.TASKS_PATH + "/" + key,
                         value.getDataVersion())) {
                     task = key;
@@ -70,7 +70,7 @@ public class TaskWorker extends Task{
      */
     public void discardTask(String taskPath){
         try {
-            client.setData().forPath(taskPath, WAITING.getBytes());
+            client.setData().forPath(taskPath, Status.WAITING.getValue().getBytes());
         } catch (KeeperException.ConnectionLossException e){
             discardTask(taskPath);
         } catch (Exception e) {
@@ -85,7 +85,7 @@ public class TaskWorker extends Task{
      */
     public void finishTask(String taskPath){
         try {
-            client.setData().forPath(taskPath, FINISHED.getBytes());
+            client.setData().forPath(taskPath, Status.FINISHED.getValue().getBytes());
         } catch (KeeperException.ConnectionLossException e) {
             finishTask(taskPath);
         } catch (Exception e) {
@@ -106,7 +106,7 @@ public class TaskWorker extends Task{
     public boolean setRunningTask(String path, int version){
         boolean result = false;
         try {
-            client.setData().withVersion(version).forPath(path, RUNNING.getBytes());
+            client.setData().withVersion(version).forPath(path, Status.RUNNING.getValue().getBytes());
             result = true;
         } catch (KeeperException.NoNodeException e) {
             super.tasksInfo.remove(path);

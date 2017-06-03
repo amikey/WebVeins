@@ -2,12 +2,12 @@ package com.xiongbeer.webveins.zk.task;
 
 import com.xiongbeer.webveins.ZnodeInfo;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by shaoxiong on 17-5-6.
@@ -32,11 +32,11 @@ public class TaskWatcher{
                 for (String child : children) {
                     byte[] data =
                             client.getData().forPath(ZnodeInfo.NEW_TASK_PATH + child);
-                    if (new String(data).equals(Task.WAITING)) {
+                    if (new String(data).equals(Task.Status.WAITING.getValue())) {
                         return;
                     }
                 }
-                Thread.sleep(WAITING_TIME);
+                TimeUnit.MILLISECONDS.sleep(WAITING_TIME);
             }
         } catch (Exception e) {
             logger.warn("some thing get wrong when waiting for task.", e);

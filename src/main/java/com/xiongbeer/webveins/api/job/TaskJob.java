@@ -7,7 +7,6 @@ import com.xiongbeer.webveins.exception.VeinsException;
 import com.xiongbeer.webveins.saver.HDFSManager;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.ZooKeeper;
 
 import java.io.IOException;
 import java.util.List;

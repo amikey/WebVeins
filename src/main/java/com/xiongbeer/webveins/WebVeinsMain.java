@@ -25,24 +25,26 @@ import java.util.concurrent.TimeUnit;
  */
 @SuppressWarnings("restriction")
 public class WebVeinsMain {
+    private static final Logger logger = LoggerFactory.getLogger(WebVeinsMain.class);
     private static WebVeinsMain wvMain;
     private CuratorFramework client;
     private String serverId;
     private Configuration configuration;
-    private Logger logger = LoggerFactory.getLogger(WebVeinsMain.class);
+
     private Manager manager;
     private HDFSManager hdfsManager;
     private ScheduledExecutorService manageExector = Executors.newScheduledThreadPool(1);
+
     private WebVeinsMain() throws IOException {
     	configuration = Configuration.getInstance();
         client = SelfTest.checkAndGetZK();
         if(client == null){
-            logger.error("[init] Connect to zookeeper server failed.");
+            logger.error("Connect to zookeeper server failed.");
             System.exit(1);
         }
         hdfsManager = SelfTest.checkAndGetHDFS();
         if(hdfsManager == null){
-            logger.error("[init] Connect to hdfs failed.");
+            logger.error("Connect to hdfs failed.");
             System.exit(1);
         }
         serverId = new IdProvider().getIp();
@@ -74,7 +76,7 @@ public class WebVeinsMain {
                 try {
                     manager.manage();
                 } catch (InterruptedException e) {
-                    logger.warn("shut down.");
+                    logger.info("shut down.");
                     return;
                 } catch (Throwable e){
                     logger.warn("something wrong when managing: ", e);
@@ -83,27 +85,25 @@ public class WebVeinsMain {
         }, 0, Configuration.CHECK_TIME, TimeUnit.SECONDS);
     }
 
-
-    @SuppressWarnings("restriction")
     private class StopSignalHandler implements SignalHandler {
         @Override
         public void handle(Signal signal) {
             try {
                 logger.info("stoping manager...");
+                manager.stop();
                 manageExector.shutdownNow();
                 client.close();
                 hdfsManager.close();
             } catch (Throwable e) {
-                System.out.println("handle|Signal handler" + "failed, reason "
+                logger.error("handle|Signal handler" + "failed, reason "
                         + e.getMessage());
-                e.printStackTrace();
             }
         }
     }
 
     public static void main(String[] args) throws IOException {
         if(SelfTest.checkRunning(WebVeinsMain.class.getSimpleName())){
-            System.out.println("[Error] Service has already running");
+            logger.error("Service has already running");
             System.exit(1);
         }
         InitLogger.init();
