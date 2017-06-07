@@ -2,6 +2,8 @@ package com.xiongbeer.webveins.zk.worker;
 
 import com.xiongbeer.webveins.ZnodeInfo;
 import com.xiongbeer.webveins.exception.VeinsException;
+import com.xiongbeer.webveins.zk.task.Epoch;
+import com.xiongbeer.webveins.zk.task.TaskData;
 import com.xiongbeer.webveins.zk.task.TaskWatcher;
 import com.xiongbeer.webveins.zk.task.TaskWorker;
 import org.apache.curator.framework.CuratorFramework;
@@ -60,17 +62,17 @@ public class Worker {
         }
     }
 
-    public String takeTask(){
-        String taskName;
-        taskName = taskWorker.takeTask();
-        if(taskName != null){
-            setStatus(taskName);
+    public Epoch takeTask(){
+        Epoch task;
+        task = taskWorker.takeTask();
+        if(task != null){
+            setStatus(task.getTaskName());
         }
-        return taskName;
+        return task;
     }
 
-    public void beat(String taskName){
-        taskWorker.setRunningTask(ZnodeInfo.TASKS_PATH + '/' + taskName, -1);
+    public void beat(String taskName, TaskData taskData){
+        taskWorker.setRunningTask(ZnodeInfo.TASKS_PATH + '/' + taskName, -1, taskData);
         setStatus(taskName);
     }
 

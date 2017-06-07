@@ -7,6 +7,7 @@ import com.xiongbeer.webveins.api.jsondata.TaskJson;
 import com.xiongbeer.webveins.exception.VeinsException.OperationFailedException;
 import com.xiongbeer.webveins.zk.task.Task;
 
+import com.xiongbeer.webveins.zk.task.TaskData;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -53,11 +54,13 @@ public class TaskInfo implements SimpleInfo {
 
     private TaskJson taskInfo(Stat taskStat, String name, byte[] data){
         TaskJson foo = new TaskJson();
-        Task.Status status = Task.Status.get(new String(data));
-        foo.setStatus(status);
+        TaskData taskData = new TaskData(data);
+        foo.setStatus(taskData.getStatus());
         foo.setCtime(taskStat.getCtime());
         foo.setMtime(taskStat.getMtime());
         foo.setName(name);
+        foo.setProgress(taskData.getProgress());
+        foo.setMarkup(taskData.getUniqueMarkup());
         return foo;
     }
 

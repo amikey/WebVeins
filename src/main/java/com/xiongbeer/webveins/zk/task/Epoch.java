@@ -6,20 +6,24 @@ import java.util.Date;
  * Created by shaoxiong on 17-4-10.
  */
 public class Epoch {
+    private final String taskName;
     private final Date previousChangeTime;
     private final Date checkTime;
     private final Task.Status status;
     private final int dataVersion;
+    private final TaskData taskData;
 
     public long getDifference(){
         return (checkTime.getTime() - previousChangeTime.getTime())/1000;
     }
 
-    public Epoch(long previousChangeTime, Task.Status status, int dataVersion){
+    public Epoch(String taskName, long previousChangeTime, int dataVersion, TaskData taskData){
         checkTime = new Date();
         this.previousChangeTime = new Date(previousChangeTime);
-        this.status = status;
+        this.status = taskData.getStatus();
         this.dataVersion = dataVersion;
+        this.taskData = taskData;
+        this.taskName = taskName;
     }
 
     public int getDataVersion(){
@@ -36,6 +40,14 @@ public class Epoch {
 
     public Date getCheckTime() {
         return checkTime;
+    }
+
+    public TaskData getTaskData(){
+        return taskData;
+    }
+
+    public String getTaskName(){
+        return taskName;
     }
 
     @Override

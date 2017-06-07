@@ -32,7 +32,8 @@ public class ShellBootstrap extends Bootstrap {
             command.append(" ");
         }
         System.out.println("[info] command: " + command.toString());
-        Bootstrap bootstrap = new ShellBootstrap(command.toString());
+        //Bootstrap bootstrap = new ShellBootstrap(command.toString());
+        Bootstrap bootstrap = new ShellBootstrap("listtasks");
         bootstrap.ready();
     }
 }

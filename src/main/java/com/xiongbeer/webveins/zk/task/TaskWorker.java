@@ -27,8 +27,8 @@ public class TaskWorker extends Task{
      * 即使本地zookeeper的视图稍有落后，也并不会发生多个worker持有一个任务的情况发生（会验证Task的版本信息）
      * 只是会多一些抢夺次数，而频繁的sync可能会给服务器带来更大的负担
      */
-    public String takeTask(){
-        String task = null;
+    public Epoch takeTask(){
+        Epoch task = null;
         checkTasks();
         /* 抢夺未被领取的任务 */
         Iterator<Entry<String, Epoch>> iterator = super.tasksInfo.entrySet().iterator();
@@ -39,8 +39,8 @@ public class TaskWorker extends Task{
             Epoch value = (Epoch) entry.getValue();
             if(!blackList.contains(value) && value.getStatus() == Status.WAITING){
                 if(setRunningTask(ZnodeInfo.TASKS_PATH + "/" + key,
-                        value.getDataVersion())) {
-                    task = key;
+                        value.getDataVersion(), value.getTaskData())) {
+                    task = value;
                     break;
                 }
             }
@@ -70,7 +70,9 @@ public class TaskWorker extends Task{
      */
     public void discardTask(String taskPath){
         try {
-            client.setData().forPath(taskPath, Status.WAITING.getValue().getBytes());
+            TaskData taskData = new TaskData();
+            taskData.setStatus(Status.WAITING);
+            client.setData().forPath(taskPath, taskData.getBytes());
         } catch (KeeperException.ConnectionLossException e){
             discardTask(taskPath);
         } catch (Exception e) {
@@ -85,7 +87,10 @@ public class TaskWorker extends Task{
      */
     public void finishTask(String taskPath){
         try {
-            client.setData().forPath(taskPath, Status.FINISHED.getValue().getBytes());
+            byte[] data = client.getData().forPath(taskPath);
+            TaskData taskData = new TaskData(data);
+            taskData.setStatus(Status.FINISHED);
+            client.setData().forPath(taskPath, taskData.getBytes());
         } catch (KeeperException.ConnectionLossException e) {
             finishTask(taskPath);
         } catch (Exception e) {
@@ -103,15 +108,17 @@ public class TaskWorker extends Task{
      * @param version
      * @return
      */
-    public boolean setRunningTask(String path, int version){
+    public boolean setRunningTask(String path, int version, TaskData data){
         boolean result = false;
+        TaskData taskData = new TaskData(data.getBytes());
+        taskData.setStatus(Status.RUNNING);
         try {
-            client.setData().withVersion(version).forPath(path, Status.RUNNING.getValue().getBytes());
+            client.setData().withVersion(version).forPath(path, taskData.getBytes());
             result = true;
         } catch (KeeperException.NoNodeException e) {
             super.tasksInfo.remove(path);
         } catch (KeeperException.ConnectionLossException e) {
-            setRunningTask(path, version);
+            setRunningTask(path, version, data);
         } catch (Exception e) {
             logger.warn("set running task failed.", e);
         }

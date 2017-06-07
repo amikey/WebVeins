@@ -17,6 +17,9 @@ import com.xiongbeer.webveins.zk.worker.WorkersWatcher;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.transaction.CuratorOp;
+import org.apache.curator.framework.api.transaction.CuratorTransaction;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.AsyncCallback.*;
 import org.apache.zookeeper.KeeperException.Code;
@@ -191,9 +194,12 @@ public class Manager {
      * 这2个操作中的任何一个操作失败，
      * 则整个操作失败。
      */
-    private MultiCallback recoverMultiCallback = new MultiCallback() {
-        public void processResult(int rc, String path, Object ctx, List<OpResult> list) {
-            switch (Code.get(rc)){
+    private BackgroundCallback recoverMultiCallback = new BackgroundCallback() {
+        @Override
+        public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
+            int rc = curatorEvent.getResultCode();
+            String path = curatorEvent.getPath();
+            switch (Code.get(rc)) {
                 case CONNECTIONLOSS:
                     logger.warn("CONNECTIONLOSS, retrying to recover active manager. server."
                             + serverId + " ...");
@@ -220,6 +226,7 @@ public class Manager {
         }
     };
 
+
     /*
      * 恢复active_manager
      *
@@ -232,31 +239,25 @@ public class Manager {
      */
     @Async
     private void recoverActiveManager(){
-        final ArrayList<Op> process = new ArrayList<Op>();
-        process.add(Op.delete(managerPath, -1));
-        process.add(Op.create(
-                ZnodeInfo.ACTIVE_MANAGER_PATH,
-                "".getBytes(),
-                OPEN_ACL_UNSAFE,
-                CreateMode.EPHEMERAL
-                )
-        );
-
         if(status == Status.NOT_ELECTED) {
             status = Status.RECOVERING;
             delayExector.schedule(new Runnable(){
                 @Override
                 public void run(){
                     try {
-                        client.getZookeeperClient().getZooKeeper().multi(
-                                process,
-                                recoverMultiCallback,
-                                null
-                        );
+                        CuratorOp deleteOp = client.transactionOp()
+                                .delete()
+                                .forPath(managerPath);
+                        CuratorOp createOp = client.transactionOp()
+                                .create()
+                                .withMode(CreateMode.EPHEMERAL)
+                                .forPath(ZnodeInfo.ACTIVE_MANAGER_PATH);
+                        client.transaction()
+                                .inBackground(recoverMultiCallback, asyncOpThreadPool)
+                                .forOperations(deleteOp, createOp);
                     } catch (Exception e) {
-                        logger.warn("Unknow error.", e);
+                        e.printStackTrace();
                     }
-
                 }
             }, ZnodeInfo.JITTER_DELAY, TimeUnit.SECONDS);
         }
