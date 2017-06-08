@@ -1,5 +1,9 @@
 package com.xiongbeer.webveins.service.protocol.handler;
 
+import com.google.common.primitives.UnsignedInteger;
+import com.google.protobuf.ByteString;
+import com.xiongbeer.webveins.Configuration;
+import com.xiongbeer.webveins.service.local.Action;
 import com.xiongbeer.webveins.service.protocol.Client;
 import com.xiongbeer.webveins.service.protocol.message.MessageType;
 import com.xiongbeer.webveins.service.protocol.message.ProcessDataProto.ProcessData;
@@ -9,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
+import java.nio.charset.Charset;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -24,9 +29,11 @@ public class HeartBeatReqHandler extends ChannelInboundHandlerAdapter {
     private volatile ScheduledFuture<?> heartBeat;
     private AtomicBoolean closeLongConnection;
     private Client client;
+    private Action action;
 
     public HeartBeatReqHandler(Client client, AtomicBoolean closeLongConnection){
         this.client = client;
+        this.action = client.getAction();
         this.closeLongConnection = closeLongConnection;
     }
 
@@ -34,11 +41,24 @@ public class HeartBeatReqHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg)
             throws Exception {
         ProcessData message = (ProcessData)msg;
-        if (message.getType() == MessageType.HEART_BEAT_REQ.getValue()) {
+        MessageType type = MessageType.get((byte) message.getType());
+        if (type == MessageType.HEART_BEAT_REQ) {
             heartBeat = ctx
                     .channel()
                     .eventLoop()
-                    .scheduleAtFixedRate(new HeartBeatReqHandler.HeartBeatTask(ctx), 10, 10, TimeUnit.SECONDS);
+                    .scheduleAtFixedRate(new HeartBeatReqHandler.HeartBeatTask(ctx)
+                            , Configuration.WORKER_HEART_BEAT/3
+                            , Configuration.WORKER_HEART_BEAT/3, TimeUnit.SECONDS);
+        } else if(type == MessageType.HEART_BEAT_RESP){
+            String content = message.getAttachment().toString(Charset.defaultCharset());
+            if(content != null){
+                try {
+                    UnsignedInteger result = UnsignedInteger.fromIntBits(Integer.parseInt(content));
+                    action.reportResult(result);
+                } catch (NumberFormatException e){
+                    //pass
+                }
+            }
         }
     }
 
@@ -47,15 +67,6 @@ public class HeartBeatReqHandler extends ChannelInboundHandlerAdapter {
         executor.execute(new KeepConnection(closeLongConnection));
     }
 
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
-            throws Exception {
-        if (heartBeat != null) {
-            heartBeat.cancel(true);
-            heartBeat = null;
-        }
-        ctx.fireExceptionCaught(cause);
-    }
 
     private class KeepConnection implements Runnable {
         private AtomicBoolean closeLongConnection;
@@ -99,8 +110,10 @@ public class HeartBeatReqHandler extends ChannelInboundHandlerAdapter {
         }
 
         private ProcessData buildHeatBeat() {
+            Integer progress = action.report().intValue();
             ProcessData.Builder builder = ProcessData.newBuilder();
             builder.setType(MessageType.HEART_BEAT_REQ.getValue());
+            builder.setAttachment(ByteString.copyFrom(progress.toString().getBytes()));
             return builder.build();
         }
     }

@@ -22,7 +22,6 @@ public class LoginAuthReqHandler extends ChannelInboundHandlerAdapter {
     }
 
     public LoginAuthReqHandler(Channel[] channel){
-
         this.channel = channel;
     }
 
@@ -67,6 +66,6 @@ public class LoginAuthReqHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
             throws Exception {
-        ctx.fireExceptionCaught(cause);
+        cause.printStackTrace();
     }
 }

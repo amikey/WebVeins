@@ -52,7 +52,8 @@ public class Epoch {
 
     @Override
     public String toString(){
-        return "[previousChangeTime: " + previousChangeTime.toString()
+        return  "[taskName" + taskName +
+                "previousChangeTime: " + previousChangeTime.toString()
                 + "," + "checkTime: " + checkTime.toString()
                 + "," + "timeDifference: " + getDifference() + "s" + "]";
     }

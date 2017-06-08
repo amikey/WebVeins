@@ -1,6 +1,7 @@
 package com.xiongbeer.webveins.service.protocol.handler;
 
 import com.google.common.primitives.UnsignedInteger;
+import com.google.protobuf.ByteString;
 import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.ZnodeInfo;
 import com.xiongbeer.webveins.service.protocol.message.MessageType;
@@ -9,21 +10,22 @@ import com.xiongbeer.webveins.zk.task.Epoch;
 import com.xiongbeer.webveins.zk.task.Task;
 import com.xiongbeer.webveins.zk.task.TaskData;
 import com.xiongbeer.webveins.zk.worker.Worker;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.nio.charset.Charset;
 import java.util.concurrent.*;
 
 /**
  * Created by shaoxiong on 17-5-30.
  */
 public class WorkerProxyHandler extends ChannelInboundHandlerAdapter {
-    private static Logger logger = LoggerFactory.getLogger(WorkerProxyHandler.class);
     public static ExecutorService workerLoop = Executors.newSingleThreadExecutor();
-    private static ProcessData.Builder builder;
+    private static Logger logger = LoggerFactory.getLogger(WorkerProxyHandler.class);
     private volatile ScheduledFuture<?> heartBeat;
     private volatile int progress;
     private static Epoch currentTask;
@@ -45,10 +47,16 @@ public class WorkerProxyHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ProcessData message = (ProcessData) msg;
-        if(message.getType() == MessageType.CRAWLER_REQ.getValue()) {
+        MessageType type = MessageType.get((byte) message.getType());
+        if(type == MessageType.CRAWLER_REQ) {
             workerLoop.execute(new CrawlerTask(ctx, message));
-        } else if(message.getType() == MessageType.HEART_BEAT_REQ.getValue()){
-            progress = Integer.parseInt(message.getCommandReasult());
+        } else if(type == MessageType.HEART_BEAT_REQ){
+            try {
+                progress = Integer.parseInt(message.getAttachment().toString(Charset.defaultCharset()));
+            } catch (NumberFormatException e){
+                // pass
+                logger.error("server workerproxy progress");
+            }
         }
         ctx.fireChannelRead(msg);
     }
@@ -61,7 +69,7 @@ public class WorkerProxyHandler extends ChannelInboundHandlerAdapter {
     private void process(ChannelHandlerContext ctx, ProcessData data){
         String taskPath = ZnodeInfo.NEW_TASK_PATH + data.getUrlFileName();
         ProcessData.CrawlerStatus status = data.getStatus();
-        builder = ProcessData.newBuilder();
+        ProcessData.Builder builder = ProcessData.newBuilder();
         switch (status){
             case NULL:
                 currentTask = null;
@@ -114,9 +122,10 @@ public class WorkerProxyHandler extends ChannelInboundHandlerAdapter {
                 break;
             }
         }
+        ProcessData.Builder builder = ProcessData.newBuilder();
         builder.setType(MessageType.CRAWLER_RESP.getValue());
         builder.setStatus(ProcessData.CrawlerStatus.RUNNING);
-        builder.setUrlFilePath(Configuration.WAITING_TASKS_URLS + "/" + task);
+        builder.setUrlFilePath(Configuration.WAITING_TASKS_URLS + "/" + task.getTaskName());
         builder.setUrlFileName(task.getTaskName());
         ctx.writeAndFlush(builder.build());
 
@@ -125,24 +134,36 @@ public class WorkerProxyHandler extends ChannelInboundHandlerAdapter {
                 .channel()
                 .eventLoop()
                 .scheduleAtFixedRate(new HeartBeat(task.getTaskName()
-                        , task.getTaskData().getUniqueMarkup()), 0
+                        , task.getTaskData().getUniqueMarkup(), ctx.channel()), 0
                         , Configuration.WORKER_HEART_BEAT, TimeUnit.SECONDS);
     }
 
     class HeartBeat implements Runnable {
         String taskName;
         TaskData taskData;
-        public HeartBeat(String taskName, UnsignedInteger markup){
+        Channel channel;
+
+        public HeartBeat(String taskName, UnsignedInteger markup, Channel channel){
             taskData = new TaskData();
             taskData.setStatus(Task.Status.RUNNING).setUniqueMarkup(markup.intValue());
             this.taskName = taskName;
+            this.channel = channel;
         }
 
         @Override
         public void run() {
+            if(channel == null){
+                logger.warn("crawler client lose connection");
+                heartBeat.cancel(true);
+            }
             TaskData taskData = new TaskData();
             taskData.setProgress(progress);
             worker.beat(taskName, taskData);
+            ProcessData.Builder builder = ProcessData.newBuilder();
+            builder.setType(MessageType.HEART_BEAT_RESP.getValue());
+            builder.setStatus(ProcessData.CrawlerStatus.RUNNING);
+            builder.setAttachment(ByteString.copyFrom(new Integer(progress).toString().getBytes()));
+            channel.writeAndFlush(builder.build());
         }
     }
 

@@ -5,6 +5,8 @@ import com.xiongbeer.webveins.service.protocol.message.ProcessDataProto.ProcessD
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.Set;
@@ -14,6 +16,7 @@ import java.util.Set;
  * Created by shaoxiong on 17-5-28.
  */
 public class LoginAuthRespHandler extends ChannelInboundHandlerAdapter {
+    private final static Logger logger = LoggerFactory.getLogger(LoginAuthRespHandler.class);
     private String[] whitekList = {"127.0.0.1", "192.168.1.104"};
     private Set<Channel> channels;
 
@@ -26,6 +29,7 @@ public class LoginAuthRespHandler extends ChannelInboundHandlerAdapter {
         if(login(ctx)){
             channels.add(ctx.channel());
         } else {
+            logger.warn("Reject connection request: " + ctx.channel());
             ctx.close();
         }
     }
@@ -42,7 +46,7 @@ public class LoginAuthRespHandler extends ChannelInboundHandlerAdapter {
             case HEART_BEAT_REQ:
                 break;
             default:
-                System.out.println("Closed.");
+                logger.warn("Unknow request rc-code: " + rc);
                 ctx.close();
                 return;
         }
@@ -51,6 +55,7 @@ public class LoginAuthRespHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        System.out.println(ctx.channel() + "logout");
         channels.remove(ctx.channel());
     }
 
@@ -71,7 +76,6 @@ public class LoginAuthRespHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
             throws Exception {
-        ctx.close();
-        ctx.fireExceptionCaught(cause);
+        cause.printStackTrace();
     }
 }
