@@ -56,7 +56,6 @@ WebVeins的原理与上面都不相同，但是也有相通的地方，比如说
 * [ ] 完整的监控与控制API
 * [ ] 支持多个active manager，能在任务分类的情况下进行工作
 * [ ] 支持多个filter，新增部分filter类型
-* [ ] 异步调用支持
 * [ ] python API支持
 * [ ] Go API支持
 * [ ] 加强负载均衡与性能优化
@@ -104,12 +103,13 @@ $ $WEBVEINS_HOME/bin/webveins -r worker
 public class Crawler implements Action{
         /* 在爬取过程中需要把新的Url保存下来，结束后上传 */
         private static Set<String> newUrls = new new ConcurrentSet<String>();
+        private static AtomicInteger counter = new AtomicInteger(0);
         /*
             返回true代表任务成功，false则为放弃该任务
             每当Server端成功领取到任务就会执行run方法
         */
         @Override
-        public boolean run(String urlFilePath) {
+        public boolean run(String urlFilePath, int progress) {
             try {
                 /* 读取任务Urls */
                 List<String> urlsList = new UrlFileLoader().readFileByLine(urlFilePath);
@@ -128,6 +128,16 @@ public class Crawler implements Action{
             return false;
         }
 
+        @Override
+        public int report() {
+            return counter.get();
+        }
+
+        @Override
+        public void reportResult(int result) {
+            // pass
+        }
+
         ...
 
         public static void main(String[] args){
@@ -138,8 +148,6 @@ public class Crawler implements Action{
             bootstrap.init();
             /* 准备好啦，可以开始工作了 */
             bootstrap.ready();
-            /* 任务执行完毕后记得关闭连接 */
-            bootstrap.close();
         }
     }
 ```
