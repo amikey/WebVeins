@@ -1,6 +1,5 @@
 package com.xiongbeer.webveins.service.protocol.handler;
 
-import com.google.common.primitives.UnsignedInteger;
 import com.google.protobuf.ByteString;
 import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.service.local.Action;
@@ -53,8 +52,7 @@ public class HeartBeatReqHandler extends ChannelInboundHandlerAdapter {
             String content = message.getAttachment().toString(Charset.defaultCharset());
             if(content != null){
                 try {
-                    UnsignedInteger result = UnsignedInteger.fromIntBits(Integer.parseInt(content));
-                    action.reportResult(result);
+                    action.reportResult(Integer.parseInt(content));
                 } catch (NumberFormatException e){
                     //pass
                 }
@@ -81,8 +79,8 @@ public class HeartBeatReqHandler extends ChannelInboundHandlerAdapter {
         }
 
         public void reconnect() {
-            logger.error("lose connection, trying to reconncet...");
             if(!closeLongConnection.get()) {
+                logger.error("lose connection, trying to reconncet...");
                 try {
                     TimeUnit.SECONDS.sleep(10);
                     client.connect();
@@ -110,7 +108,7 @@ public class HeartBeatReqHandler extends ChannelInboundHandlerAdapter {
         }
 
         private ProcessData buildHeatBeat() {
-            Integer progress = action.report().intValue();
+            Integer progress = action.report();
             ProcessData.Builder builder = ProcessData.newBuilder();
             builder.setType(MessageType.HEART_BEAT_REQ.getValue());
             builder.setAttachment(ByteString.copyFrom(progress.toString().getBytes()));

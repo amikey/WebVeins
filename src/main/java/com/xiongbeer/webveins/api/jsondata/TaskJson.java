@@ -1,6 +1,5 @@
 package com.xiongbeer.webveins.api.jsondata;
 
-import com.google.common.primitives.UnsignedInteger;
 import com.xiongbeer.webveins.zk.task.Task;
 
 import java.util.Date;
@@ -19,9 +18,9 @@ public class TaskJson implements JData {
     /* 状态 */
     private Task.Status status;
     /* 任务进度 */
-    private UnsignedInteger progress;
+    private int progress;
     /* 所属filter标识 */
-    private UnsignedInteger markup;
+    private int markup;
 
     public String getCtime() {
         return new Date(cTime).toString();
@@ -70,18 +69,18 @@ public class TaskJson implements JData {
     }
 
     public String getProgress(){
-        return progress.toString();
+        return new Integer(progress).toString();
     }
 
-    public void setProgress(UnsignedInteger progress){
+    public void setProgress(int progress){
         this.progress = progress;
     }
 
     public String getMarkup(){
-        return markup.toString();
+        return new Integer(markup).toString();
     }
 
-    public void setMarkup(UnsignedInteger markup){
+    public void setMarkup(int markup){
         this.markup = markup;
     }
 }

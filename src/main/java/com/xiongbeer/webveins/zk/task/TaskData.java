@@ -1,8 +1,5 @@
 package com.xiongbeer.webveins.zk.task;
 
-import com.google.common.primitives.UnsignedInteger;
-
-import java.util.BitSet;
 
 /**
  *  HIGH                    --->                   LOW
@@ -14,8 +11,8 @@ import java.util.BitSet;
  */
 public class TaskData {
     private byte[] data;
-    private UnsignedInteger uniqueMarkup;
-    private UnsignedInteger progress;
+    private int uniqueMarkup;
+    private int progress;
     private byte status;
     private static short STATUS = 8;
     private static short U_MARKUP = 4;
@@ -35,12 +32,12 @@ public class TaskData {
         for(int i=PROGRRESS; i<PROGRRESS+4; ++i){
             foo += (data[i] & 0xff) << (i-PROGRRESS)*8;
         }
-        progress = UnsignedInteger.fromIntBits(foo);
+        progress = foo;
         foo = 0;
         for(int i=U_MARKUP; i<U_MARKUP+4; ++i){
             foo += (data[i] & 0xff) << (i-U_MARKUP)*8;
         }
-        uniqueMarkup = UnsignedInteger.fromIntBits(foo);
+        uniqueMarkup =foo;
     }
 
     public TaskData setStatus(Task.Status status){
@@ -51,7 +48,7 @@ public class TaskData {
     }
 
     public TaskData setProgress(int progress){
-        this.progress = UnsignedInteger.fromIntBits(progress);
+        this.progress = progress;
         for(int i=PROGRRESS; i<PROGRRESS+4; ++i){
             data[i] = (byte) (progress >> (i-PROGRRESS)*8);
         }
@@ -59,18 +56,18 @@ public class TaskData {
     }
 
     public TaskData setUniqueMarkup(int uniqueMarkup){
-        this.uniqueMarkup = UnsignedInteger.fromIntBits(uniqueMarkup);
+        this.uniqueMarkup = uniqueMarkup;
         for(int i=U_MARKUP; i<U_MARKUP+4; ++i){
             data[i] = (byte) (uniqueMarkup >> (i-U_MARKUP)*8);
         }
         return this;
     }
 
-    public UnsignedInteger getProgress(){
+    public int getProgress(){
         return progress;
     }
 
-    public UnsignedInteger getUniqueMarkup(){
+    public int getUniqueMarkup(){
         return uniqueMarkup;
     }
 

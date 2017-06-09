@@ -37,13 +37,14 @@ public class Crawler implements PageProcessor, Action {
 
     /* 每当worker领取到任务以后就会自动的运行这个函数，可以视为一个异步的callback */
     @Override
-    public boolean run(String urlFilePath) {
+    public boolean run(String urlFilePath, int progress) {
         try {
     	    /* worker领取到的url存放在一个本地文件夹中，这里提供了一个UrlFileLoader来把其中的url读到内存中 */
             List<String> urlsList = new UrlFileLoader().readFileByLine(urlFilePath);
+            int len = urlsList.size();
     	    /* 读取的url存在list中，读取出来放入爬虫的爬取队列中 */
-            for (String url : urlsList) {
-                spider.addUrl(url);
+    	    for(int i=progress; i<len; ++i){
+    	        spider.addUrl(urlsList.get(i));
             }
             spider.run();
             /* 任务执行完毕，上传新的url，为了节省内存你可以选择清空newurls，但也可以选择不清空以此来减轻manager的去重负担，这里选择了保留 */
@@ -58,13 +59,13 @@ public class Crawler implements PageProcessor, Action {
     }
 
     @Override
-    public UnsignedInteger report() {
-        return UnsignedInteger.fromIntBits(counter.get());
+    public int report() {
+        return counter.get();
     }
 
     @Override
-    public void reportResult(UnsignedInteger result) {
-        System.out.println(result);
+    public void reportResult(int result) {
+        System.out.println("----progress:" + result + "-------");
         //pass
     }
 
@@ -100,7 +101,5 @@ public class Crawler implements PageProcessor, Action {
         bootstrap.init();
         /* 准备好啦，可以开始工作了 */
         bootstrap.ready();
-        /* 任务执行完毕后记得关闭连接 */
-        //bootstrap.close();
     }
 }

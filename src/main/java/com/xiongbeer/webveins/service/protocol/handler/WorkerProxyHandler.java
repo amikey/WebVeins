@@ -1,6 +1,5 @@
 package com.xiongbeer.webveins.service.protocol.handler;
 
-import com.google.common.primitives.UnsignedInteger;
 import com.google.protobuf.ByteString;
 import com.xiongbeer.webveins.Configuration;
 import com.xiongbeer.webveins.ZnodeInfo;
@@ -127,6 +126,7 @@ public class WorkerProxyHandler extends ChannelInboundHandlerAdapter {
         builder.setStatus(ProcessData.CrawlerStatus.RUNNING);
         builder.setUrlFilePath(Configuration.WAITING_TASKS_URLS + "/" + task.getTaskName());
         builder.setUrlFileName(task.getTaskName());
+        builder.setAttachment(ByteString.copyFrom(new Integer(task.getTaskData().getProgress()).toString().getBytes()));
         ctx.writeAndFlush(builder.build());
 
         /* 拿到任务后会定时改变任务的mtime，防止被manager错误的重置 */
@@ -143,9 +143,9 @@ public class WorkerProxyHandler extends ChannelInboundHandlerAdapter {
         TaskData taskData;
         Channel channel;
 
-        public HeartBeat(String taskName, UnsignedInteger markup, Channel channel){
+        public HeartBeat(String taskName, int markup, Channel channel){
             taskData = new TaskData();
-            taskData.setStatus(Task.Status.RUNNING).setUniqueMarkup(markup.intValue());
+            taskData.setStatus(Task.Status.RUNNING).setUniqueMarkup(markup);
             this.taskName = taskName;
             this.channel = channel;
         }

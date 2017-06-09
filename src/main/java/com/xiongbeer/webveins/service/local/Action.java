@@ -1,15 +1,13 @@
 package com.xiongbeer.webveins.service.local;
 
-import com.google.common.primitives.UnsignedInteger;
-
 /**
  * Created by shaoxiong on 17-4-26.
  */
 public interface Action {
 
-    boolean run(String urlFilePath);
+    boolean run(String urlFilePath, int progress);
 
-    UnsignedInteger report();
+    int report();
 
-    void reportResult(UnsignedInteger result);
+    void reportResult(int result);
 }

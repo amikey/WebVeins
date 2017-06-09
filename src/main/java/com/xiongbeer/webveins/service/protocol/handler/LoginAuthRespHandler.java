@@ -29,7 +29,7 @@ public class LoginAuthRespHandler extends ChannelInboundHandlerAdapter {
         if(login(ctx)){
             channels.add(ctx.channel());
         } else {
-            logger.warn("Reject connection request: " + ctx.channel());
+            logger.error("Reject connection request: " + ctx.channel());
             ctx.close();
         }
     }
@@ -46,7 +46,7 @@ public class LoginAuthRespHandler extends ChannelInboundHandlerAdapter {
             case HEART_BEAT_REQ:
                 break;
             default:
-                logger.warn("Unknow request rc-code: " + rc);
+                logger.error("Unknow request rc-code: " + rc);
                 ctx.close();
                 return;
         }
@@ -55,7 +55,6 @@ public class LoginAuthRespHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        System.out.println(ctx.channel() + "logout");
         channels.remove(ctx.channel());
     }
 
