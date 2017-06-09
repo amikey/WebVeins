@@ -87,7 +87,6 @@ public class Server {
             } catch (InterruptedException e) {
                 logger.error(e.getMessage());
             }
-
         }
     }
 }

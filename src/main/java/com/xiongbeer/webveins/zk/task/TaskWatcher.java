@@ -27,12 +27,12 @@ public class TaskWatcher{
     public void waitForTask(){
         try {
             while(true) {
-                List<String> children =
-                        (ArrayList<String>) client.getChildren().forPath(ZnodeInfo.TASKS_PATH);
+                List<String> children = client.getChildren().forPath(ZnodeInfo.TASKS_PATH);
                 for (String child : children) {
-                    byte[] data =
-                            client.getData().forPath(ZnodeInfo.NEW_TASK_PATH + child);
-                    if (new String(data).equals(Task.Status.WAITING.getValue())) {
+                    byte[] data = client.getData()
+                            .forPath(ZnodeInfo.NEW_TASK_PATH + child);
+                    TaskData taskData = new TaskData(data);
+                    if (taskData.getStatus() == Task.Status.WAITING) {
                         return;
                     }
                 }

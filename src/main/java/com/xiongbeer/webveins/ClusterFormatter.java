@@ -20,9 +20,10 @@ public class ClusterFormatter implements Watcher{
     /**
      * 初始化znode基础设置，生成3个永久的znode
      * /
-     * |--- wvTasks
-     * |--- wvWorkers
-     * |--- wvManagers
+     * |--- webveins
+     *     |--- wvTasks
+     *     |--- wvWorkers
+     *     |--- wvManagers
      */
     public void initZK()
             throws KeeperException, InterruptedException {

@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -69,7 +70,8 @@ public class LocalCrawlerHandler extends ChannelInboundHandlerAdapter {
          */
         String localSavePath = Configuration.TEMP_DIR + '/'
                 + data.getUrlFileName();
-        boolean flag = action.run(localSavePath);
+        int progress = Integer.parseInt(data.getAttachment().toString(Charset.defaultCharset()));
+        boolean flag = action.run(localSavePath, progress);
         /* 任务结束后删除url文件 */
         new File(localSavePath).delete();
         ProcessData.Builder builder = ProcessData.newBuilder();
@@ -85,7 +87,6 @@ public class LocalCrawlerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         cause.printStackTrace();
-        ctx.close();
     }
 
     class CrawlerTask implements Runnable {

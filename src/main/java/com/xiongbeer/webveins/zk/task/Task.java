@@ -74,13 +74,14 @@ public class Task {
      */
     public void checkTask(String path) {
         try {
+            String taskName = new File(path).getName();
             Stat stat = new Stat();
-            Status status = Status.get(new String(
-                    client.getData()
+            byte[] data = client.getData()
                     .storingStatIn(stat)
-                    .forPath(path)));
-            Epoch taskInfo = new Epoch(stat.getMtime(), status, stat.getVersion());
-            tasksInfo.put(new File(path).getName(), taskInfo);
+                    .forPath(path);
+            TaskData taskData = new TaskData(data);
+            Epoch taskInfo = new Epoch(taskName, stat.getMtime(), stat.getVersion(), taskData);
+            tasksInfo.put(taskName, taskInfo);
         } catch (Exception e) {
             logger.warn("Check task: " + path + " failed.", e);
         }

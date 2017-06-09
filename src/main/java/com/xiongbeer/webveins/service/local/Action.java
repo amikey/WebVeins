@@ -5,6 +5,9 @@ package com.xiongbeer.webveins.service.local;
  */
 public interface Action {
 
-    boolean run(String urlFilePath);
+    boolean run(String urlFilePath, int progress);
 
+    int report();
+
+    void reportResult(int result);
 }

@@ -6,8 +6,10 @@ import com.xiongbeer.webveins.zk.AsyncOpThreadPool;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.KeeperException.Code;
+import org.apache.zookeeper.data.Stat;
 
 import java.io.File;
 import java.util.concurrent.ExecutorService;
@@ -108,11 +110,13 @@ public class TaskManager extends Task{
      */
     public void submit(String name){
         try {
+            TaskData taskData = new TaskData();
+            taskData.setStatus(Status.WAITING);
             client.create()
                     .creatingParentsIfNeeded()
                     .withMode(CreateMode.PERSISTENT)
                     .inBackground(submitTaskCallback, asyncOpThreadPool)
-                    .forPath(ZnodeInfo.NEW_TASK_PATH + name, Status.WAITING.getValue().getBytes());
+                    .forPath(ZnodeInfo.NEW_TASK_PATH + name, taskData.getBytes());
         } catch (Exception e) {
             logger.error("unknow error", e);
         }
@@ -125,12 +129,17 @@ public class TaskManager extends Task{
      * 状态，等待其他Worker重新接管任务
      * @param path
      */
-    @Async
     public void resetTask(String path){
         try {
+            Stat stat = new Stat();
+            byte[] data = client.getData()
+                    .storingStatIn(stat)
+                    .forPath(path);
+            TaskData taskData = new TaskData(data);
+            taskData.setStatus(Status.WAITING);
             client.setData()
                     .inBackground(resetTaskCallback, asyncOpThreadPool)
-                    .forPath(path, Status.WAITING.getValue().getBytes());
+                    .forPath(path, taskData.getBytes());
         } catch (Exception e) {
             logger.error("unknow error", e);
         }

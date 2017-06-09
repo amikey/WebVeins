@@ -21,6 +21,7 @@ import io.netty.handler.timeout.ReadTimeoutHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
@@ -29,20 +30,23 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class Client {
     private final static Logger logger = LoggerFactory.getLogger(Client.class);
-    private volatile boolean isLongConnection = false;
+    private final String host = Configuration.LOCAL_HOST;
+    private final int port = Configuration.LOCAL_PORT;
+    private final Action action;
     private AtomicBoolean closeLongConnection = new AtomicBoolean(false);
+    private volatile boolean isLongConnection = false;
     private EventLoopGroup group = new NioEventLoopGroup();
     private Channel[] channel = new Channel[1];
     private ChannelInitializer<SocketChannel> channelInitializer;
-    private final int port = Configuration.LOCAL_PORT;
-    private final String host = Configuration.LOCAL_HOST;
+
 
     /**
      * Shell查询服务，短连接
      *
      * @param command
      */
-    public Client(final ProcessData command){
+    public Client(@Nonnull final ProcessData command){
+        action = null;
         channelInitializer = new ChannelInitializer<SocketChannel>() {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
@@ -62,14 +66,10 @@ public class Client {
      *
      * @param action
      */
-    public Client(final Action action){
-        if(action == null){
-            logger.error("init client failed, action is null");
-            isLongConnection = true;
-            System.exit(1);
-        }
+    public Client(@Nonnull final Action action){
         isLongConnection = true;
         final Client self = this;
+        this.action = action;
         channelInitializer = new ChannelInitializer<SocketChannel>() {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
@@ -143,5 +143,9 @@ public class Client {
         if(channel[0] != null) {
             channel[0].writeAndFlush(data);
         }
+    }
+
+    public Action getAction(){
+        return action;
     }
 }

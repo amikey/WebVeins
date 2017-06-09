@@ -17,6 +17,10 @@ public class TaskJson implements JData {
     private String name;
     /* 状态 */
     private Task.Status status;
+    /* 任务进度 */
+    private int progress;
+    /* 所属filter标识 */
+    private int markup;
 
     public String getCtime() {
         return new Date(cTime).toString();
@@ -62,5 +66,21 @@ public class TaskJson implements JData {
 
     public void setStatus(Task.Status status) {
         this.status = status;
+    }
+
+    public String getProgress(){
+        return new Integer(progress).toString();
+    }
+
+    public void setProgress(int progress){
+        this.progress = progress;
+    }
+
+    public String getMarkup(){
+        return new Integer(markup).toString();
+    }
+
+    public void setMarkup(int markup){
+        this.markup = markup;
     }
 }
