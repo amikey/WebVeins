@@ -1,6 +1,5 @@
 package com.xiongbeer.webveins.example.webmagic;
 
-import com.google.common.primitives.UnsignedInteger;
 import com.xiongbeer.webveins.service.local.Action;
 import com.xiongbeer.webveins.service.local.Bootstrap;
 import com.xiongbeer.webveins.service.local.CrawlerBootstrap;
@@ -31,10 +30,9 @@ public class Crawler implements PageProcessor, Action {
     private Site site = Site.me().setRetryTimes(3)
             .setSleepTime(1000).setUseGzip(true)
             .setUserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36");
-    private static Set<String> newUrls = new ConcurrentSet<String>();
+    private static Set<String> newUrls = new ConcurrentSet<>();
     private static Spider spider = Spider.create(new Crawler()).thread(3).clearPipeline();
     private static AtomicInteger counter = new AtomicInteger(0);
-
     /* 每当worker领取到任务以后就会自动的运行这个函数，可以视为一个异步的callback */
     @Override
     public boolean run(String urlFilePath, int progress) {

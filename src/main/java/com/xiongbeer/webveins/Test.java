@@ -1,5 +1,8 @@
 package com.xiongbeer.webveins;
 
+import javax.swing.text.html.Option;
+import java.io.File;
+import java.util.*;
 
 /**
  * Created by shaoxiong on 17-4-9.
@@ -7,6 +10,8 @@ package com.xiongbeer.webveins;
 public class Test {
 
     public static void main(String[] args){
-        System.out.println(new Integer(1231).toString());
+        File dir = new File("/");
+        Optional<File[]> files = Optional.ofNullable(dir.listFiles());
+        files.ifPresent(list -> Arrays.asList(list).forEach(System.out::println));
     }
 }

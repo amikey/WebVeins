@@ -62,6 +62,7 @@ public class HeartBeatReqHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        heartBeat.cancel(true);
         executor.execute(new KeepConnection(closeLongConnection));
     }
 

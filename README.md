@@ -62,7 +62,7 @@ WebVeins的原理与上面都不相同，但是也有相通的地方，比如说
 
 
 ### 依赖
-- ZooKeeper >= 3.4.9
+- ZooKeeper >= 3.5.0
 - Hadoop >= 2.7.3
 - jdk 1.8
 - linux内核系统

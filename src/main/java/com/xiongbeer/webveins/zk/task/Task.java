@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -52,13 +51,11 @@ public class Task {
      * 成功后对每个task进行checkTask
      */
     public void checkTasks(){
-        String path = ZnodeInfo.TASKS_PATH;
+
         try {
-            List<String> tasks =
-                    client.getChildren().forPath(path);
-            for(String task:tasks){
-                checkTask(path + "/" + task);
-            }
+            client.getChildren()
+                    .forPath(ZnodeInfo.TASKS_PATH)
+                    .forEach(task -> checkTask(ZnodeInfo.NEW_TASK_PATH + task));
         } catch (Exception e) {
             logger.warn("failed to update tasks' information", e);
         }

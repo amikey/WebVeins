@@ -5,7 +5,6 @@ import com.xiongbeer.webveins.api.SimpleInfo;
 import com.xiongbeer.webveins.api.jsondata.JData;
 import com.xiongbeer.webveins.api.jsondata.TaskJson;
 import com.xiongbeer.webveins.exception.VeinsException.OperationFailedException;
-import com.xiongbeer.webveins.zk.task.Task;
 
 import com.xiongbeer.webveins.zk.task.TaskData;
 import org.apache.curator.framework.CuratorFramework;
@@ -55,42 +54,13 @@ public class TaskInfo implements SimpleInfo {
     private TaskJson taskInfo(Stat taskStat, String name, byte[] data){
         TaskJson foo = new TaskJson();
         TaskData taskData = new TaskData(data);
-        foo.setStatus(taskData.getStatus());
+        foo.setName(name);
         foo.setCtime(taskStat.getCtime());
         foo.setMtime(taskStat.getMtime());
-        foo.setName(name);
+        foo.setStatus(taskData.getStatus());
         foo.setProgress(taskData.getProgress());
         foo.setMarkup(taskData.getUniqueMarkup());
         return foo;
-    }
-
-    /**
-     * 获取任务历史失败次数
-     *
-     * @param mTimes 修改的次数
-     * @param currentStatus 当前的状态
-     * @return 失败次数
-     */
-    @SuppressWarnings("unused")
-	@Deprecated
-    private int getFailedTimes(int mTimes, Task.Status currentStatus){
-        int ftimes = 0;
-        if(mTimes > 0) {
-            switch (currentStatus) {
-                case WAITING:
-                    ftimes = mTimes/2;
-                    break;
-                case RUNNING:
-                    ftimes = (mTimes-1)/2;
-                    break;
-                case FINISHED:
-                    ftimes = (mTimes-2)/2;
-                    break;
-                default:
-                    break;
-            }
-        }
-        return ftimes;
     }
 
     @Override

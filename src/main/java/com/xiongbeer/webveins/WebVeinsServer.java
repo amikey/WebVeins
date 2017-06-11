@@ -34,16 +34,8 @@ public class WebVeinsServer {
 	private WebVeinsServer() throws IOException {
     	Configuration.getInstance();
         client = SelfTest.checkAndGetZK();
-        if(client == null){
-            logger.error("Connect to zookeeper server failed.");
-            System.exit(1);
-        }
-        hdfsManager = SelfTest.checkAndGetHDFS();
-        if(hdfsManager == null){
-            logger.error("Connect to hdfs failed.");
-            System.exit(1);
-        }
         serverId = new IdProvider().getIp();
+        hdfsManager = SelfTest.checkAndGetHDFS();
         /* 监听kill信号 */
         SignalHandler handler = new StopSignalHandler();
         Signal termSignal = new Signal("TERM");
@@ -66,16 +58,13 @@ public class WebVeinsServer {
 
     public void run(){
         /* 主服务 */
-        serviceThreadPool.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    logger.info("run local server");
-                    runServer();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    System.exit(1);
-                }
+        serviceThreadPool.execute(() -> {
+            try {
+                logger.info("run local server");
+                runServer();
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.exit(1);
             }
         });
     }

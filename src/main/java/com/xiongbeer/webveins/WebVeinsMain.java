@@ -27,62 +27,48 @@ import java.util.concurrent.TimeUnit;
 public class WebVeinsMain {
     private static final Logger logger = LoggerFactory.getLogger(WebVeinsMain.class);
     private static WebVeinsMain wvMain;
-    private CuratorFramework client;
     private String serverId;
-    private Configuration configuration;
-
     private Manager manager;
     private HDFSManager hdfsManager;
+    private CuratorFramework client;
+    private Configuration configuration;
     private ScheduledExecutorService manageExector = Executors.newScheduledThreadPool(1);
 
     private WebVeinsMain() throws IOException {
     	configuration = Configuration.getInstance();
         client = SelfTest.checkAndGetZK();
-        if(client == null){
-            logger.error("Connect to zookeeper server failed.");
-            System.exit(1);
-        }
-        hdfsManager = SelfTest.checkAndGetHDFS();
-        if(hdfsManager == null){
-            logger.error("Connect to hdfs failed.");
-            System.exit(1);
-        }
         serverId = new IdProvider().getIp();
+        hdfsManager = SelfTest.checkAndGetHDFS();
         /* 监听kill信号 */
         SignalHandler handler = new StopSignalHandler();
         Signal termSignal = new Signal("TERM");
         Signal.handle(termSignal, handler);
-    }
-    
-    public static synchronized WebVeinsMain getInstance()
-            throws IOException {
-        if(wvMain == null){
-            wvMain = new WebVeinsMain();
-        }
-        return wvMain;
     }
 
     /**
      * 定时执行manage
      */
     private void run(){
-        UrlFilter filter = configuration.getUrlFilter();
         manager = Manager.getInstance(client, serverId,
-                hdfsManager, filter);
-
-        manageExector.scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    manager.manage();
-                } catch (InterruptedException e) {
-                    logger.info("shut down.");
-                    return;
-                } catch (Throwable e){
-                    logger.warn("something wrong when managing: ", e);
-                }
+                hdfsManager, configuration.getUrlFilter());
+        manageExector.scheduleAtFixedRate(() -> {
+            try {
+                manager.manage();
+            } catch (InterruptedException e) {
+                logger.info("shut down.");
+                return;
+            } catch (Throwable e){
+                logger.warn("something wrong when managing: ", e);
             }
         }, 0, Configuration.CHECK_TIME, TimeUnit.SECONDS);
+    }
+
+    public static synchronized WebVeinsMain getInstance()
+            throws IOException {
+        if(wvMain == null){
+            wvMain = new WebVeinsMain();
+        }
+        return wvMain;
     }
 
     private class StopSignalHandler implements SignalHandler {

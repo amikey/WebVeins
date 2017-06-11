@@ -51,7 +51,7 @@ public class LoginAuthReqHandler extends ChannelInboundHandlerAdapter {
             case HEART_BEAT_RESP:
                 break;
             default:
-                System.out.println("login refused");
+                logger.error("login refused");
                 ctx.close();
                 return;
         }

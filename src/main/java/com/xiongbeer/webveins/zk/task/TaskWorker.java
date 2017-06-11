@@ -34,7 +34,7 @@ public class TaskWorker extends Task{
         Iterator<Entry<String, Epoch>> iterator = super.tasksInfo.entrySet().iterator();
         while(iterator.hasNext()){
             @SuppressWarnings("rawtypes")
-			Map.Entry entry = (Map.Entry)iterator.next();
+			Map.Entry entry = iterator.next();
             String key = (String) entry.getKey();
             Epoch value = (Epoch) entry.getValue();
             if(!blackList.contains(value) && value.getStatus() == Status.WAITING){
@@ -45,7 +45,6 @@ public class TaskWorker extends Task{
                 }
             }
         }
-
         /* 如果task不为null就说明拿到了任务 */
         return task;
     }

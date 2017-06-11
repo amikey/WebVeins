@@ -29,76 +29,70 @@ public class TaskManager extends Task{
      * 提交任务成功后不立即刷新Tasks列表
      * 是为了减轻Manager服务器的压力
      */
-    private BackgroundCallback submitTaskCallback = new BackgroundCallback() {
-        @Override
-        public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
-            int rc = curatorEvent.getResultCode();
-            String name = curatorEvent.getName();
-            String path = curatorEvent.getPath();
-            switch (Code.get(rc)){
-                case CONNECTIONLOSS:
-                    submit(name);
-                    break;
-                case OK:
-                    logger.info("Submit task: " + path + " success.");
-                    break;
-                case NODEEXISTS:
-                    // pass
-                    break;
-                default:
-                    logger.error("Something went wrong when submit task.",
-                            KeeperException.create(Code.get(rc), path));
-                    break;
-            }
+    private BackgroundCallback submitTaskCallback =
+            (CuratorFramework curatorFramework, CuratorEvent curatorEvent) -> {
+        int rc = curatorEvent.getResultCode();
+        String name = curatorEvent.getName();
+        String path = curatorEvent.getPath();
+        switch (Code.get(rc)){
+            case CONNECTIONLOSS:
+                submit(name);
+                break;
+            case OK:
+                logger.info("Submit task: " + path + " success.");
+                break;
+            case NODEEXISTS:
+                // pass
+                break;
+            default:
+                logger.error("Something went wrong when submit task.",
+                        KeeperException.create(Code.get(rc), path));
+                break;
         }
     };
 
 
-    private BackgroundCallback resetTaskCallback = new BackgroundCallback() {
-        @Override
-        public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
-            int rc = curatorEvent.getResultCode();
-            String path = curatorEvent.getPath();
-            switch (Code.get(rc)){
-                case CONNECTIONLOSS:
-                    resetTask(path);
-                    break;
-                case OK:
-                    logger.info("Task: " + path + " has been reset.");
-                    break;
-                case NONODE:
-                    logger.warn("Task: " + path + " doesn't exist.");
-                    break;
-                default:
-                    logger.error("Something went wrong when reset task.",
-                            KeeperException.create(Code.get(rc), path));
-                    break;
-            }
+    private BackgroundCallback resetTaskCallback =
+            (CuratorFramework curatorFramework, CuratorEvent curatorEvent) -> {
+        int rc = curatorEvent.getResultCode();
+        String path = curatorEvent.getPath();
+        switch (Code.get(rc)){
+            case CONNECTIONLOSS:
+                resetTask(path);
+                break;
+            case OK:
+                logger.info("Task: " + path + " has been reset.");
+                break;
+            case NONODE:
+                logger.warn("Task: " + path + " doesn't exist.");
+                break;
+            default:
+                logger.error("Something went wrong when reset task.",
+                        KeeperException.create(Code.get(rc), path));
+                break;
         }
     };
 
 
-    private BackgroundCallback releaseTaskCallback = new BackgroundCallback() {
-        @Override
-        public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
-            int rc = curatorEvent.getResultCode();
-            String path = curatorEvent.getPath();
-            switch (Code.get(rc)){
-                case CONNECTIONLOSS:
-                    releaseTask(path);
-                    break;
-                case OK:
-                    String dataUrl = new File(path).getName();
-                    if(tasksInfo.containsKey(dataUrl)){
-                        tasksInfo.remove(dataUrl);
-                    }
-                    logger.info("Release task: " + dataUrl + " success.");
-                    break;
-                default:
-                    logger.error("Something went wrong when release task.",
-                            KeeperException.create(Code.get(rc), path));
-                    break;
-            }
+    private BackgroundCallback releaseTaskCallback =
+            (CuratorFramework curatorFramework, CuratorEvent curatorEvent) -> {
+        int rc = curatorEvent.getResultCode();
+        String path = curatorEvent.getPath();
+        switch (Code.get(rc)){
+            case CONNECTIONLOSS:
+                releaseTask(path);
+                break;
+            case OK:
+                String dataUrl = new File(path).getName();
+                if(tasksInfo.containsKey(dataUrl)){
+                    tasksInfo.remove(dataUrl);
+                }
+                logger.info("Release task: " + dataUrl + " success.");
+                break;
+            default:
+                logger.error("Something went wrong when release task.",
+                        KeeperException.create(Code.get(rc), path));
+                break;
         }
     };
 

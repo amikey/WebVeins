@@ -10,7 +10,6 @@ import com.xiongbeer.webveins.utils.Async;
 import com.xiongbeer.webveins.utils.MD5Maker;
 import com.xiongbeer.webveins.zk.AsyncOpThreadPool;
 import com.xiongbeer.webveins.zk.task.Epoch;
-import com.xiongbeer.webveins.zk.task.Task;
 import com.xiongbeer.webveins.zk.task.TaskManager;
 import com.xiongbeer.webveins.zk.worker.WorkersWatcher;
 
@@ -18,10 +17,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.transaction.CuratorOp;
-import org.apache.curator.framework.api.transaction.CuratorTransaction;
-import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.zookeeper.*;
-import org.apache.zookeeper.AsyncCallback.*;
 import org.apache.zookeeper.KeeperException.Code;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.LoggerFactory;
@@ -37,7 +33,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
 /**
  * @author shaoxiong
@@ -70,22 +65,22 @@ public class Manager {
     private TaskManager taskManager;
     private HDFSManager hdfsManager;
 
-    private Map<String, String> workerList = new HashMap<String, String>();
+    private Map<String, String> workersMap = new HashMap<>();
 
     /* 未完成的任务指RUNNING状态的任务 */
-    private Map<String, Epoch> unfinishedTaskList = new HashMap<String, Epoch>();
+    private Map<String, Epoch> unfinishedTaskMap = new HashMap<>();
 
-    private UrlFilter filter;
+    private UrlFilter urlFilter;
 
     private Manager(CuratorFramework client, String serverId,
-                   HDFSManager hdfsManager, UrlFilter filter){
-        status = Status.Initializing;
+                   HDFSManager hdfsManager, UrlFilter urlFilter){
         this.client = client;
         this.serverId = serverId;
-        taskManager = new TaskManager(client);
         this.hdfsManager = hdfsManager;
+        this.urlFilter = urlFilter;
+        taskManager = new TaskManager(client);
+        status = Status.Initializing;
         workersWatcher = new WorkersWatcher(client);
-        this.filter = filter;
         toBeActive();
     }
 
@@ -94,9 +89,9 @@ public class Manager {
     }
 
     public static synchronized Manager getInstance(CuratorFramework client, String serverId,
-                                      HDFSManager hdfsManager, UrlFilter filter){
+                                      HDFSManager hdfsManager, UrlFilter urlFilter){
         if(manager == null){
-            manager = new Manager(client, serverId, hdfsManager, filter);
+            manager = new Manager(client, serverId, hdfsManager, urlFilter);
         }
         return manager;
     }
@@ -194,35 +189,33 @@ public class Manager {
      * 这2个操作中的任何一个操作失败，
      * 则整个操作失败。
      */
-    private BackgroundCallback recoverMultiCallback = new BackgroundCallback() {
-        @Override
-        public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
-            int rc = curatorEvent.getResultCode();
-            String path = curatorEvent.getPath();
-            switch (Code.get(rc)) {
-                case CONNECTIONLOSS:
-                    logger.warn("CONNECTIONLOSS, retrying to recover active manager. server."
-                            + serverId + " ...");
-                    recoverActiveManager();
-                    break;
-                case OK:
-                    status = Status.ELECTED;
-                    managerPath = ZnodeInfo.ACTIVE_MANAGER_PATH;
-                    logger.info("Recover active manager success. now server." + serverId
-                            + " is active manager.");
-                    activeManagerExists();
-                    break;
-                case NODEEXISTS:
-                    status = Status.NOT_ELECTED;
-                    logger.info("Active manager has already recover by other server.");
-                    activeManagerExists();
-                    break;
-                default:
-                    status = Status.NOT_ELECTED;
-                    logger.error("Something went wrong when recoving for active manager.",
-                            KeeperException.create(Code.get(rc), path));
-                    break;
-            }
+    private BackgroundCallback recoverMultiCallback =
+            (CuratorFramework curatorFramework, CuratorEvent curatorEvent) -> {
+        int rc = curatorEvent.getResultCode();
+        String path = curatorEvent.getPath();
+        switch (Code.get(rc)) {
+            case CONNECTIONLOSS:
+                logger.warn("CONNECTIONLOSS, retrying to recover active manager. server."
+                        + serverId + " ...");
+                recoverActiveManager();
+                break;
+            case OK:
+                status = Status.ELECTED;
+                managerPath = ZnodeInfo.ACTIVE_MANAGER_PATH;
+                logger.info("Recover active manager success. now server." + serverId
+                        + " is active manager.");
+                activeManagerExists();
+                break;
+            case NODEEXISTS:
+                status = Status.NOT_ELECTED;
+                logger.info("Active manager has already recover by other server.");
+                activeManagerExists();
+                break;
+            default:
+                status = Status.NOT_ELECTED;
+                logger.error("Something went wrong when recoving for active manager.",
+                        KeeperException.create(Code.get(rc), path));
+                break;
         }
     };
 
@@ -241,23 +234,20 @@ public class Manager {
     private void recoverActiveManager(){
         if(status == Status.NOT_ELECTED) {
             status = Status.RECOVERING;
-            delayExector.schedule(new Runnable(){
-                @Override
-                public void run(){
-                    try {
-                        CuratorOp deleteOp = client.transactionOp()
-                                .delete()
-                                .forPath(managerPath);
-                        CuratorOp createOp = client.transactionOp()
-                                .create()
-                                .withMode(CreateMode.EPHEMERAL)
-                                .forPath(ZnodeInfo.ACTIVE_MANAGER_PATH);
-                        client.transaction()
-                                .inBackground(recoverMultiCallback, asyncOpThreadPool)
-                                .forOperations(deleteOp, createOp);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+            delayExector.schedule(() -> {
+                try {
+                    CuratorOp deleteOp = client.transactionOp()
+                            .delete()
+                            .forPath(managerPath);
+                    CuratorOp createOp = client.transactionOp()
+                            .create()
+                            .withMode(CreateMode.EPHEMERAL)
+                            .forPath(ZnodeInfo.ACTIVE_MANAGER_PATH);
+                    client.transaction()
+                            .inBackground(recoverMultiCallback, asyncOpThreadPool)
+                            .forOperations(deleteOp, createOp);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }, ZnodeInfo.JITTER_DELAY, TimeUnit.SECONDS);
         }
@@ -265,29 +255,27 @@ public class Manager {
             toBeActive();
         }
     }
-    
-    private BackgroundCallback actManagerExistsCallback = new BackgroundCallback() {
-        @Override
-        public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
-            int rc = curatorEvent.getResultCode();
-            Stat stat = curatorEvent.getStat();
-            switch (Code.get(rc)){
-                case CONNECTIONLOSS:
-                    activeManagerExists();
+
+    private BackgroundCallback actManagerExistsCallback =
+            (CuratorFramework curatorFramework, CuratorEvent curatorEvent) -> {
+        int rc = curatorEvent.getResultCode();
+        Stat stat = curatorEvent.getStat();
+        switch (Code.get(rc)){
+            case CONNECTIONLOSS:
+                activeManagerExists();
+                break;
+            case OK:
+                if(stat == null){
+                    recoverActiveManager();
                     break;
-                case OK:
-                    if(stat == null){
-                        recoverActiveManager();
-                        break;
-                    }
-                    break;
-                default:
-                    checkActiveManager();
-                    break;
-            }
+                }
+                break;
+            default:
+                checkActiveManager();
+                break;
         }
     };
-    
+
     /**
      * 检查active_manager节点是否还存在
      * 并且设置监听点
@@ -306,31 +294,29 @@ public class Manager {
         }
     }
     
-    private BackgroundCallback stdManagerExistsCallback = new BackgroundCallback() {
-        @Override
-        public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
-            int rc = curatorEvent.getResultCode();
-            String path = curatorEvent.getPath();
-            switch (Code.get(rc)){
-                case CONNECTIONLOSS:
-                    standbyManagerExists();
-                    break;
-                case OK:
-                    // pass
-                    break;
-                case NONODE:
-                    /* 有可能是standy节点转为了active状态，那个时候便不需要重新设置standby节点 */
-                    if(status == Status.NOT_ELECTED) {
-                        toBeStandBy();
-                        logger.warn("standby manager deleted, now trying to recover it. by server."
-                                + serverId + " ...");
-                    }
-                    break;
-                default:
-                    logger.error("Something went wrong when check standby manager itself.",
-                            KeeperException.create(Code.get(rc), path));
-                    break;
-            }
+    private BackgroundCallback stdManagerExistsCallback =
+            (CuratorFramework curatorFramework, CuratorEvent curatorEvent) -> {
+        int rc = curatorEvent.getResultCode();
+        String path = curatorEvent.getPath();
+        switch (Code.get(rc)){
+            case CONNECTIONLOSS:
+                standbyManagerExists();
+                break;
+            case OK:
+                // pass
+                break;
+            case NONODE:
+                /* 有可能是standy节点转为了active状态，那个时候便不需要重新设置standby节点 */
+                if(status == Status.NOT_ELECTED) {
+                    toBeStandBy();
+                    logger.warn("standby manager deleted, now trying to recover it. by server."
+                            + serverId + " ...");
+                }
+                break;
+            default:
+                logger.error("Something went wrong when check standby manager itself.",
+                        KeeperException.create(Code.get(rc), path));
+                break;
         }
     };
     
@@ -350,30 +336,28 @@ public class Manager {
         }
     }
     
-    private BackgroundCallback actManagerCreateCallback = new BackgroundCallback() {
-        @Override
-        public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
-            int rc = curatorEvent.getResultCode();
-            String path = curatorEvent.getPath();
-            switch (Code.get(rc)){
-                case CONNECTIONLOSS:
-                    checkActiveManager();
-                    break;
-                case OK:
-                    logger.info("Active manager created success. at {}", new Date().toString());
-                    managerPath = path;
-                    status = Status.ELECTED;
-                    activeManagerExists();
-                    break;
-                case NODEEXISTS:
-                    logger.info("Active manger already exists, turn to set standby manager...");
-                    toBeStandBy();
-                    break;
-                default:
-                    logger.error("Something went wrong when running for active manager.",
-                            KeeperException.create(Code.get(rc), path));
-                    break;
-            }
+    private BackgroundCallback actManagerCreateCallback =
+            (CuratorFramework curatorFramework, CuratorEvent curatorEvent) -> {
+        int rc = curatorEvent.getResultCode();
+        String path = curatorEvent.getPath();
+        switch (Code.get(rc)){
+            case CONNECTIONLOSS:
+                checkActiveManager();
+                break;
+            case OK:
+                logger.info("Active manager created success. at {}", new Date().toString());
+                managerPath = path;
+                status = Status.ELECTED;
+                activeManagerExists();
+                break;
+            case NODEEXISTS:
+                logger.info("Active manger already exists, turn to set standby manager...");
+                toBeStandBy();
+                break;
+            default:
+                logger.error("Something went wrong when running for active manager.",
+                        KeeperException.create(Code.get(rc), path));
+                break;
         }
     };
     
@@ -393,30 +377,28 @@ public class Manager {
         }
     }
     
-    private BackgroundCallback stdManagerCreateCallback = new BackgroundCallback() {
-        @Override
-        public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
-            int rc = curatorEvent.getResultCode();
-            String path = curatorEvent.getPath();
-            switch (Code.get(rc)){
-                case CONNECTIONLOSS:
-                    toBeStandBy();
-                    break;
-                case OK:
-                    status = Status.NOT_ELECTED;
-                    managerPath = path;
-                    logger.info("Server." + serverId + " registered. at {}", new Date().toString());
-                    activeManagerExists();
-                    standbyManagerExists();
-                    break;
-                case NODEEXISTS:
-                    //TODO
-                    break;
-                default:
-                    logger.error("Something went wrong when running for stand manager.",
-                            KeeperException.create(Code.get(rc), path));
-                    break;
-            }
+    private BackgroundCallback stdManagerCreateCallback =
+            (CuratorFramework curatorFramework, CuratorEvent curatorEvent) -> {
+        int rc = curatorEvent.getResultCode();
+        String path = curatorEvent.getPath();
+        switch (Code.get(rc)){
+            case CONNECTIONLOSS:
+                toBeStandBy();
+                break;
+            case OK:
+                status = Status.NOT_ELECTED;
+                managerPath = path;
+                logger.info("Server." + serverId + " registered. at {}", new Date().toString());
+                activeManagerExists();
+                standbyManagerExists();
+                break;
+            case NODEEXISTS:
+                //TODO
+                break;
+            default:
+                logger.error("Something went wrong when running for stand manager.",
+                        KeeperException.create(Code.get(rc), path));
+                break;
         }
     };
 
@@ -436,24 +418,22 @@ public class Manager {
         }
     }
     
-    private BackgroundCallback actCheckCallback = new BackgroundCallback() {
-        @Override
-        public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
-            int rc = curatorEvent.getResultCode();
-            String path = curatorEvent.getPath();
-            switch (Code.get(rc)){
-                case CONNECTIONLOSS:
-                    checkActiveManager();
-                    break;
-                case NONODE:
-                    recoverActiveManager();
-                    break;
-                default:
-                    logger.error("Something went wrong when check active manager.",
-                            KeeperException.create(Code.get(rc), path));
-                    break;
+    private BackgroundCallback actCheckCallback =
+            (CuratorFramework curatorFramework, CuratorEvent curatorEvent) -> {
+        int rc = curatorEvent.getResultCode();
+        String path = curatorEvent.getPath();
+        switch (Code.get(rc)){
+            case CONNECTIONLOSS:
+                checkActiveManager();
+                break;
+            case NONODE:
+                recoverActiveManager();
+                break;
+            default:
+                logger.error("Something went wrong when check active manager.",
+                        KeeperException.create(Code.get(rc), path));
+                break;
             }
-        }
     };
 
     /**
@@ -483,22 +463,26 @@ public class Manager {
         Iterator<Entry<String, Epoch>> iterator = tasks.entrySet().iterator();
         while(iterator.hasNext()){
             @SuppressWarnings("rawtypes")
-			Map.Entry entry = (Map.Entry)iterator.next();
+			Map.Entry entry = iterator.next();
             String key = (String) entry.getKey();
             Epoch value = (Epoch) entry.getValue();
-
-            if(value.getStatus() == Task.Status.FINISHED){
-                if(unfinishedTaskList.containsKey(key)){
-                    unfinishedTaskList.remove(key);
-                }
-                hdfsManager.moveHDFSFile(Configuration.WAITING_TASKS_URLS + "/" + key,
-                        Configuration.FINISHED_TASKS_URLS + "/" + key);
-                taskManager.releaseTask(ZnodeInfo.TASKS_PATH + '/' + key);
-            }
-            else if(value.getStatus() == Task.Status.RUNNING){
-                unfinishedTaskList.put(key, value);
-            } else{
-                unfinishedTaskList.remove(key);
+            switch (value.getStatus()) {
+                case FINISHED:
+                    if (unfinishedTaskMap.containsKey(key)) {
+                        unfinishedTaskMap.remove(key);
+                    }
+                    hdfsManager.moveHDFSFile(Configuration.WAITING_TASKS_URLS + "/" + key,
+                            Configuration.FINISHED_TASKS_URLS + "/" + key);
+                    taskManager.releaseTask(ZnodeInfo.TASKS_PATH + '/' + key);
+                    break;
+                case RUNNING:
+                    unfinishedTaskMap.put(key, value);
+                    break;
+                case WAITING:
+                    unfinishedTaskMap.remove(key);
+                    break;
+                default:
+                    break;
             }
         }
     }
@@ -510,37 +494,30 @@ public class Manager {
      * 但是无法保证znode中wvTasks与hdfs中waitingtasks中一致
      */
     private void syncWaitingTasks() throws IOException {
-        List<String> files = hdfsManager.listFiles(Configuration.WAITING_TASKS_URLS, false);
-        for(String filePath:files){
-            String fileName = Files.getNameWithoutExtension(filePath);
-            taskManager.submit(fileName);
-        }
+        hdfsManager.listFiles(Configuration.WAITING_TASKS_URLS, false)
+                .stream()
+                .map(Files::getNameWithoutExtension)
+                .forEach(fileName -> taskManager.submit(fileName));
     }
 
     /**
      * 检查Workers的状态，若它失效则需要重置它之前领取的任务。
      */
     private void checkWorkers() throws InterruptedException {
-        Iterator<Entry<String, Epoch>> iterator = unfinishedTaskList.entrySet().iterator();
-        workersWatcher.getWorkers();
-        workersWatcher.reflushWorkerStatus();
-        workerList = workersWatcher.getWorkersList();
-        while(iterator.hasNext()){
-            @SuppressWarnings("rawtypes")
-			Map.Entry entry = (Map.Entry) iterator.next();
-            String name = (String) entry.getKey();
-            // 检查执行对应任务的worker是不是挂了
-            if(! workerList.containsValue(name)){
-                /*
-                  挂了就需要查看最后一次修改时间与检查时间的差值，如果
-                  差值超过预设的值，就认为任务该worker失效，需要重置任务
-                 */
-                if(((Epoch) entry.getValue()).getDifference() > Configuration.WORKER_DEAD_TIME){
+        workersWatcher.refreshAliveWorkers();
+        workersWatcher.refreshAllWorkersStatus();
+        workersMap = workersWatcher.getWorkersMap();
+        unfinishedTaskMap.entrySet()
+                .stream()
+                .filter(entry -> {
+                    String name = entry.getKey();
+                    Epoch epoch = entry.getValue();
+                    return !workersMap.containsKey(name) && epoch.getDifference() > Configuration.WORKER_DEAD_TIME;})
+                .forEach(entry -> {
+                    String name = entry.getKey();
                     taskManager.resetTask(ZnodeInfo.TASKS_PATH + "/" + name);
                     logger.warn("The owner of task: " + name + " has dead, now reset it...");
-                }
-            }
-        }
+        });
     }
 
     /**
@@ -604,15 +581,13 @@ public class Manager {
      * @param tempSaveDir
      */
     private void deleteNormalFiles(File tempSaveDir){
-        File[] urls = tempSaveDir.listFiles();
-        for(File url:urls){
-            if(url.isFile()){
-                String path = url.getAbsolutePath();
-                if(!path.endsWith(Configuration.TEMP_SUFFIX)){
-                    url.delete();
-                }
-            }
-        }
+        Optional.ofNullable(tempSaveDir.listFiles()).ifPresent(files ->
+            Arrays.asList(files)
+                .stream()
+                .filter(File::isFile)
+                .filter(file -> !file.getAbsolutePath().endsWith(Configuration.TEMP_SUFFIX))
+                .forEach(File::delete)
+        );
     }
 
     /**
@@ -621,16 +596,17 @@ public class Manager {
      * @param dir
      */
     private void removeTempSuffix(File dir){
-        File[] files = dir.listFiles();
-        for(File file:files){
-            if(file.isFile()){
-                String path = file.getAbsolutePath();
-                if(path.endsWith(Configuration.TEMP_SUFFIX)){
-                    file.renameTo(new File(path.substring(0,
-                            path.length() - Configuration.TEMP_SUFFIX.length())));
-                }
-            }
-        }
+        Optional.ofNullable(dir.listFiles()).ifPresent(files ->
+            Arrays.asList(files)
+                    .stream()
+                    .filter(File::isFile)
+                    .filter(file -> file.getAbsolutePath().endsWith(Configuration.TEMP_SUFFIX))
+                    .forEach(file -> {
+                        String path = file.getAbsolutePath();
+                        file.renameTo(new File(path.substring(0,
+                                path.length() - Configuration.TEMP_SUFFIX.length())));
+                    })
+        );
     }
 
     /**
@@ -668,7 +644,7 @@ public class Manager {
      */
     private List<String> downloadTaskFiles(List<String> urlFiles
             , String savePath) throws IOException {
-        List<String> localUrlFiles = new LinkedList<String>();
+        List<String> localUrlFiles = new LinkedList<>();
         for(String filePath:urlFiles){
             /*
                 若文件已存在则直接跳过
@@ -702,7 +678,7 @@ public class Manager {
             }
         }
         /* 备份至本地 */
-        String bloomFilePath = filter.save(Configuration.BLOOM_SAVE_PATH);
+        String bloomFilePath = urlFilter.save(Configuration.BLOOM_SAVE_PATH);
         /* 上传至hdfs */
         hdfsManager.upLoad(bloomFilePath,
                 Configuration.BLOOM_BACKUP_PATH);
@@ -720,6 +696,7 @@ public class Manager {
                 hdfsManager.moveHDFSFile(cache, newName);
             }
         }
+
     }
 
     /**
@@ -746,7 +723,7 @@ public class Manager {
                 public boolean processLine(String line) throws IOException {
                     String newLine = line + System.getProperty("line.separator");
                     /* 到filter中确认url是不是已经存在，已经存在就丢弃 */
-                    if(filter.put(line)){
+                    if(urlFilter.put(line)){
                         md5.update(newLine);
                         if(newUrlCounter.get() <= Configuration.TASK_URLS_NUM) {
                             newUrls.append(newLine);

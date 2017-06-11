@@ -26,9 +26,9 @@ public class Worker {
 
     public Worker(CuratorFramework client, String serverId){
         this.client = client;
+        this.serverId = serverId;
         taskWorker = new TaskWorker(client);
         taskWatcher = new TaskWatcher(client);
-        this.serverId = serverId;
         signUpWorker();
     }
 
